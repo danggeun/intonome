@@ -72,11 +72,11 @@ export function output(): AudioNode {
 /** 출력 지연 — Android 는 outputLatency(40–100 ms) ≫ baseLatency */
 export const outputLatency = (ac: AudioContext): number => (ac as AudioContext & { outputLatency?: number }).outputLatency || ac.baseLatency || 0
 
-/** 드론 주파수를 분석 워커에 알린다 — 튜너가 그 주파수만 잘라내고 읽는다. 마이크를 나중에 열어도 전해지게 기억한다 */
-let droneForAnalysis: number | null = null
-export function setAnalysisDrone(hz: number | null): void {
-  droneForAnalysis = hz
-  if (A.worker && A.ac) sendToWorker({ type: 'drone', hz, at: A.ac.currentTime + outputLatency(A.ac) })
+/** 울리는 앱 음(드론 · A 듣기)의 주파수를 분석 워커에 알린다. 튜너가 그 음과 정수배를 잘라내고 읽는다. 마이크를 나중에 열어도 전해지게 기억한다 */
+let toneForAnalysis: number | null = null
+export function setAnalysisTone(hz: number | null): void {
+  toneForAnalysis = hz
+  if (A.worker && A.ac) sendToWorker({ type: 'tone', hz, at: A.ac.currentTime + outputLatency(A.ac) })
 }
 
 /** 아무도 컨텍스트를 쓰지 않으면(마이크 off·메트로놈 정지·기준음·드론 없음) 일시정지 — Android 오디오 포커스 반환, 배터리 */
@@ -144,7 +144,7 @@ export async function openMic(): Promise<MicResult> {
     A.micSource = ac.createMediaStreamSource(stream); A.micSource.connect(A.captureNode)
     // 장치가 빠지거나 다른 앱이 마이크를 가져가면 (track ended) 정리 — 자기 스트림일 때만 (이전 세션의 늦은 ended 가 새 세션을 닫지 않게)
     stream.getAudioTracks()[0]?.addEventListener('ended', () => { if (A.micStream === stream) { closeMic(); onFatal?.(tr('mic.errEnded')) } })
-    if (droneForAnalysis !== null) sendToWorker({ type: 'drone', hz: droneForAnalysis, at: ac.currentTime }) // 이미 울리는 드론 — 지금부터 잘라낸다
+    if (toneForAnalysis !== null) sendToWorker({ type: 'tone', hz: toneForAnalysis, at: ac.currentTime }) // 이미 울리는 앱 음: 지금부터 잘라낸다
     tunerStore.set({ micReady: true, running: true, sampleRate: ac.sampleRate }) // 샘플레이트는 트레이스 창을 초 단위로 유지하는 데 쓰인다
     opening = false
     for (const h of hooks.afterOpen) h()

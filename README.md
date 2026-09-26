@@ -16,8 +16,8 @@ Korean by default; English in Settings › Language.
 
 - **Tuner**: 40 Hz (double bass E1) to 4.2 kHz, reference A = 410–466 Hz, tolerance ±5–25 ¢, pitch trace, double stops.
 - **Metronome**: sample-accurate clicks from an AudioWorklet, 40–200 BPM, 2/4 · 3/4 · 4/4 · 6/8, four subdivisions, a full-screen dial. The screen stays on while it plays.
-- **Play A**: the A at your reference pitch, in your A string's octave (A4 violin and viola, A3 cello, A2 double bass; Settings › Play A pitch).
-- **Drone**: any of the 12 notes, held in octave 4 while you practice. The tuner cuts the drone's own frequency out and keeps reading you; with only the drone sounding it shows nothing, and the practice timer doesn't count it.
+- **Play A**: the A at your reference pitch, in your A string's octave (A4 violin and viola, A3 cello, A2 double bass; Settings › Play A pitch). The tuner ignores it and keeps reading your other strings.
+- **Drone**: any of the 12 notes, held in octave 4 while you practice, with the same sound as Play A. The tuner cuts out the drone and everything the speaker adds to it (whole multiples of its frequency) and keeps reading you; with only the drone sounding it shows nothing, and the practice timer doesn't count it. A note exactly on the drone's own pitches (the same note or an octave above, within about 3 cents) is cut with it.
 - **Recorder and editor**: waveform, A-B loop, zoom, bookmarks, 0.5–1.5× speed, save a section as WAV. Recordings are saved every 10 s and recovered if the app is killed.
 - **Practice timer**: counts the time you actually played; speech and noise are ignored.
 - Dark and light themes, touch targets of 44 px, WCAG AA contrast.

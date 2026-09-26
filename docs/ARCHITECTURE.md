@@ -39,7 +39,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
                          │  1024-sample transferable Float32Array over a direct MessagePort
                          ▼
                   Analysis Worker (analysis.worker)             ≈43 Hz
-                    drone notch (only while a drone sounds) → ring buffer → 4096 window → FFT-YIN → spectrum (octave correction)
+                    app-tone filter (only while Play A or the drone sounds) → ring buffer → 4096 window → FFT-YIN → spectrum (octave correction)
                     → tracker → playing detector
                     a reference other than 440 is normalized before the tracker and restored for display
                          ▼
@@ -48,7 +48,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
 
 - One `AudioContext` (engine.ts). It is suspended when idle (no mic, metronome, Play A or drone). Mic sessions are identified by `micGen`.
 - Everything the app plays (metronome, Play A, drone) goes through one soft limiter, `output()` in engine.ts.
-- The drone is a sine the app plays, so its frequency is known exactly. While it sounds, the worker notches that frequency out of the mic signal before analysis (`core/drone.ts`: Q 35, 0.3 s to settle). A window that holds only the drone and speaker distortion (what is left is under 12 % of the drone) is analyzed as silence, so the tuner shows nothing and the practice timer doesn't count it.
+- Play A and the drone are the same sound (a triangle wave at the same level and fade) and never sound together. The app knows their frequency f exactly, and whatever the phone speaker and the room add to them lands only on whole multiples of f. While one sounds, the worker cuts f and every multiple up to 8 kHz out of the mic signal (a narrow notch at each, as wide in Hz as the one at f) and low-passes at 5 kHz before analysis (`core/drone.ts`, 0.3 s to settle). A window where what is left is under 12 % of what was cut is analyzed as silence, so the tuner shows nothing and the practice timer doesn't count it. A played note whose partials all land on multiples of f (the same note or an octave above, in tune within about 3 cents) is cut with it.
 - The sample rate is not forced. No SharedArrayBuffer (COOP/COEP can't be set on Pages or in Capacitor).
 - The metronome runs in its own worklet (metro.worklet + core/metro/sequencer). Click times (including output latency) are sent to the worker, which lowers confidence for frames in that window.
 - Recording uses MediaRecorder: mp4 (AAC) first on iOS and Safari, webm/opus elsewhere. Chunks go to IndexedDB every 10 s, and an unfinished recording is recovered on the next launch.

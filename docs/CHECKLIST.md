@@ -43,11 +43,12 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 
 ## Drone
 - [A] DRONE opens a 12-note picker; a note starts the drone and closes it; the button shows the note in red; tapping it stops the drone
-- [A] Tapping outside only closes the picker (the tap doesn't reach the metronome); Esc closes it
+- [A] Tapping outside only closes the picker (the tap doesn't reach the metronome); tapping DRONE again or Esc closes it
 - [A] Play A and the drone turn each other off
 - [A] Plays without the mic
-- [A] The tuner reads the player over the drone (octave, fifth, third, second, unison), and a drone alone with 10 % speaker distortion counts as silence (unit tests with the real analyzer)
-- [D] On a phone speaker: the drone is clearly audible, the tuner reads you while it sounds, and the screen stays on; leaving the app stops it
+- [A] Play A or the drone alone never shows on the tuner: all 12 drone notes and Play A4/A3/A2 at 440 and 442 Hz, through heavy speaker distortion, room echoes and noise, show nothing in every frame (unit tests with the real analyzer)
+- [A] The tuner reads the player over them: an octave below, a fifth below, and a second, third, fourth, fifth, sixth and seventh above the drone; the other strings over Play A; the same note, an octave and two octaves above from 5 cents off (unit tests)
+- [D] On a phone speaker: the drone sounds like Play A, the tuner shows nothing while only it or Play A sounds and reads you over it, and the screen stays on; leaving the app stops it
 
 ## Recording
 - [A] Start/stop from the header REC or the menu, elapsed time shown

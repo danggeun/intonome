@@ -3,11 +3,13 @@
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
 ## [2.4.1] - 2026-09-27
-- DRONE: a new button next to ☰. Pick one of the 12 notes and it keeps sounding (octave 4, a pure tone) while you practice; tap the red note to stop. Like the metronome, it keeps the screen awake and stops when you leave the app. The first time you open it, a line explains what it's for
-- The tuner keeps reading you over the drone. It cuts out the drone's exact frequency, so an octave or a fifth above the drone reads as your note, not the drone's. With only the drone sounding the tuner shows nothing, and the practice timer doesn't count it
+- DRONE: a new button next to ☰. Pick one of the 12 notes and it keeps sounding (octave 4, the same sound as Play A) while you practice; tap the red note to stop. Tapping DRONE again while the notes are open closes them. Like the metronome, it keeps the screen awake and stops when you leave the app. The first time you open it, a line explains what it's for
+- The tuner ignores the drone and Play A. It cuts out their frequency and every whole multiple of it, which is all a phone speaker and the room can add to them, so with only them sounding the tuner shows nothing and the practice timer doesn't count it. It keeps reading you over them: other strings over Play A, and any interval over the drone. A note that sits exactly on the tone's own pitches (the same note or an octave above, within about 3 cents) is cut with it and shows nothing
+- Play A and the drone sound the same and both fade in and out, so Play A no longer clicks when it starts
 - Play A follows your instrument: Settings › Play A pitch sets A4 (violin, viola), A3 (cello) or A2 (double bass)
 - Play A and the drone never sound together; turning one on turns the other off
 - Play A lights red while it sounds, like the other buttons that are on
+- DRONE and REC in the header are the same size
 - The MIC button is gone. The tuner's start button turns the mic on, and REC turns it on and starts recording
 - Reference tones left the menu; the drone replaces them
 - The metronome, Play A and the drone share one soft limiter, so a click over the drone no longer clips
@@ -20,6 +22,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - Edge swipe back: a drag that stops before you lift springs back unless it passed 35 % of the width; only a drag still moving fast when you lift counts as a flick
 - New app icon: three white rings around a green light on the app's dark card. The light is the tuner's in-tune green, and the rings spread out like beats. Android shows it at the same size as the iPhone does, and the splash screen shows it round on the app's background
 - The settings footer shows the Intonome wordmark above the version. The tagline stays in the README and the store listing
+- Full screen moved to the bottom of Settings
 
 ## [2.4.0] - 2026-09-25
 - Renamed to **Intonome** (intonation + metronome), with a new web address: danggeun.github.io/intonome. Settings and recordings saved under the old name are cleared once

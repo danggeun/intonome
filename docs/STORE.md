@@ -35,7 +35,7 @@ Intonome 은 현악기 연습에 필요한 것만 담은 도구입니다.
 · 허용 오차 ±5–25 센트 조절
 · 음이름 도레미 / C D E, 이명동음 함께 표시
 · 최근 음정이 어떻게 흔들렸는지 화면에 남습니다
-· 드론이 울리는 동안에도 연주하는 음을 읽습니다
+· 드론이나 A 듣기가 울려도 앱 소리에는 반응하지 않고 연주하는 음만 읽습니다
 
 ■ 메트로놈
 · 2/4 · 3/4 · 4/4 · 6/8, 셋잇단 포함 세분 4종
@@ -75,7 +75,7 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 · Tolerance from ±5 to ±25 cents
 · Letter note names with enharmonics
 · A trace shows how your pitch moved over the last few seconds
-· Keeps reading you while a drone sounds
+· Ignores its own drone and Play A and keeps reading you
 
 ■ Metronome
 · 2/4 · 3/4 · 4/4 · 6/8, four subdivisions including triplets
