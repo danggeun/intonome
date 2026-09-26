@@ -818,11 +818,13 @@ await scenario('timer: elapsed counts, detected counts while playing, reset', 'v
   await p.click('#timer-toggle-btn'); await sleep(p, 1200); await p.click('#timer-reset-btn'); await p.click('#toast'); await sleep(p, 100)
   assert.equal(await p.evaluate(() => document.getElementById('timer-toggle-btn').textContent), '정지', 'undo restores running state')
 })
-await scenario('drone: pick → red note, tap stops; Play A and the drone turn each other off; outside tap only closes', 'violin_A4.wav', async p => {
+await scenario('drone: pick → red note, tap stops; DRONE again closes the picker; Play A and the drone turn each other off; outside tap only closes', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   const st = () => p.evaluate(() => ({ label: document.getElementById('drone-btn').textContent, on: document.getElementById('drone-btn').classList.contains('on'), pop: document.getElementById('drone-pop').classList.contains('open'), a: document.getElementById('ref-a-btn').classList.contains('on') }))
   assert.deepEqual(await st(), { label: 'DRONE', on: false, pop: false, a: false })
   await p.click('#drone-btn'); await sleep(p, 250); assert.equal((await st()).pop, true, 'DRONE 을 누르면 창')
+  await p.click('#drone-btn'); await sleep(p, 250); assert.equal((await st()).pop, false, '창이 열린 채 DRONE 을 다시 누르면 닫힌다')
+  await p.click('#drone-btn'); await sleep(p, 250)
   await p.click('#drone-pop .drone-note-btn[data-pc="2"]'); await sleep(p, 250)
   assert.deepEqual(await st(), { label: '레', on: true, pop: false, a: false }, '레가 울리고 창은 닫힌다')
   await p.click('#drone-btn'); await sleep(p, 250)
