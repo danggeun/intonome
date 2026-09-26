@@ -162,6 +162,16 @@ describe('favicon', () => {
   })
 })
 
+// 스플래시 가운데 그림(capacitor-assets 가 logo.png 를 쓴다): 원으로 깎여 모서리가 투명해야 네모 타일이 뜨지 않는다
+describe('splash logo', () => {
+  const logo = new URL('../resources/logo.png', import.meta.url)
+  test.skipIf(!existsSync(logo))('round: transparent corners, opaque center', () => {
+    const p = PNG.sync.read(readFileSync(logo)), W = p.width
+    for (const [x, y] of [[2, 2], [W - 3, 2], [2, W - 3], [W - 3, W - 3]]) expect(p.data[(y * W + x) * 4 + 3], `${x},${y}`).toBe(0)
+    expect(p.data[((W >> 1) * W + (W >> 1)) * 4 + 3]).toBe(255)
+  })
+})
+
 // 타일색의 원천은 resources/icon-background.svg(→ .png). package.json 의 cap:assets 색은 손으로 맞추는 값
 describe('the icon background color is defined in one place', () => {
   const bgPng = new URL('../resources/icon-background.png', import.meta.url)
@@ -183,7 +193,6 @@ describe('the iOS / PWA icon is full-bleed', () => {
     const p = PNG.sync.read(readFileSync(full)), bg = PNG.sync.read(readFileSync(new URL('../resources/icon-background.png', import.meta.url)))
     const W = p.width, H = p.height, m = Math.round(W * 0.04)
     const pts = []
-    // 위·아래 가장자리는 ¼·¾ 지점을 본다 — 가운데엔 현이 가장자리까지 이어진다(그림의 일부지 테두리가 아니다)
     for (const d of [0, m]) pts.push([d, d], [W - 1 - d, d], [d, H - 1 - d], [W - 1 - d, H - 1 - d], [W >> 2, d], [(3 * W) >> 2, d], [W >> 2, H - 1 - d], [(3 * W) >> 2, H - 1 - d], [d, H >> 1], [W - 1 - d, H >> 1])
     for (const [x, y] of pts) {
       const i = (y * W + x) * 4
@@ -194,21 +203,20 @@ describe('the iOS / PWA icon is full-bleed', () => {
   })
 })
 
-// maskable 규격: 중앙 지름 80 % 원 안에 내용이 있어야 한다. 잉크가 가로로 넓어 폭이 아니라 대각선(= 필요한 원 지름)이 걸리는 값
+// maskable 규격: 중앙 지름 80 % 원 안에 내용이 있어야 한다. 가운데에서 가장 먼 잉크까지의 거리(= 필요한 원 반지름)로 잰다
 describe('maskable icons keep a margin inside the safe zone', () => {
   const file = new URL('../www/public/icons/icon-maskable-512.png', import.meta.url)
   test.skipIf(!existsSync(file))('필요한 원 지름 ≤ 76 % (규격 80 % 에 최소 4 %p 여유)', () => {
     const p = PNG.sync.read(readFileSync(file))
-    // 바탕이 나무결·그라디언트라 한 색이 아니다 — 바탕 층(1024)의 같은 자리와 비교해 다른 곳만 잉크로 본다
+    // 바탕이 그라디언트라 한 색이 아니다. 바탕 층(1024)의 같은 자리와 비교해 다른 곳만 잉크로 본다
     const bgL = PNG.sync.read(readFileSync(new URL('../resources/icon-background.png', import.meta.url))), sc = bgL.width / p.width
-    let x0 = p.width, x1 = -1, y0 = p.height, y1 = -1
+    const c = p.width / 2
+    let r = 0
     for (let y = 0; y < p.height; y++) for (let x = 0; x < p.width; x++) {
       const i = (y * p.width + x) * 4, j = (Math.floor(y * sc) * bgL.width + Math.floor(x * sc)) * 4
       if (Math.abs(p.data[i] - bgL.data[j]) + Math.abs(p.data[i + 1] - bgL.data[j + 1]) + Math.abs(p.data[i + 2] - bgL.data[j + 2]) <= 60) continue
-      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y
+      r = Math.max(r, Math.hypot(x + 0.5 - c, y + 0.5 - c))
     }
-    const c = p.width / 2
-    const r = Math.max(...[[x0, y0], [x1, y0], [x0, y1], [x1, y1]].map(([x, y]) => Math.hypot(x - c, y - c)))
     const pct = r * 2 / p.width * 100
     expect(pct, `잉크가 중앙 ${pct.toFixed(1)} % 원을 차지한다 — 런처 마스크에 양끝이 닿는다`).toBeLessThan(76)
   })

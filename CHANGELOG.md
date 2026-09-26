@@ -18,6 +18,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - If recording can't start, the message suggests reloading the app (there is no mic switch to turn off and on anymore)
 - When the browser has blocked the mic, the message points to the icon at the left of the address bar (Chrome no longer shows a lock there)
 - Edge swipe back: a drag that stops before you lift springs back unless it passed 35 % of the width; only a drag still moving fast when you lift counts as a flick
+- New app icon: three white rings around a green light on the app's dark card. The light is the tuner's in-tune green, and the rings spread out like beats. Android shows it at the same size as the iPhone does, and the splash screen shows it round on the app's background
+- The settings footer shows the Intonome wordmark above the version. The tagline stays in the README and the store listing
 
 ## [2.4.0] - 2026-09-25
 - Renamed to **Intonome** (intonation + metronome), with a new web address: danggeun.github.io/intonome. Settings and recordings saved under the old name are cleared once
