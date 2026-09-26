@@ -49,7 +49,7 @@ The source is split into `core / state / audio / persist / platform / ui` layers
 
 ```bash
 npx cap add android   # once (android/ is generated, not in the repo)
-npm run cap:assets    # launcher icons
+npm run cap:assets    # launcher icons and splash screens
 npm run cap:sync      # Capacitor build + sync + manifest fixes
 npx cap open android  # Android Studio → Build › Generate Signed App Bundle / APK
 ```
@@ -62,4 +62,4 @@ Mic input and recordings are processed and stored only on the device. Nothing is
 
 ## License
 
-[MIT](LICENSE). The bundled DM Mono font is under the SIL Open Font License. Note icons are drawn from glyphs of the Bravura music font (© Steinberg Media Technologies, SIL Open Font License); see `scripts/gen-note-glyphs.py`.
+[MIT](LICENSE). The bundled DM Mono font is under the SIL Open Font License. Note icons are drawn from glyphs of the Bravura music font (© Steinberg Media Technologies, SIL Open Font License); see `scripts/gen-note-glyphs.py`. The wordmark in Settings is set in Bricolage Grotesque (SIL Open Font License) and embedded as outlines.

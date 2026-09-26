@@ -28,5 +28,5 @@ export function mountSettings(): void {
   settingsStore.select(s => s.theme, v => markSteps('theme-steps', v === 'light' ? 1 : 0), { immediate: true })
   settingsStore.select(s => s.lang, v => markSteps('lang-steps', v === 'en' ? 1 : 0), { immediate: true })
   settingsStore.select(s => s.aOctave, v => markSteps('apitch-steps', v), { immediate: true })
-  q('settings-version').textContent = `Intonome ${__APP_VERSION__}`
+  q('settings-version').textContent = `v${__APP_VERSION__}`
 }
