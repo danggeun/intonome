@@ -1,26 +1,25 @@
-# Intonome
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/banner-dark.svg">
+  <img src="docs/banner-light.svg" alt="Intonome: in tune, in time." width="100%">
+</picture>
 
-> **in tune, in time.**
-> Chromatic tuner, metronome, drone and a practice recorder for string players.
-> Web (PWA) and Android (Capacitor). Works offline; audio never leaves the device.
+Chromatic tuner, metronome, drone and a practice recorder for string players.
+Web (PWA) and Android. Works offline; audio never leaves the device.
 
 [![CI](https://github.com/danggeun/intonome/actions/workflows/ci.yml/badge.svg)](https://github.com/danggeun/intonome/actions/workflows/ci.yml)
 [![Live](https://img.shields.io/badge/Web-Live-22c55e?style=flat-square)](https://danggeun.github.io/intonome/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-**<https://danggeun.github.io/intonome/>** works in current Chrome, Safari and Edge. Add it to your home screen to use it as an offline app.
-
-Korean by default; English in Settings › Language.
+**<https://danggeun.github.io/intonome/>** · Chrome, Safari, Edge. Add it to your home screen to use it offline.
 
 ## Features
 
-- **Tuner**: 40 Hz (double bass E1) to 4.2 kHz, reference A = 410–466 Hz, tolerance ±5–25 ¢, pitch trace, double stops.
-- **Metronome**: sample-accurate clicks from an AudioWorklet, 40–200 BPM, 2/4 · 3/4 · 4/4 · 6/8, four subdivisions, a full-screen dial. The screen stays on while it plays.
-- **Play A**: the A at your reference pitch, in your A string's octave (A4 violin and viola, A3 cello, A2 double bass; Settings › Play A pitch). The tuner ignores it and keeps reading your other strings.
-- **Drone**: any of the 12 notes, held in octave 4 while you practice, with the same sound as Play A. The tuner cuts out the drone and everything the speaker adds to it (whole multiples of its frequency) and keeps reading you; with only the drone sounding it shows nothing, and the practice timer doesn't count it. A note exactly on the drone's own pitches (the same note or an octave above, within about 3 cents) is cut with it.
-- **Recorder and editor**: waveform, A-B loop, zoom, bookmarks, 0.5–1.5× speed, save a section as WAV. Recordings are saved every 10 s and recovered if the app is killed.
-- **Practice timer**: counts the time you actually played; speech and noise are ignored.
-- Dark and light themes, touch targets of 44 px, WCAG AA contrast.
+- **Tuner**: 40 Hz to 4.2 kHz, A = 410–466 Hz, tolerance ±5–25 ¢, pitch trace, double stops.
+- **Metronome**: sample-accurate clicks, 40–200 BPM, 2/4 · 3/4 · 4/4 · 6/8, four subdivisions, a full-screen dial.
+- **Play A and drone**: the A in your string's octave, or any of the 12 notes held while you practice. The tuner ignores both and keeps reading you.
+- **Recorder and editor**: waveform, A-B loop, bookmarks, 0.5–1.5× speed, save a section as WAV. Recordings are recovered if the app is killed.
+- **Practice timer**: counts only the time you actually played.
+- Dark and light themes. Korean by default, English in Settings.
 
 ## Run
 
@@ -62,4 +61,4 @@ Mic input and recordings are processed and stored only on the device. Nothing is
 
 ## License
 
-[MIT](LICENSE). The bundled DM Mono font is under the SIL Open Font License. Note icons are drawn from glyphs of the Bravura music font (© Steinberg Media Technologies, SIL Open Font License); see `scripts/gen-note-glyphs.py`. The wordmark in Settings is set in Bricolage Grotesque (SIL Open Font License) and embedded as outlines.
+[MIT](LICENSE). The bundled DM Mono font is under the SIL Open Font License. Note icons are drawn from glyphs of the Bravura music font (© Steinberg Media Technologies, SIL Open Font License); see `scripts/gen-note-glyphs.py`. The wordmark (Settings and the banner above) is set in Bricolage Grotesque (SIL Open Font License) and embedded as outlines.
