@@ -28,8 +28,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] BPM −/+, drag (2 px per BPM), clamped to 40–200
 - [A] Time signatures none/2/4/3/4/4/4/6/8, subdivisions; 6/8 disables subdivisions
 - [A] Collapsed and playing: the card and tuner header flash on beats
-- [A] Playing never changes the size; the size button cycles collapsed → expanded → full → collapsed
-- [A] Dragging the card follows the finger: up grows a step, down shrinks a step; a short drag springs back
+- [A] Playing never changes the size; the size button goes collapsed ⇄ expanded, and from full one step down to expanded. Full is reached by dragging the card up (on a wide screen, where nothing collapses, the button goes expanded ⇄ full)
+- [A] Dragging the card follows the finger: up grows a step, down shrinks a step; a short drag springs back. With reduced motion a 40 px push moves one step, up or down
 - [A] Volume slider (card and full mode stay in sync) → saved and restored
 - [A] While recording, clicks are silent and beats stay visible
 - [A] Timing: the worklet renders 120 bpm with ≤1-sample jitter over 20 s (OfflineAudioContext e2e)
