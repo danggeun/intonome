@@ -19,7 +19,7 @@ Web (PWA) and Android. Works offline; audio never leaves the device.
 - **Play A and drone**: the A in your string's octave, or any of the 12 notes held while you practice. The tuner ignores both and keeps reading you.
 - **Recorder and editor**: waveform, A-B loop, bookmarks, 0.5–1.5× speed, save a section as WAV. Recordings are recovered if the app is killed.
 - **Practice timer**: counts only the time you actually played, and shows in the header while it runs.
-- Dark and light themes. Korean by default, English in Settings.
+- Dark and light themes, dark by default. English by default, Korean in Settings.
 
 ## Run
 

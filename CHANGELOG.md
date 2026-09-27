@@ -5,6 +5,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 ## [2.4.4] - 2026-09-27
 - The practice timer shows in the header while it runs, between ☰ and DRONE. The bar fills with the share of the time you actually played; inside it is the time you played, next to it the elapsed time. Tap it to open the timer in the menu. It disappears when you reset the timer
 - The times keep their size down to the iPhone mini and small Android phones, even past 100 minutes. On screens narrower than 338 px the bar shows only the fill, with the elapsed time still next to it
+- New installs start in English with the dark theme, whatever the phone is set to. Korean and the light theme are in Settings; in Korean the note names start as 도 레 미
+- The iPhone home-screen splash is dark to match
+- Settings › Haptic feedback (was Vibration). On iPhone the drag ticks use the haptic of the system switch control (Safari 17.4 or later); on Android they are a little lighter
+- Under the BPM, the drag hint is a drawn arrow instead of the ↕ character, which an iPhone draws like an emoji
+- Expanded metronome: the beat lights in the header sit in the middle of the card
+- Full-screen metronome: the −5, −, play, + and +5 buttons are a little smaller
+- The settings footer shows the wordmark on one line, with the version under it
 
 ## [2.4.3] - 2026-09-27
 - The icon sits on near-black instead of dark gray, so the rings and the green light stand out next to other apps. A faint light from the top keeps its edge visible on a black wallpaper

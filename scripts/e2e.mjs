@@ -32,10 +32,13 @@ const results = []
 let browser
 /** --only <정규식> 로 시나리오 이름을 골라 돌린다  */
 const ONLY = typeof args.only === 'string' ? new RegExp(args.only) : null
-async function scenario(name, wav, fn, ctxOpts = {}) {
+/** 앱 기본은 영어 · 다크(2.4.4). 시나리오는 한국어 문구 · 라이트 색으로 짜여 있어, 저장이 없으면 한국어 · 라이트 · 도레미를 심고 연다(__seed 표시: 앱이 한 번 저장하면 사라진다). { fresh: true } 면 심지 않는다 */
+const SEED = () => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', noteNames: 'ko', __seed: 1 })) }
+async function scenario(name, wav, fn, { fresh = false, ...ctxOpts } = {}) {
   if (ONLY && !ONLY.test(name)) return
   browser = await launch(wav)
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, permissions: ['microphone'], ...ctxOpts })
+  if (!fresh) await ctx.addInitScript(SEED)
   const page = await ctx.newPage()
   const errors = []
   page.on('pageerror', e => errors.push(String(e)))
@@ -48,7 +51,7 @@ const tunerText = p => p.evaluate(() => ({ note: document.getElementById('tuner-
 const waitNote = async (p, pred, ms = 4000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { const t = await tunerText(p); if (pred(t)) return t; await p.waitForTimeout(100) } throw new Error('note not reached: ' + JSON.stringify(await tunerText(p))) }
 const sleep = (p, ms) => p.waitForTimeout(ms)
 /** 색·캔버스 픽셀을 다크 토큰 기준으로 재는 시나리오용 — 기본 테마는 라이트라 다크를 저장해 두고 연다 */
-const darkTheme = p => p.addInitScript(() => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, theme: 'dark' })) })
+const darkTheme = p => p.addInitScript(() => { const s = localStorage.getItem('intonome_settings_v1'); if (!s || JSON.parse(s).__seed) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', noteNames: 'ko', theme: 'dark' })) })
 /** 카드를 아래로 밀어 한 단계 내리기. 헤더의 빈 가운데에서 시작한다 */
 const swipeDown = async (p, sel = '#metro-hdr') => {
   const b = await p.locator(sel).boundingBox()
@@ -409,6 +412,15 @@ for (const w of [360, 384]) await scenario(`layout: collapsed, stopped and playi
   await p.keyboard.press('Space')
 }, { viewport: { width: w, height: 800 } })
 
+// 펼침: 헤더 LED 줄이 카드 가운데(좁으면 줄이 줄어든다), 양옆과 겹치지 않는다. BPM 아래 끌기 표시는 글자 ↕ 가 아니라 그림
+for (const w of [412, 375, 360, 320]) await scenario(`layout: expanded at ${w}px · BPM 200 — the header LEDs sit in the middle of the card`, 'silence_lowfloor.wav', async p => {
+  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', bpm: 200 })))
+  await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
+  const r = await p.evaluate(() => { const c = document.getElementById('metro-card').getBoundingClientRect(), v = document.getElementById('beat-vis').getBoundingClientRect(), l = document.getElementById('metro-hdr-label').getBoundingClientRect(), s = document.getElementById('metro-size-btn').getBoundingClientRect(), n = document.getElementById('metro-hdr-bpm').getBoundingClientRect(); return { off: Math.abs((v.left + v.right) - (c.left + c.right)) / 2, gapL: v.left - n.right, gapR: s.left - v.right, arrow: document.getElementById('metro-bpm-hint').textContent.includes('↕'), glyph: !!document.querySelector('#metro-bpm-hint .drag-glyph') } })
+  assert.ok(r.off <= 0.6, 'LED 줄 가운데 ' + JSON.stringify(r)); assert.ok(r.gapL >= 6 && r.gapR >= 6, '양옆과 안 겹침 ' + JSON.stringify(r))
+  assert.equal(r.arrow, false); assert.equal(r.glyph, true)
+}, { viewport: { width: w, height: 800 } })
+
 for (const w of [360, 384, 412]) await scenario(`layout: collapsed at ${w}px — the header LEDs stay put when BPM goes from two to three digits`, 'silence_lowfloor.wav', async p => {
   const leds = async bpm => {
     await p.addInitScript(b => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, bpm: b })), bpm)
@@ -597,8 +609,8 @@ await scenario('drag ticks: BPM drag and ref drum vibrate per step, strong on te
   const b0 = await bpm(); await dragBpm(0); assert.equal(await bpm(), b0); assert.equal((await vib()).length, 0, '값이 그대로면 진동 없음')
   await dragBpm(100); const v1 = await vib(), b1 = await bpm()
   assert.ok(b1 > b0 + 40, `BPM ${b0} → ${b1}`)
-  assert.ok(v1.every(ms => ms === 10 || ms === 20), v1.join())
-  assert.equal(v1.filter(ms => ms === 20).length, Math.floor(b1 / 10) - Math.floor(b0 / 10), '지난 10 단위마다 센 틱 하나')
+  assert.ok(v1.every(ms => ms === 8 || ms === 16), v1.join())
+  assert.equal(v1.filter(ms => ms === 16).length, Math.floor(b1 / 10) - Math.floor(b0 / 10), '지난 10 단위마다 센 틱 하나')
   assert.ok(v1.length <= b1 - b0, '바뀐 칸보다 많지 않다')
   await p.click('#rec-hdr-btn'); await sleep(p, 1200)
   assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true)
@@ -607,7 +619,7 @@ await scenario('drag ticks: BPM drag and ref drum vibrate per step, strong on te
   const box = await p.locator('#ref-drum-outer').boundingBox()
   await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await p.mouse.down(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 56, { steps: 8 }); await p.mouse.up(); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.querySelector('.ref-drum-item.active').textContent), '440 Hz')
-  const v2 = (await vib()).slice(v1.length); assert.ok(v2.length >= 1 && v2.includes(20), '442 → 440: 440 에 닿을 때 센 틱 ' + v2.join())
+  const v2 = (await vib()).slice(v1.length); assert.ok(v2.length >= 1 && v2.includes(16), '442 → 440: 440 에 닿을 때 센 틱 ' + v2.join())
   await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#haptics-steps .step-btn[data-v="0"]'); await p.click('#settings-back-btn'); await sleep(p, 400)
   const n = (await vib()).length; await dragBpm(60); assert.equal((await vib()).length, n, '설정 › 진동 꺼짐이면 없음')
   await p.reload(); await waitNote(p, t => t.note === '라')
@@ -623,7 +635,7 @@ await scenario('launch: iPhone home-screen app starts on a copy of the splash, t
     const c = await ctx.browser().newContext({ ...iphone, colorScheme: scheme }); await c.addInitScript(standalone)
     const bare = await c.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_); await bare.waitForTimeout(300)
     assert.equal(await bare.evaluate(() => document.getElementById('launch')?.className), 'show', scheme)
-    const shot = PNG.sync.read(await bare.screenshot()), ref = PNG.sync.read(readFileSync(join(DIST, `splash/iphone-1179x2556-${scheme}.png`)))
+    const shot = PNG.sync.read(await bare.screenshot()), ref = PNG.sync.read(readFileSync(join(DIST, 'splash/iphone-1179x2556-dark.png'))) // 폰이 라이트여도 다크
     assert.deepEqual([shot.width, shot.height], [ref.width, ref.height])
     const diff = pixelmatch(shot.data, ref.data, null, ref.width, ref.height, { threshold: 0.1 })
     assert.ok(diff / (ref.width * ref.height) < 0.002, `${scheme}: 스플래시와 다른 픽셀 ${diff}`)
@@ -637,14 +649,18 @@ await scenario('launch: iPhone home-screen app starts on a copy of the splash, t
 })
 
 // 첫 실행(저장 없음)은 기기의 다크 모드를 따른다: 앱 스크립트 없이 첫 그리기부터, 설정 표시도 다크
-await scenario('theme: first launch follows the phone dark mode', 'silence_lowfloor.wav', async (p, ctx) => {
+// 첫 실행(저장 없음) 기본값: 영어 · 다크. 폰이 라이트 모드여도. 앱 스크립트 없이 첫 그리기부터 다크 · 한국어 원문은 가려져 있다
+await scenario('first launch: English and dark, even with the phone in light mode', 'silence_lowfloor.wav', async (p, ctx) => {
   const bare = await ctx.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_)
-  assert.equal(await bare.evaluate(() => document.documentElement.dataset.theme ?? null), null, '첫 그리기 전 다크')
+  assert.deepEqual(await bare.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending'), meta: document.querySelector('meta[name="theme-color"]').content })), { theme: null, lang: 'en', hidden: true, meta: '#181b21' }, '첫 그리기 전')
   await bare.close()
   await p.goto(URL_); await sleep(p, 600)
-  assert.equal(await p.evaluate(() => document.documentElement.dataset.theme ?? null), null)
-  assert.equal(await p.evaluate(() => document.querySelector('#theme-steps .step-btn.on').dataset.v), '0')
-}, { colorScheme: 'dark' })
+  assert.deepEqual(await p.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending'), themeOn: document.querySelector('#theme-steps .step-btn.on').dataset.v, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, haptics: document.querySelector('[data-t="set.haptics"]').textContent, drag: document.getElementById('metro-bpm-hint').textContent })),
+    { theme: null, lang: 'en', hidden: false, themeOn: '0', langOn: '1', haptics: 'Haptic feedback', drag: 'drag' })
+  // 한국어로 바꾸면 음이름은 도레미가 기본
+  await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#lang-steps .step-btn[data-v="0"]'); await sleep(p, 200)
+  assert.equal(await p.evaluate(() => document.querySelector('#notenames-steps .step-btn.on').dataset.v), '0')
+}, { colorScheme: 'light', fresh: true })
 
 // 녹음 / 편집
 // 녹음 중 조각이 IDB 에 남아 있으면(앱이 죽었다) 다음 실행에서 항목으로 복구된다

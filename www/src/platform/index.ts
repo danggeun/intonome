@@ -63,21 +63,37 @@ export async function acquireWakeLock(): Promise<void> {
 }
 export function releaseWakeLock(): void { wakeGen++; wakeLock?.release().catch(() => {}); wakeLock = null } // 이미 풀린 센티널은 reject 할 수 있다
 
-// 끌어서 값을 바꿀 때의 눈금 진동. 앱: Capacitor Haptics 의 짧은 진동(VIBRATE 권한은 플러그인이 붙인다). 웹: navigator.vibrate. 아이폰 웹은 진동 기능이 없어 무음
-export const TICK_MS = 10, TICK_STRONG_MS = 20
+// 끌어서 값을 바꿀 때의 눈금 진동. 앱: Capacitor Haptics 의 짧은 진동(VIBRATE 권한은 플러그인이 붙인다). 웹: navigator.vibrate.
+// 아이폰 웹: 사파리에 진동 기능이 없다. 대신 켜기/끄기 스위치(<input type=checkbox switch>, 사파리 17.4+)가 바뀔 때 iOS 가 내는 햅틱을 쓴다 — 숨긴 스위치를 코드로 누른다. 안 되는 기기면 조용히 아무 일도 없다
+export const TICK_MS = 8, TICK_STRONG_MS = 16
 /** 약한 틱 사이 최소 간격. 빨리 돌려도 초당 25 번까지라 '웅' 이 아니라 '드르륵'. 센 틱(10 단위)은 빠뜨리지 않는다 */
 export const TICK_GAP_MS = 40
 let lastTick = -Infinity
-/** 이 기기에서 진동을 낼 수 있는가 (앱은 항상, 웹은 navigator.vibrate 가 있을 때. 아이폰 웹은 없다) */
-export const canVibrate = (): boolean => isNative() || (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
+const iosSwitchHaptics = (): boolean => !isNative() && isIOS() && typeof HTMLInputElement !== 'undefined' && 'switch' in HTMLInputElement.prototype
+/** 이 기기에서 진동을 낼 수 있는가 (앱은 항상, 웹은 navigator.vibrate 가 있거나 아이폰 스위치 햅틱이 될 때) */
+export const canVibrate = (): boolean => isNative() || (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') || iosSwitchHaptics()
 let haptics: Promise<typeof import('@capacitor/haptics')> | null = null
+let iosSwitch: HTMLLabelElement | null = null
+/** 숨긴 스위치를 한 번 뒤집는다(iOS 햅틱 한 번). 화면에 그려지지 않는 <head> 안에 두어 레이아웃 · 탭과 무관하다 */
+function iosTick(): void {
+  if (!iosSwitch) {
+    const label = document.createElement('label'), input = document.createElement('input')
+    input.type = 'checkbox'; input.setAttribute('switch', ''); input.tabIndex = -1
+    label.setAttribute('aria-hidden', 'true'); label.style.display = 'none'; label.appendChild(input)
+    document.head.appendChild(label); iosSwitch = label
+  }
+  iosSwitch.click()
+}
 export function vibrateTick(strong: boolean): void {
   const now = performance.now()
   if (!strong && now - lastTick < TICK_GAP_MS) return
   lastTick = now
   const ms = strong ? TICK_STRONG_MS : TICK_MS
   if (isNative()) { (haptics ??= import('@capacitor/haptics')).then(({ Haptics }) => Haptics.vibrate({ duration: ms })).catch(() => {}); return }
-  try { navigator.vibrate?.(ms) } catch { /* 막힌 환경 */ }
+  try {
+    if (typeof navigator.vibrate === 'function') navigator.vibrate(ms)
+    else if (iosSwitchHaptics()) iosTick() // 세기 구분은 없다
+  } catch { /* 막힌 환경 */ }
 }
 
 // 전체화면 (웹 전용)
