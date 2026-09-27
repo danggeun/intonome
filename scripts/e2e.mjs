@@ -1252,12 +1252,14 @@ await scenario('lifecycle: hidden → mic released and metronome stopped; the ti
 })
 await scenario('lifecycle: on the web the mic stays open when hidden during a recording (a recording must not break)', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
-  await p.click('#menu-btn'); await sleep(p, 300); await p.click('#rec-toggle-btn'); await sleep(p, 600)
+  assert.equal(await p.evaluate(() => document.getElementById('rec-empty')?.textContent), '아직 녹음이 없어요', '첫 녹음 전: 빈 목록 안내')
+  await p.click('#rec-hdr-btn'); await sleep(p, 600)
   await setVisibility(p, 'hidden'); await sleep(p, 400)
   assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true, '녹음 중: 마이크 유지')
   await setVisibility(p, 'visible'); await sleep(p, 300)
-  await p.click('#rec-toggle-btn'); await sleep(p, 800)
+  await p.click('#rec-hdr-btn'); await sleep(p, 800)
   assert.equal(await p.evaluate(() => document.querySelectorAll('.rec-item').length), 1, '녹음이 저장됐다')
+  assert.equal(await p.evaluate(() => document.getElementById('rec-empty')), null, '안내는 사라진다')
 })
 await scenario('lifecycle: idle → context suspended (audio focus released); metronome start resumes it', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel'); await p.evaluate(() => document.activeElement?.blur())
@@ -1401,8 +1403,7 @@ await scenario('recording: non-iOS keeps webm (Android unchanged) and the extens
     return { plainMp4Gives: t, aac: MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2') }
   })
   assert.ok(/opus/.test(probe.plainMp4Gives) || probe.aac, 'audio/mp4 가 AAC 가 아니면 iOS 전용 분기가 맞다: ' + probe.plainMp4Gives)
-  await p.click('#menu-btn'); await sleep(p, 400)
-  await p.click('#rec-toggle-btn'); await sleep(p, 1200); await p.click('#rec-toggle-btn'); await sleep(p, 1200)
+  await p.click('#rec-hdr-btn'); await sleep(p, 1200); await p.click('#rec-hdr-btn'); await sleep(p, 1200)
   // 확장자는 mimeType 문자열이 아니라 blob 앞부분(ftyp / EBML)으로 정해진다 → 이름과 내용이 항상 일치해야 한다
   const info = await p.evaluate(async () => {
     const a = document.querySelector('.rec-dl-link')
@@ -1420,8 +1421,8 @@ await scenario('recording: non-iOS keeps webm (Android unchanged) and the extens
 
 await scenario('playback: quiet recordings get correction gain and keep playing', 'violin_A4_m20.wav', async p => {
   await p.goto(URL_); await sleep(p, 1500)
+  await p.click('#rec-hdr-btn'); await sleep(p, 2000); await p.click('#rec-hdr-btn'); await sleep(p, 1500)
   await p.click('#menu-btn'); await sleep(p, 400)
-  await p.click('#rec-toggle-btn'); await sleep(p, 2000); await p.click('#rec-toggle-btn'); await sleep(p, 1500)
   await p.click('.rec-play-btn'); await sleep(p, 900)
   const st = await p.evaluate(() => window.__tt.playback())
   assert.equal(st.active, true, '재생 중으로 표시돼야 유휴 suspend 가 재생을 끊지 않는다')

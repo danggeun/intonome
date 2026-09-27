@@ -2,6 +2,10 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.4.5] - 2026-09-28
+- The menu no longer has its own Start recording button. REC in the header starts and stops recording; the menu lists the recordings
+- Before the first recording, the menu says there are no recordings yet instead of showing an empty section
+
 ## [2.4.4] - 2026-09-27
 - The practice timer shows in the header while it runs, between ☰ and DRONE. The bar fills with the share of the time you actually played; inside it is the time you played, next to it the elapsed time. Tap it to open the timer in the menu. It disappears when you reset the timer
 - The times keep their size down to the iPhone mini and small Android phones, even past 100 minutes. On screens narrower than 338 px the bar shows only the fill, with the elapsed time still next to it

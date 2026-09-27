@@ -89,8 +89,6 @@ export const KO = {
   'menu.rec': '녹음',
 
   // 녹음
-  'rec.start': '녹음 시작',
-  'rec.stopBtn': 'REC 중지',
   'rec.started': '녹음 시작',
   'rec.done': '녹음 완료',
   'rec.empty': '아직 녹음이 없어요',

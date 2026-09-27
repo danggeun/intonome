@@ -119,8 +119,7 @@ button{font-family:inherit;color:inherit;}
 #rec-hdr-btn.rec-on #rec-hdr-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;} /* 녹음 중엔 시간이 그 자리에. 화면 읽기에는 'REC 00:04' */
 #rec-hdr-btn.rec-on{gap:4px;border-color:var(--accent);color:var(--accent);animation:recpulse 1s infinite;} /* gap 4: ● 00:00 이 64 안에 */
 #rec-hdr-dot{width:7px;height:7px;border-radius:50%;background:var(--text-2);transition:background var(--t-std);flex-shrink:0;}
-#rec-hdr-btn.rec-on #rec-hdr-dot,.rec-live-dot{background:var(--accent);animation:pulse 1s infinite;}
-.rec-live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle;}
+#rec-hdr-btn.rec-on #rec-hdr-dot{background:var(--accent);animation:pulse 1s infinite;}
 /* 44 px 터치 영역은 두고 글리프만 화면 모서리에 맞춘다 */
 #menu-btn{position:relative;width:44px;height:44px;margin-left:-12px;background:transparent;border:none;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;}
 #settings-hdr-btn{position:relative;width:44px;height:44px;margin-right:-12px;background:transparent;border:none;color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;}
@@ -356,8 +355,6 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .rec-old{display:none;flex-direction:column;gap:8px;margin-top:8px;}
 .rec-old.open{display:flex;}
 .rec-more{width:100%;height:var(--h-seg);background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-md);color:var(--text-2);font-size:var(--fs-btn-sm);font-weight:var(--fw-md);cursor:pointer;text-align:center;margin-top:2px;}
-.menu-action{width:100%;height:var(--h-control);background:var(--surface);border:1px solid var(--line-ctl);border-radius:var(--r-md);color:var(--text);font-size:var(--fs-btn);font-weight:var(--fw-b);cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;}
-.menu-action.rec-active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
 
 /* 설정 페이지 */
 #settings-wordmark{display:block;width:108px;height:auto;margin:var(--s6) auto 0;fill:var(--text);} /* 한 줄 워드마크(resources/wordmark.svg 와 같은 윤곽) */ /* 글자 윤곽을 패스로 넣은 워드마크(Bricolage Grotesque): 폰트 파일을 싣지 않는다 */

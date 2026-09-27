@@ -183,7 +183,7 @@ export function mountRecList(openEditor: (item: RecItem) => void, beforeDelete: 
     }
   })
   on(list, 'input', (e: Event) => { const t = e.target as HTMLElement; if (t.dataset.action === 'seek') seek(+t.dataset.idx!) })
-  recListStore.select(s => s.rev, render)
+  recListStore.select(s => s.rev, render, { immediate: true }) // 녹음이 하나도 없으면 저장소 복원이 rev 를 올리지 않는다 — 빈 목록 안내는 여기서
   onLangChange(render)
   settingsStore.select(s => s.autoDelete, () => { const st = recListStore.get(); recListStore.set({ rev: st.rev + 1 }) }) // 보관 설정이 바뀌면 예고문 갱신
   // patchRec(items 배열만 교체)에는 메타 줄만 제자리 갱신 — 전체 재렌더는 펼침 상태와 미니 플레이어를 리셋한다
