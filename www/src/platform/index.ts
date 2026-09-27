@@ -63,6 +63,23 @@ export async function acquireWakeLock(): Promise<void> {
 }
 export function releaseWakeLock(): void { wakeGen++; wakeLock?.release().catch(() => {}); wakeLock = null } // 이미 풀린 센티널은 reject 할 수 있다
 
+// 끌어서 값을 바꿀 때의 눈금 진동. 앱: Capacitor Haptics 의 짧은 진동(VIBRATE 권한은 플러그인이 붙인다). 웹: navigator.vibrate. 아이폰 웹은 진동 기능이 없어 무음
+export const TICK_MS = 10, TICK_STRONG_MS = 20
+/** 약한 틱 사이 최소 간격. 빨리 돌려도 초당 25 번까지라 '웅' 이 아니라 '드르륵'. 센 틱(10 단위)은 빠뜨리지 않는다 */
+export const TICK_GAP_MS = 40
+let lastTick = -Infinity
+/** 이 기기에서 진동을 낼 수 있는가 (앱은 항상, 웹은 navigator.vibrate 가 있을 때. 아이폰 웹은 없다) */
+export const canVibrate = (): boolean => isNative() || (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
+let haptics: Promise<typeof import('@capacitor/haptics')> | null = null
+export function vibrateTick(strong: boolean): void {
+  const now = performance.now()
+  if (!strong && now - lastTick < TICK_GAP_MS) return
+  lastTick = now
+  const ms = strong ? TICK_STRONG_MS : TICK_MS
+  if (isNative()) { (haptics ??= import('@capacitor/haptics')).then(({ Haptics }) => Haptics.vibrate({ duration: ms })).catch(() => {}); return }
+  try { navigator.vibrate?.(ms) } catch { /* 막힌 환경 */ }
+}
+
 // 전체화면 (웹 전용)
 type FsDoc = Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void }
 export const isFullscreen = (): boolean => !!(document.fullscreenElement || (document as FsDoc).webkitFullscreenElement)

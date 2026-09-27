@@ -95,6 +95,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Screenshot baselines: 18 screens (dark, light, English) match pixel for pixel
 - [A] Touch targets are at least 44 px (visible size unchanged)
 - [A] Text and control contrast meets WCAG AA in both themes
+- [A] Vibration: dragging the dial, the BPM or the A = drum taps once per step (10 ms), firmer on every ten (20 ms), none while recording, none when Settings › Vibration is off (kept after reload)
+- [D] Vibration feels like a detent, not a buzz, when spinning the dial fast; the tuner doesn't read the vibration while dragging with the mic on; hidden on iPhone web
 - [A] Theme: the first launch follows the phone (dark mode → dark), after that Settings › Appearance; applied before the first paint; status bar follows
 - [A] Language: Korean by default, English in Settings › Language; no Korean left on any screen in English, nothing clipped, survives a reload
 - [A] Header LED row fits with a three-digit BPM on 360 px phones

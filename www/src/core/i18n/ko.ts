@@ -176,6 +176,8 @@ export const KO = {
   'set.wake': '화면 항상 켜짐',
   'set.wakeDesc': '연습 중 화면이 꺼지지 않아요',
   'set.wakeUnsupported': '이 브라우저는 화면 켜짐 유지를 지원하지 않아요',
+  'set.haptics': '진동',
+  'set.hapticsDesc': '다이얼, BPM, 기준음을 끌어서 바꿀 때 한 칸마다 가볍게 울려요',
   'set.fs': '전체화면',
   'set.fsDesc': '브라우저에서 쓸 때 주소창을 숨겨요. 홈 화면에 추가했으면 이미 전체화면이에요',
   'set.fsUnsupported': '이 기기에서는 홈 화면에 추가하면 전체화면으로 사용할 수 있어요',

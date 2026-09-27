@@ -13,6 +13,7 @@ import { onLangChange } from './lang.ts'
 import { beatDurS, isBeatStart, sweepX, ledIndex, hitIndex } from '../core/metro/sweep.ts'
 import { q, qsa, on, reflow } from './dom.ts'
 import { toast } from './toast.ts'
+import { dragTick } from './dragTick.ts'
 import { overlayOpen } from './menu.ts'
 import { isEditorOpen } from './editor.ts'
 
@@ -121,13 +122,15 @@ function flashBeat(tick: number): void {
   else { card.classList.add('lit-weak'); if (flashTimer) clearTimeout(flashTimer); flashTimer = setTimeout(() => card.classList.remove('lit-weak'), 100) }
 }
 
+/** 끌어서 BPM 을 바꾼다(다이얼 · 숫자 ↕). 값이 실제로 바뀔 때만 눈금 진동 */
+function dragBPM(v: number): void { const prev = settingsStore.get().bpm; setBPM(v); dragTick(prev, settingsStore.get().bpm) }
 function attachDrag(el: HTMLElement): void {
   let sy = 0, sb = 0, sw = false
   on(el, 'mousedown', (e: MouseEvent) => { sw = true; sy = e.clientY; sb = settingsStore.get().bpm; e.preventDefault() })
-  on(window, 'mousemove', (e: MouseEvent) => { if (sw) setBPM(sb + Math.round((sy - e.clientY) / CFG.metro.swipePxPerBpm)) })
+  on(window, 'mousemove', (e: MouseEvent) => { if (sw) dragBPM(sb + Math.round((sy - e.clientY) / CFG.metro.swipePxPerBpm)) })
   on(window, 'mouseup', () => { sw = false })
   on(el, 'touchstart', (e: TouchEvent) => { sw = true; sy = e.touches[0]!.clientY; sb = settingsStore.get().bpm }, { passive: true })
-  on(window, 'touchmove', (e: TouchEvent) => { if (sw) setBPM(sb + Math.round((sy - e.touches[0]!.clientY) / CFG.metro.swipePxPerBpm)) }, { passive: true })
+  on(window, 'touchmove', (e: TouchEvent) => { if (sw) dragBPM(sb + Math.round((sy - e.touches[0]!.clientY) / CFG.metro.swipePxPerBpm)) }, { passive: true })
   on(window, 'touchend', () => { sw = false }); on(window, 'touchcancel', () => { sw = false }) // OS 가 터치를 끊어도 다음 터치가 옛 기준점으로 튀지 않게
 }
 
@@ -176,7 +179,7 @@ export function mountMetro(): void {
 
   // 상태 → 화면
   settingsStore.select(s => s.bpm, bpm => { q('metro-bpm').textContent = String(bpm); q('metro-hdr-bpm').textContent = String(bpm); setDialBpm(bpm); q('dial').setAttribute('aria-valuenow', String(bpm)) }, { immediate: true })
-  onDialChange(setBPM)
+  onDialChange(dragBPM)
   settingsStore.select(s => s.metroVol, v => { volMain.value = String(v); volPad.value = String(v) }, { immediate: true })
   settingsStore.select(s => s.timeSig, ts => {
     sweepResetDir() // 마디가 다시 시작되므로 스윕도 왼쪽부터
