@@ -101,13 +101,14 @@ button{font-family:inherit;color:inherit;}
 #hdr-left{display:flex;align-items:center;gap:4px;min-width:0;}
 #hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 /* DRONE — 꺼짐 'DRONE', 켜짐 빨간 음이름. 폭을 고정해 글자가 바뀌어도 흔들리지 않는다 */
-#drone-btn,#rec-hdr-btn{min-width:78px;justify-content:center;} /* 헤더 양쪽의 두 네모를 같은 크기로 */
+#drone-btn,#rec-hdr-btn{height:var(--h-chip);padding:0 9px;min-width:70px;justify-content:center;font-size:var(--fs-xs);} /* 헤더 양쪽의 두 네모: 같은 크기, A 듣기와 같은 높이. 폭은 DRONE 에 여유 조금 */
+#drone-btn::after,#rec-hdr-btn::after{inset:-8px -2px;} /* 보이는 네모는 28, 누르는 범위는 44 */
 #drone-btn[aria-expanded="true"]{z-index:71;} /* 창이 열린 동안 배경(69)보다 위: 다시 누르면 배경이 아니라 버튼이 받아 창을 닫는다 */
 #drone-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-size:var(--fs-md);letter-spacing:0;}
 #hdr-rec-time{display:none;font-family:'DM Mono',monospace;font-size:13px;color:var(--text);font-weight:500;letter-spacing:.04em;min-width:2.6em;text-align:right;}
 #hdr-rec-time.show{display:inline;}
 #rec-hdr-btn.rec-on{border-color:var(--accent);color:var(--accent);animation:recpulse 1s infinite;}
-#rec-hdr-dot{width:8px;height:8px;border-radius:50%;background:var(--text-2);transition:background var(--t-std);flex-shrink:0;}
+#rec-hdr-dot{width:7px;height:7px;border-radius:50%;background:var(--text-2);transition:background var(--t-std);flex-shrink:0;}
 #rec-hdr-btn.rec-on #rec-hdr-dot,.rec-live-dot{background:var(--accent);animation:pulse 1s infinite;}
 .rec-live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle;}
 /* 44 px 터치 영역은 두고 글리프만 화면 모서리에 맞춘다 */

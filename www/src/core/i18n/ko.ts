@@ -178,7 +178,6 @@ export const KO = {
   'set.wakeUnsupported': '이 브라우저는 화면 켜짐 유지를 지원하지 않아요',
   'set.fs': '전체화면',
   'set.fsDesc': '브라우저에서 쓸 때 주소창을 숨겨요. 홈 화면에 추가했으면 이미 전체화면이에요',
-  'set.fsBtn': '전체화면 켜기/끄기',
   'set.fsUnsupported': '이 기기에서는 홈 화면에 추가하면 전체화면으로 사용할 수 있어요',
   'set.keep': '녹음 보관',
   'set.keepDesc': '30일이면 오래된 녹음을 자동으로 지워요. 필요한 건 다운로드로 보관해요',

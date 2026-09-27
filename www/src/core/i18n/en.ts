@@ -170,7 +170,6 @@ export const EN: Record<TKey, string> = {
   'set.wakeUnsupported': 'This browser can’t keep the screen on',
   'set.fs': 'Full screen',
   'set.fsDesc': 'Hides the address bar in a browser. Already full screen if added to your home screen',
-  'set.fsBtn': 'Toggle full screen',
   'set.fsUnsupported': 'On this device, add the app to your home screen to use it full screen',
   'set.keep': 'Keep recordings',
   'set.keepDesc': 'Recordings older than 30 days are deleted. Download the ones you want to keep',
