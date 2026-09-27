@@ -8,6 +8,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - While recording, the elapsed time takes the place of REC inside the button, so nothing sits apart from it
 - DRONE and REC are 30 × 64 and the text is centered in them. The gap between ☰ and DRONE looks the same as the gap between REC and ⚙
 - On first launch the app follows the phone's dark mode, like the splash screen. After you change any setting, it keeps what Settings says
+- The iPhone home-screen app opens on a splash screen: the round icon and the Intonome wordmark on the app's background, dark when the phone is in dark mode. Add the app to the home screen again to see it
 - Vibration: dragging the metronome dial, the BPM or the A = drum gives a light tap for each step and a firmer one on every ten (80, 90 … and 440, 450 …). There is none while recording, so it stays out of the recording. Settings › Vibration turns it off. iPhone web apps have no vibration, so the setting is hidden there
 
 ## [2.4.1] - 2026-09-27

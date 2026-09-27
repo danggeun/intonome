@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
       registerType: 'prompt',
       injectRegister: null,
       // Capacitor 앱에서는 파일이 로컬이라 SW 가 불필요하지만 무해. 웹(PWA)에서는 전 자산을 프리캐시해 오프라인 동작.
-      workbox: { globPatterns: ['**/*.{js,css,html,woff2,png,webmanifest}'], navigateFallback: null, cleanupOutdatedCaches: true },
+      workbox: { globPatterns: ['**/*.{js,css,html,woff2,png,webmanifest}'], globIgnores: ['splash/**'], navigateFallback: null, cleanupOutdatedCaches: true }, // 아이폰 스플래시(24장)는 홈 화면에 추가할 때 사파리가 한 번 받아 둔다. 서비스 워커가 미리 받을 필요 없다
       includeAssets: ['icons/*.png'],
       manifest: {
         // id 를 못 박아 둔다 — 없으면 start_url 이 곧 identity 라 base 가 바뀌면 '다른 앱' 이 되어 재설치된다
