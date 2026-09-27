@@ -16,8 +16,8 @@
 <meta property="og:description" content="in tune, in time. 튜너 · 메트로놈 · 드론 · 녹음 편집을 한 화면에서.">
 <meta property="og:image" content="https://danggeun.github.io/intonome/icons/icon-512.png">
 <meta name="theme-color" content="#eef0f3">
-<!-- 저장된 테마·언어를 첫 그리기 전에 적용한다. 기본 라이트는 html 에 박혀 있고, 다크를 저장했으면 뗀다. 영어면 문구를 바꿀 때까지 가린다(ui/lang.ts 가 푼다) -->
-<script>try{var s=JSON.parse(localStorage.getItem('intonome_settings_v1')||'{}'),t=s.theme;if(s.lang==='en'){document.documentElement.lang='en';document.documentElement.classList.add('i18n-pending')}if(t==='dark'){delete document.documentElement.dataset.theme;document.querySelector('meta[name="theme-color"]').content='#181b21';document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content='black-translucent'}}catch(e){}</script>
+<!-- 저장된 테마·언어를 첫 그리기 전에 적용한다. 기본 라이트는 html 에 박혀 있고, 다크를 저장했으면(저장이 없는 첫 실행이면 기기가 다크일 때) 뗀다. 영어면 문구를 바꿀 때까지 가린다(ui/lang.ts 가 푼다) -->
+<script>try{var s=JSON.parse(localStorage.getItem('intonome_settings_v1')||'{}'),t=s.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(s.lang==='en'){document.documentElement.lang='en';document.documentElement.classList.add('i18n-pending')}if(t==='dark'){delete document.documentElement.dataset.theme;document.querySelector('meta[name="theme-color"]').content='#181b21';document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content='black-translucent'}}catch(e){}</script>
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png"> <!-- 아이폰 홈 화면 60pt × 3 — 192 를 주면 다시 줄여 흐려진다 -->
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"> <!-- 탭 크기(32 px)에선 글자가 안 읽혀 T 한 글자만 -->
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"> <!-- 없으면 브라우저가 /favicon.ico 를 요청하고, 오프라인에선 콘솔 오류가 된다 -->
@@ -43,8 +43,8 @@
       <button id="drone-btn" class="compact-btn caps" aria-label="드론 음 고르기" aria-haspopup="dialog" aria-expanded="false">DRONE</button>
     </div>
     <div id="hdr-right">
-      <span id="hdr-rec-time">0:00</span>
-      <button id="rec-hdr-btn" class="compact-btn caps"><span id="rec-hdr-dot"></span>REC</button>
+      <!-- 녹음 중엔 REC 글자 자리에 흐르는 시간 (글자는 화면 읽기용으로 남는다) -->
+      <button id="rec-hdr-btn" class="compact-btn caps"><span id="rec-hdr-dot"></span><span id="rec-hdr-label">REC</span><span id="hdr-rec-time">00:00</span></button>
       <button id="settings-hdr-btn" aria-label="설정" data-t-aria="hdr.settings"><svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.5"/><path d="M8.3 4.14L8.75 2.1A8 8 0 0 1 11.25 2.1L11.7 4.14A6.1 6.1 0 0 1 12.94 4.66L14.7 3.53A8 8 0 0 1 16.47 5.3L15.34 7.06A6.1 6.1 0 0 1 15.86 8.3L17.9 8.75A8 8 0 0 1 17.9 11.25L15.86 11.7A6.1 6.1 0 0 1 15.34 12.94L16.47 14.7A8 8 0 0 1 14.7 16.47L12.94 15.34A6.1 6.1 0 0 1 11.7 15.86L11.25 17.9A8 8 0 0 1 8.75 17.9L8.3 15.86A6.1 6.1 0 0 1 7.06 15.34L5.3 16.47A8 8 0 0 1 3.53 14.7L4.66 12.94A6.1 6.1 0 0 1 4.14 11.7L2.1 11.25A8 8 0 0 1 2.1 8.75L4.14 8.3A6.1 6.1 0 0 1 4.66 7.06L3.53 5.3A8 8 0 0 1 5.3 3.53L7.06 4.66A6.1 6.1 0 0 1 8.3 4.14Z"/></svg></button>
     </div>
   </div>

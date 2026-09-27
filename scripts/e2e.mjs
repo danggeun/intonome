@@ -587,6 +587,16 @@ await scenario('theme: light by default → dark persists (applied before first 
   s = await st(); assert.equal(s.attr, 'light'); assert.equal(s.meta, '#eef0f3'); assert.equal(s.bg, 'rgb(238, 240, 243)')
 })
 
+// 첫 실행(저장 없음)은 기기의 다크 모드를 따른다: 앱 스크립트 없이 첫 그리기부터, 설정 표시도 다크
+await scenario('theme: first launch follows the phone dark mode', 'silence_lowfloor.wav', async (p, ctx) => {
+  const bare = await ctx.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_)
+  assert.equal(await bare.evaluate(() => document.documentElement.dataset.theme ?? null), null, '첫 그리기 전 다크')
+  await bare.close()
+  await p.goto(URL_); await sleep(p, 600)
+  assert.equal(await p.evaluate(() => document.documentElement.dataset.theme ?? null), null)
+  assert.equal(await p.evaluate(() => document.querySelector('#theme-steps .step-btn.on').dataset.v), '0')
+}, { colorScheme: 'dark' })
+
 // 녹음 / 편집
 // 녹음 중 조각이 IDB 에 남아 있으면(앱이 죽었다) 다음 실행에서 항목으로 복구된다
 await scenario('rec: chunks of an unfinished recording are recovered on the next launch', 'violin_A4.wav', async p => {

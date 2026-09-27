@@ -51,7 +51,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] On a phone speaker: the drone sounds like Play A, the tuner shows nothing while only it or Play A sounds and reads you over it, and the screen stays on; leaving the app stops it
 
 ## Recording
-- [A] Start/stop from the header REC or the menu, elapsed time shown
+- [A] Start/stop from the header REC or the menu; while recording the elapsed time replaces REC inside the button and the button keeps its size
 - [A] Without the mic, REC turns it on and then records
 - [A] New recording at the top of the list, named `YYYYMMDD_HHMM`, with its length
 - [A] Newest one open, the rest behind "Show N older recordings"
@@ -95,12 +95,12 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Screenshot baselines: 18 screens (dark, light, English) match pixel for pixel
 - [A] Touch targets are at least 44 px (visible size unchanged)
 - [A] Text and control contrast meets WCAG AA in both themes
-- [A] Theme: light by default, dark in Settings › Appearance, independent of the system setting; applied before the first paint; status bar follows
+- [A] Theme: the first launch follows the phone (dark mode → dark), after that Settings › Appearance; applied before the first paint; status bar follows
 - [A] Language: Korean by default, English in Settings › Language; no Korean left on any screen in English, nothing clipped, survives a reload
 - [A] Header LED row fits with a three-digit BPM on 360 px phones
 - [D] Readable from 60–90 cm; REC, size and drum usable while holding a bow
 - [D] Larger system font sizes on the tuner card layout
-- [D] Android 15 edge-to-edge: header clear of the status bar; adaptive launcher icon; app name "Intonome"
+- [D] Android 15 edge-to-edge: header clear of the status bar; adaptive launcher icon, and the home-screen web app icon the same size with the outer ring clear of the edges; app name "Intonome"
 - [D] iPhone home-screen app: no gap at the bottom (iOS 26), nothing cut off in either theme
 
 ## Settings / other

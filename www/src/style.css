@@ -33,7 +33,7 @@
   /* 간격 — 4 px 그리드 */
   --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;--s6:24px;
   /* 크기 — 조작 높이 5종(28/36/44/48/56), 히트 영역은 44 이상. 내비 아이콘 20 */
-  --h-chip:28px;--h-compact:36px;--h-seg:44px;--h-control:48px;--h-tall:56px;--icon-nav:20px;
+  --h-chip:28px;--h-hdr:30px;--h-compact:36px;--h-seg:44px;--h-control:48px;--h-tall:56px;--icon-nav:20px;
   --fs-btn:var(--fs-base);--fs-btn-sm:var(--fs-md);
   /* 북마크 글자색 — 어두운 면 위에서는 앰버 그대로가 가장 읽힌다 */
   --mark-text:#f59e0b;
@@ -99,15 +99,16 @@ button{font-family:inherit;color:inherit;}
 /* 헤더 — 양 끝에 같은 크기의 아이콘 버튼 하나씩: 왼쪽 ☰(+DRONE), 오른쪽 (REC)⚙ */
 #hdr{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:400px;}
 #hdr-left{display:flex;align-items:center;gap:4px;min-width:0;}
-#hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+#hdr-right{display:flex;align-items:center;gap:3px;flex-shrink:0;} /* ☰↔DRONE 과 눈으로 같은 간격. ⚙ 는 톱니 끝만 튀어나와 보이는 가장자리가 잉크보다 안쪽이라 1 px 좁힌다 (잉크 사이 ☰ 17.3 · ⚙ 16.3) */
 /* DRONE — 꺼짐 'DRONE', 켜짐 빨간 음이름. 폭을 고정해 글자가 바뀌어도 흔들리지 않는다 */
-#drone-btn,#rec-hdr-btn{height:var(--h-chip);padding:0 9px;min-width:70px;justify-content:center;font-size:var(--fs-xs);} /* 헤더 양쪽의 두 네모: 같은 크기, A 듣기와 같은 높이. 폭은 DRONE 에 여유 조금 */
-#drone-btn::after,#rec-hdr-btn::after{inset:-8px -2px;} /* 보이는 네모는 28, 누르는 범위는 44 */
+#drone-btn,#rec-hdr-btn{height:var(--h-hdr);padding:0 6.5px 0 7.5px;min-width:64px;justify-content:center;font-size:var(--fs-xs);letter-spacing:.04em;} /* 헤더 양쪽의 두 네모: 같은 크기(30×64). 폭은 DRONE 에 여유 조금, 녹음 시간(● 00:00)도 들어간다. 글자 뒤 자간과 점 때문에 잉크가 왼쪽으로 0.5 px 쏠려 여백을 0.5 px 옮긴다 */
+#drone-btn::after,#rec-hdr-btn::after{inset:-7px -2px;} /* 보이는 네모는 30, 누르는 범위는 44 */
 #drone-btn[aria-expanded="true"]{z-index:71;} /* 창이 열린 동안 배경(69)보다 위: 다시 누르면 배경이 아니라 버튼이 받아 창을 닫는다 */
 #drone-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-size:var(--fs-md);letter-spacing:0;}
-#hdr-rec-time{display:none;font-family:'DM Mono',monospace;font-size:13px;color:var(--text);font-weight:500;letter-spacing:.04em;min-width:2.6em;text-align:right;}
+#hdr-rec-time{display:none;font-family:'DM Mono',monospace;font-size:var(--fs-sm);font-weight:500;letter-spacing:0;}
 #hdr-rec-time.show{display:inline;}
-#rec-hdr-btn.rec-on{border-color:var(--accent);color:var(--accent);animation:recpulse 1s infinite;}
+#rec-hdr-btn.rec-on #rec-hdr-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;} /* 녹음 중엔 시간이 그 자리에. 화면 읽기에는 'REC 00:04' */
+#rec-hdr-btn.rec-on{gap:4px;border-color:var(--accent);color:var(--accent);animation:recpulse 1s infinite;} /* gap 4: ● 00:00 이 64 안에 */
 #rec-hdr-dot{width:7px;height:7px;border-radius:50%;background:var(--text-2);transition:background var(--t-std);flex-shrink:0;}
 #rec-hdr-btn.rec-on #rec-hdr-dot,.rec-live-dot{background:var(--accent);animation:pulse 1s infinite;}
 .rec-live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle;}
