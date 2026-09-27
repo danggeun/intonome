@@ -32,7 +32,7 @@
     "verify": "npm run check && npm run shots && npm run e2e",
     "cap:manifest": "node scripts/cap-manifest.mjs",
     "cap:assets": "capacitor-assets generate --android --iconBackgroundColor #3d434e --iconBackgroundColorDark #3d434e --splashBackgroundColor #eef0f3 --splashBackgroundColorDark #181b21 && node scripts/cap-icons.mjs",
-    "icons": "node scripts/gen-icons.mjs"
+    "icons": "node scripts/gen-icons.mjs && node scripts/gen-splash.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

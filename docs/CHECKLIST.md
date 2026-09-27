@@ -104,6 +104,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] Larger system font sizes on the tuner card layout
 - [D] Android 15 edge-to-edge: header clear of the status bar; adaptive launcher icon, and the home-screen web app icon the same size with the outer ring clear of the edges; app name "Intonome"
 - [D] iPhone home-screen app: no gap at the bottom (iOS 26), nothing cut off in either theme
+- [D] iPhone home-screen app opens on the splash (round icon and Intonome on the app background), dark when the phone is in dark mode; re-add the app to pick up a new splash
 
 ## Settings / other
 - [A] Keep screen on on/off (Wake Lock)
