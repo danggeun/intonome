@@ -106,6 +106,14 @@ button{font-family:inherit;color:inherit;}
 #drone-btn::after,#rec-hdr-btn::after{inset:-7px -2px;} /* 보이는 네모는 30, 누르는 범위는 44 */
 #drone-btn[aria-expanded="true"]{z-index:71;} /* 창이 열린 동안 배경(69)보다 위: 다시 누르면 배경이 아니라 버튼이 받아 창을 닫는다 */
 #drone-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-size:var(--fs-md);letter-spacing:0;}
+#hdr-timer{flex:1;min-width:0;display:flex;align-items:center;gap:5px;margin:0 8px 0 0;padding:0;height:44px;background:transparent;border:none;cursor:pointer;} /* 누르는 범위는 헤더 높이 44 */
+#hdr-timer[hidden]{display:none;}
+#hdr-timer .ht-bar{position:relative;flex:1;min-width:0;height:22px;display:flex;align-items:center;border:1px solid var(--line-ctl);border-radius:var(--r-sm);overflow:hidden;}
+#hdr-timer .ht-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--line-ctl);opacity:.35;transition:width .4s var(--ease);} /* 무채색: 초록 = 음정 맞음, 빨강 = 켜짐 · 녹음 과 겹치지 않게. .35: 채움 위 글자(--text-2)가 4.5:1 이상(라이트 4.9 · 다크 4.6) */
+#hdr-timer .ht-in,#hdr-timer .ht-out{font-family:'DM Mono',monospace;font-weight:500;white-space:nowrap;}
+#hdr-timer .ht-in{position:relative;padding-left:5px;font-size:var(--fs-sm);color:var(--text-2);} /* 안 · 밖 두 시간은 크기 · 굵기 · 색이 같다 (진한 쪽이 커 보이지 않게) */
+#hdr-timer .ht-out{font-size:var(--fs-sm);color:var(--text-2);}
+@media (max-width:337px){#hdr-timer .ht-in{display:none;}} /* 칸 안 12 px 는 338 px 까지 105:10 앞뒤 여백이 같게(6 px) 들어간다: 아이폰 미니 375 · 작은 안드로이드 360 · 폴드 커버 약 344 와 그 언저리 변형까지. 더 좁으면 칸 안 글자 없이 채움만, 경과 시간은 밖에 그대로 */
 #hdr-rec-time{display:none;font-family:'DM Mono',monospace;font-size:var(--fs-sm);font-weight:500;letter-spacing:0;}
 #hdr-rec-time.show{display:inline;}
 #rec-hdr-btn.rec-on #rec-hdr-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;} /* 녹음 중엔 시간이 그 자리에. 화면 읽기에는 'REC 00:04' */

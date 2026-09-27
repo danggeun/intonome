@@ -1,16 +1,22 @@
-/** 연습/연주 타이머 (메뉴). 무활동 자동 종료는 main 의 inactivity watch 가 담당 */
+/** 연습/연주 타이머 (메뉴 + 헤더 가운데 칸). 무활동 자동 종료는 main 의 inactivity watch 가 담당 */
 import { sessionStore, tunerStore } from '../state/index.ts'
-import { fmt } from '../core/format.ts'
-import { q, on } from './dom.ts'
+import { fmt, playedRatio } from '../core/format.ts'
+import { q, qs, on } from './dom.ts'
 import { toast } from './toast.ts'
 import { t } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
+import { openMenu } from './menu.ts'
 
 let int: ReturnType<typeof setInterval> | null = null
 function render(): void {
-  const s = sessionStore.get()
-  q('timer-elapsed').textContent = fmt(s.elapsedSec); q('timer-detected').textContent = fmt(s.detectedSec)
+  const s = sessionStore.get(), el = fmt(s.elapsedSec), pl = fmt(s.detectedSec)
+  q('timer-elapsed').textContent = el; q('timer-detected').textContent = pl
   const btn = q('timer-toggle-btn'); btn.textContent = t(s.timerRunning ? 'common.stop' : 'common.start'); btn.classList.toggle('active', s.timerRunning)
+  // 헤더: 타이머가 돌거나 멈춘 채 0 이 아닐 때만. 초기화하면 사라져 헤더는 예전 그대로
+  const h = q('hdr-timer'); h.hidden = !(s.timerRunning || s.elapsedSec > 0)
+  q('hdr-timer-played').textContent = pl; q('hdr-timer-elapsed').textContent = el
+  qs<HTMLElement>('#hdr-timer .ht-fill').style.width = `${(playedRatio(s.detectedSec, s.elapsedSec) * 100).toFixed(1)}%`
+  h.setAttribute('aria-label', t('hdr.timer', { played: pl, elapsed: el }))
 }
 export function stopTimer(): void { if (int) clearInterval(int); int = null; sessionStore.set({ timerRunning: false }) }
 function startTimer(): void {
@@ -28,6 +34,7 @@ function startTimer(): void {
 }
 export function mountTimer(): void {
   on(q('timer-toggle-btn'), 'click', () => { if (sessionStore.get().timerRunning) stopTimer(); else startTimer() })
+  on(q('hdr-timer'), 'click', openMenu) // 헤더 칸을 누르면 메뉴: 맨 위가 타이머(시작 · 정지 · 초기화는 거기서)
   // 초기화는 확인 없이 즉시, 대신 '실행 취소' 토스트. 실행 취소는 돌고 있던 상태도 되돌린다
   on(q('timer-reset-btn'), 'click', () => {
     const { elapsedSec, detectedSec, timerRunning } = sessionStore.get()

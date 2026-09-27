@@ -20,6 +20,7 @@ export const EN: Record<TKey, string> = {
   'common.undoSuffix': ' · Undo',
 
   'hdr.menu': 'Menu',
+  'hdr.timer': 'Practice timer: played {played}, elapsed {elapsed}. Opens the menu',
   'hdr.settings': 'Settings',
   'hdr.drone': 'DRONE',
   'drone.pick': 'Choose a drone note',

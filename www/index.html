@@ -70,6 +70,8 @@
     <div id="hdr-left">
       <button id="menu-btn" aria-label="메뉴" data-t-aria="hdr.menu"><svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4h16M2 10h16M2 16h16"/></svg></button>
     </div>
+    <!-- 연습 타이머: 칸은 소리 낸 시간 ÷ 경과 시간만큼 차고, 칸 안은 소리 낸 시간, 밖은 경과 시간. 타이머가 돌거나 멈춘 채 0 이 아닐 때만. 누르면 메뉴(맨 위가 타이머) -->
+    <button id="hdr-timer" hidden><span class="ht-bar"><span class="ht-fill"></span><span class="ht-in" id="hdr-timer-played">00:00</span></span><span class="ht-out" id="hdr-timer-elapsed">00:00</span></button>
     <div id="hdr-right">
       <!-- 드론: 꺼져 있으면 누르면 음 고르기, 켜져 있으면(빨간 음이름) 누르면 끔 — A 듣기·REC·메트로놈과 같은 규칙 -->
       <button id="drone-btn" class="compact-btn caps" aria-label="드론 음 고르기" aria-haspopup="dialog" aria-expanded="false">DRONE</button>
