@@ -83,8 +83,6 @@ export const EN: Record<TKey, string> = {
   'menu.resetDone': 'Timer reset',
   'menu.rec': 'Recordings',
 
-  'rec.start': 'Start recording',
-  'rec.stopBtn': 'Stop REC',
   'rec.started': 'Recording',
   'rec.done': 'Recording saved',
   'rec.empty': 'No recordings yet',

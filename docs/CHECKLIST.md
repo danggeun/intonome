@@ -51,7 +51,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] On a phone speaker: the drone sounds like Play A, the tuner shows nothing while only it or Play A sounds and reads you over it, and the screen stays on; leaving the app stops it
 
 ## Recording
-- [A] Start/stop from the header REC or the menu; while recording the elapsed time replaces REC inside the button and the button keeps its size
+- [A] Start/stop from the header REC (the menu only lists recordings); while recording the elapsed time replaces REC inside the button and the button keeps its size
 - [A] Without the mic, REC turns it on and then records
 - [A] New recording at the top of the list, named `YYYYMMDD_HHMM`, with its length
 - [A] Newest one open, the rest behind "Show N older recordings"
