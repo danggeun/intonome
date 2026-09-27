@@ -31,6 +31,6 @@ export function mountSettings(): void {
   settingsStore.select(s => s.lang, v => markSteps('lang-steps', v === 'en' ? 1 : 0), { immediate: true })
   settingsStore.select(s => s.aOctave, v => markSteps('apitch-steps', v), { immediate: true })
   settingsStore.select(s => s.haptics, v => markSteps('haptics-steps', v ? 1 : 0), { immediate: true })
-  if (!canVibrate()) q('haptics-row').style.display = 'none' // 아이폰 웹: 진동 기능이 없다
+  if (!canVibrate()) q('haptics-row').style.display = 'none' // 진동을 낼 수 없는 곳(오래된 아이폰 사파리 등)
   q('settings-version').textContent = `v${__APP_VERSION__}`
 }

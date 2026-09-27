@@ -73,10 +73,7 @@ export function parseStored(raw: string | null): Partial<Settings> {
 export function loadSettings(): void {
   let raw: string | null = null
   try { raw = localStorage.getItem(SETTINGS_KEY) } catch { /* 사파리 프라이빗 등 */ }
-  const s = parseStored(raw)
-  // 테마를 저장한 적이 없으면(첫 실행) 기기의 다크 모드를 따른다. 스플래시도 기기를 따르니 이어서 같은 색. index.html 의 첫 그리기와 같은 규칙
-  if (!s.theme) { try { s.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' } catch { /* matchMedia 가 없으면 기본 라이트 */ } }
-  settingsStore.set(s)
+  settingsStore.set(parseStored(raw)) // 저장이 없으면(첫 실행) 기본값: 영어 · 다크 (state/index.ts). 영어는 음이름이 늘 C D E, 한국어로 바꾸면 도레미가 기본
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null

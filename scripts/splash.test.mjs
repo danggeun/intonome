@@ -8,17 +8,17 @@ const html = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8')
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16))
 
 describe('iPhone home-screen splash images', () => {
-  test('index.html links every size in both themes, light first', () => {
+  test('index.html links every size, dark only (the app starts dark whatever the phone is set to)', () => {
     const tags = splashTags()
     for (const t of tags) expect(html, t).toContain(t)
-    expect(html.match(/rel="apple-touch-startup-image"/g)?.length).toBe(tags.length)
-    expect(html.indexOf('-dark.png')).toBeGreaterThan(html.lastIndexOf('-light.png'))
+    expect(html.match(/rel="apple-touch-startup-image"/g)?.length).toBe(SPLASH_DEVICES.length)
+    expect(html).not.toContain('-light.png'); expect(html).not.toContain('prefers-color-scheme')
   })
   test('index.html carries the splash-to-app block made from the current icon and wordmark', () => {
     expect(html).toContain(launchBlock())
     expect(html.indexOf('<!-- launch:start')).toBeLessThan(html.indexOf('<div id="app"'))
   })
-  test.each(SPLASH_DEVICES.flatMap(([w, h, d, name]) => ['light', 'dark'].map(th => [`${name} ${th}`, w, h, d, th])))('%s', (_, w, h, d, th) => {
+  test.each(SPLASH_DEVICES.flatMap(([w, h, d, name]) => Object.keys(SPLASH_THEMES).map(th => [`${name} ${th}`, w, h, d, th])))('%s', (_, w, h, d, th) => {
     const f = new URL('../www/public/' + splashFile(w, h, d, th), import.meta.url)
     expect(existsSync(f)).toBe(true)
     const p = PNG.sync.read(readFileSync(f))

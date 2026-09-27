@@ -195,6 +195,11 @@ button{font-family:inherit;color:inherit;}
 /* LED 9칸(metro.ts HDR_LEDS). 폭이 모자라면(세 자리 BPM·좁은 폰·접힘의 재생 버튼) 간격만 줄인다 — 고정 gap 이면 오른쪽 버튼이 카드 밖으로 밀린다.
    max-width = 점 9개 + 간격 7px×8 이라 여유가 있을 땐 전과 같은 그림 */
 #beat-vis{display:flex;align-items:center;justify-content:space-between;height:22px;width:100%;min-width:0;max-width:calc(9*13px + 8*7px);justify-self:center;}
+/* 펼침(접힘도 전용도 아닐 때): 헤더에 ♩BPM 과 크기 버튼만 있으니 LED 줄을 카드 가운데로. 양옆 칸은 같은 폭(최소 64 = ♩ + 세 자리 BPM 칸), 좁으면 줄이 줄어든다.
+   헤더 안쪽 여백이 왼쪽 16 · 오른쪽 12 라 칸의 가운데가 카드 가운데보다 2 px 오른쪽 → 줄을 2 px 왼쪽으로 */
+#metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr{grid-template-columns:minmax(64px,1fr) minmax(0,calc(9*13px + 8*7px)) minmax(64px,1fr);}
+#metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #beat-vis{position:relative;left:-2px;}
+#metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr-label{justify-self:start;} /* 칸이 넓어져도 ♩BPM 끌기 자리는 글자 폭 그대로(나머지는 카드 끌기) */
 /* grid 세 번째 칸에 고정 — 전용 모드에서 #beat-vis 가 display:none 이라 grid 항목이 줄어도 오른쪽 끝에 남게 */
 #metro-hdr-right{display:flex;align-items:center;gap:6px;grid-column:3;justify-self:end;}
 #metro-play-hdr-btn{width:44px;height:var(--h-compact);background:var(--accent-fill);border:none;border-radius:var(--r-sm);color:var(--on-accent);font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;}
@@ -221,16 +226,16 @@ button{font-family:inherit;color:inherit;}
 #metro-card.full #metro-bpm-wrap{display:none;}                    /* 숫자는 다이얼 가운데에 */
 #metro-card.full #metro-bpm-row{justify-content:center;gap:0;}
 #metro-card.full #metro-adj-col{flex:0 0 auto;}
-#metro-card.full #metro-btn-row{gap:var(--s2);align-items:center;--adj:clamp(44px, calc((100vw - 94px) / 5.4), 56px);}
+#metro-card.full #metro-btn-row{gap:var(--s2);align-items:center;--adj:clamp(44px, calc((100vw - 94px) / 5.7), 53px);}
 /* [−5] [−] [▶] [+] [+5] — 네 버튼은 같은 크기(자주 누르는 버튼끼리 크기가 다르면 손이 매번 조준을 바꾼다), 재생만 1.29 배.
    크기는 폭을 따라: 본문 폭 = 100vw − 58, 틈 8·12·12·8 = 36 → 360 px 폰 50 / 375 52 / 393 55 / 412↑ 56 (최대). 한 줄이 본문을 넘지 않는다 */
 #metro-card.full .m-adj,#metro-card.full .m-adj5{width:var(--adj);height:var(--adj);flex:none;border-radius:50%;padding:0;order:0;}
-#metro-card.full .m-adj{font-size:26px;}
+#metro-card.full .m-adj{font-size:25px;}
 #metro-card.full .m-adj + .m-adj{order:2;}
-#metro-card.full #metro-play-btn{width:calc(var(--adj) * 1.286);height:calc(var(--adj) * 1.286);flex:none;border-radius:50%;font-size:30px;order:1;margin:0 var(--s1);}
+#metro-card.full #metro-play-btn{width:calc(var(--adj) * 1.286);height:calc(var(--adj) * 1.286);flex:none;border-radius:50%;font-size:29px;order:1;margin:0 var(--s1);}
 /* 5 단위: 전용 모드에서만, ± 와 같은 모양 — 글자(−5 · +5)만 다르다 */
 .m-adj5,.m-adj5-pad{display:none;}
-#metro-card.full .m-adj5{display:flex;background:transparent;border:1px solid var(--line-ctl);color:var(--text);font-size:19px;font-variant-numeric:tabular-nums;align-items:center;justify-content:center;cursor:pointer;}
+#metro-card.full .m-adj5{display:flex;background:transparent;border:1px solid var(--line-ctl);color:var(--text);font-size:18px;font-variant-numeric:tabular-nums;align-items:center;justify-content:center;cursor:pointer;}
 #metro-card.full [data-step="-5"]{order:-1;}
 #metro-card.full [data-step="5"]{order:3;}
 #metro-card.full #metro-vol-row{display:none!important;}
@@ -286,7 +291,8 @@ button{font-family:inherit;color:inherit;}
 #metro-bpm-row{display:flex;align-items:center;gap:10px;}
 #metro-bpm-wrap{display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;touch-action:none;}
 #metro-bpm{font-family:'DM Mono',monospace;font-size:min(var(--fs-d2),14vw);font-weight:var(--fw-md);line-height:1;min-width:90px;text-align:center;color:var(--text);}
-#metro-bpm-hint{font-size:var(--fs-xs);color:var(--deco);margin-top:3px;}
+#metro-bpm-hint{display:inline-flex;align-items:center;gap:3px;font-size:var(--fs-xs);color:var(--deco);margin-top:3px;}
+.drag-glyph{width:.72em;height:1em;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;} /* 글자 ↕ 는 아이폰에서 이모지처럼 그려져 그림으로 */
 #metro-adj-col{display:flex;flex-direction:column;gap:8px;flex:1;}
 #metro-btn-row{display:flex;gap:8px;}
 .m-adj{flex:1;height:var(--h-control);background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-md);color:var(--text);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
@@ -354,7 +360,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .menu-action.rec-active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
 
 /* 설정 페이지 */
-#settings-wordmark{display:block;width:88px;height:auto;margin:var(--s6) auto 0;fill:var(--text);} /* 글자 윤곽을 패스로 넣은 워드마크(Bricolage Grotesque): 폰트 파일을 싣지 않는다 */
+#settings-wordmark{display:block;width:108px;height:auto;margin:var(--s6) auto 0;fill:var(--text);} /* 한 줄 워드마크(resources/wordmark.svg 와 같은 윤곽) */ /* 글자 윤곽을 패스로 넣은 워드마크(Bricolage Grotesque): 폰트 파일을 싣지 않는다 */
 #settings-version{font-family:'DM Mono',monospace;font-size:var(--fs-xs);color:var(--text-3);text-align:center;padding-top:var(--s2);}
 #settings-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:60;opacity:0;pointer-events:none;visibility:hidden;transition:opacity var(--t-std),visibility 0s var(--t-std);overflow-y:auto;}
 #settings-page.open{opacity:1;pointer-events:all;visibility:visible;transition:opacity var(--t-std),visibility 0s;}
