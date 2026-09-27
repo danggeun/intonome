@@ -32,6 +32,7 @@ import { mountMicPopup, showMicPopup, closeMicPopup } from './ui/micPopup.ts'
 import { mountRecHeader } from './ui/recHeader.ts'
 import { mountRecList } from './ui/recList.ts'
 import { mountEditor, openEditor, closeEditorIfEditing, closeEditor, isEditorOpen, editorDiag } from './ui/editor.ts'
+import { hideLaunch } from './ui/launch.ts'
 import { stopMetro } from './audio/metronome.ts'
 import { stopRec } from './audio/recorder.ts'
 import { sessionStore } from './state/index.ts'
@@ -49,6 +50,7 @@ mountLang(); mountTheme(); onThemeChange(retheme)
 mountTuner(); mountRefDrum(); mountMetro(); mountRefPanel(); mountDrone(); mountMenu(); mountSettings()
 mountTimer()
 mountRecList(openEditor, closeEditorIfEditing); mountEditor()
+hideLaunch() // 아이폰 홈 화면 웹앱: 스플래시와 같은 첫 화면을 다 그린 뒤 걷는다
 
 // 마이크 생명주기
 /** 마이크 열기. popupOnDenied 는 직접 누른 경우에만 — iOS 웹앱은 제스처 없는 호출도 NotAllowedError 를 낸다 */

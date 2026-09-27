@@ -96,10 +96,11 @@ button{font-family:inherit;color:inherit;}
 /* 앱 */
 #app{height:100%;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top,0px) + var(--s3)) var(--s3) max(var(--s3),env(safe-area-inset-bottom,0px));gap:var(--gap);} /* 엣지투엣지(Android 15+)에서 워드마크가 상태바 밑으로 들어가지 않게 */
 
-/* 헤더 — 양 끝에 같은 크기의 아이콘 버튼 하나씩: 왼쪽 ☰(+DRONE), 오른쪽 (REC)⚙ */
+/* 헤더 — 왼쪽 ☰ 하나, 오른쪽에 동작 DRONE · REC 와 ⚙ (메뉴는 왼쪽, 동작은 오른쪽: 앱에서 흔한 자리) */
 #hdr{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:400px;}
 #hdr-left{display:flex;align-items:center;gap:4px;min-width:0;}
-#hdr-right{display:flex;align-items:center;gap:3px;flex-shrink:0;} /* ☰↔DRONE 과 눈으로 같은 간격. ⚙ 는 톱니 끝만 튀어나와 보이는 가장자리가 잉크보다 안쪽이라 1 px 좁힌다 (잉크 사이 ☰ 17.3 · ⚙ 16.3) */
+#hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0;} /* DRONE ↔ REC 8 px */
+#settings-hdr-btn{margin-left:-5px;} /* REC ↔ ⚙ 잉크 사이 16.3 px: ⚙ 는 톱니 끝만 튀어나와 보이는 가장자리가 잉크보다 안쪽이라 ☰ 쪽보다 1 px 좁게 */
 /* DRONE — 꺼짐 'DRONE', 켜짐 빨간 음이름. 폭을 고정해 글자가 바뀌어도 흔들리지 않는다 */
 #drone-btn,#rec-hdr-btn{height:var(--h-hdr);padding:0 6.5px 0 7.5px;min-width:64px;justify-content:center;font-size:var(--fs-xs);letter-spacing:.04em;} /* 헤더 양쪽의 두 네모: 같은 크기(30×64). 폭은 DRONE 에 여유 조금, 녹음 시간(● 00:00)도 들어간다. 글자 뒤 자간과 점 때문에 잉크가 왼쪽으로 0.5 px 쏠려 여백을 0.5 px 옮긴다 */
 #drone-btn::after,#rec-hdr-btn::after{inset:-7px -2px;} /* 보이는 네모는 30, 누르는 범위는 44 */

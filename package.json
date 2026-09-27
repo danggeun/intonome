@@ -1,6 +1,6 @@
 {
   "name": "intonome",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "Intonome — tuner, metronome, drone and practice recorder for string players (PWA + Capacitor Android)",
   "private": true,
   "license": "MIT",
@@ -31,7 +31,7 @@
     "e2e": "npm run build:cap && node scripts/e2e.mjs --dist dist",
     "verify": "npm run check && npm run shots && npm run e2e",
     "cap:manifest": "node scripts/cap-manifest.mjs",
-    "cap:assets": "capacitor-assets generate --android --iconBackgroundColor #3d434e --iconBackgroundColorDark #3d434e --splashBackgroundColor #eef0f3 --splashBackgroundColorDark #181b21 && node scripts/cap-icons.mjs",
+    "cap:assets": "capacitor-assets generate --android --iconBackgroundColor #1c1e22 --iconBackgroundColorDark #1c1e22 --splashBackgroundColor #eef0f3 --splashBackgroundColorDark #181b21 && node scripts/cap-icons.mjs",
     "icons": "node scripts/gen-icons.mjs && node scripts/gen-splash.mjs"
   },
   "dependencies": {

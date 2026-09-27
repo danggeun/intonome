@@ -2,6 +2,11 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.4.3] - 2026-09-27
+- The icon sits on near-black instead of dark gray, so the rings and the green light stand out next to other apps. A faint light from the top keeps its edge visible on a black wallpaper
+- DRONE moved next to REC on the right. ☰ stays alone on the left, like in most apps
+- iPhone home-screen app: the splash no longer blinks or leaves a trace when the app appears. The app's first frame is drawn exactly like the splash and then fades into the app
+
 ## [2.4.2] - 2026-09-27
 - New icon colors: the rings around the green light are amber and coral, the app's own colors, and fade outward like beats
 - The icon of the web app added to an Android home screen is the same size as the installed app's. Before, the outer ring touched the edges and was cut off

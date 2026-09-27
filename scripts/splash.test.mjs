@@ -2,7 +2,7 @@
 import { describe, test, expect } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { PNG } from 'pngjs'
-import { SPLASH_DEVICES, SPLASH_THEMES, splashFile, splashTags } from './gen-splash.mjs'
+import { SPLASH_DEVICES, SPLASH_THEMES, splashFile, splashTags, launchBlock } from './gen-splash.mjs'
 
 const html = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8')
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16))
@@ -13,6 +13,10 @@ describe('iPhone home-screen splash images', () => {
     for (const t of tags) expect(html, t).toContain(t)
     expect(html.match(/rel="apple-touch-startup-image"/g)?.length).toBe(tags.length)
     expect(html.indexOf('-dark.png')).toBeGreaterThan(html.lastIndexOf('-light.png'))
+  })
+  test('index.html carries the splash-to-app block made from the current icon and wordmark', () => {
+    expect(html).toContain(launchBlock())
+    expect(html.indexOf('<!-- launch:start')).toBeLessThan(html.indexOf('<div id="app"'))
   })
   test.each(SPLASH_DEVICES.flatMap(([w, h, d, name]) => ['light', 'dark'].map(th => [`${name} ${th}`, w, h, d, th])))('%s', (_, w, h, d, th) => {
     const f = new URL('../www/public/' + splashFile(w, h, d, th), import.meta.url)
