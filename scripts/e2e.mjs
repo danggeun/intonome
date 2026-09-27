@@ -587,6 +587,33 @@ await scenario('theme: light by default → dark persists (applied before first 
   s = await st(); assert.equal(s.attr, 'light'); assert.equal(s.meta, '#eef0f3'); assert.equal(s.bg, 'rgb(238, 240, 243)')
 })
 
+// 끌어서 값을 바꿀 때 눈금 진동: 값이 바뀔 때만, 10 단위는 센 틱(20 ms, 빠뜨리지 않음), 녹음 중엔 없음, 기준음 드럼도
+await scenario('drag ticks: BPM drag and ref drum vibrate per step, strong on tens, none while recording or when turned off in Settings', 'violin_A4.wav', async p => {
+  await p.addInitScript(() => Object.defineProperty(Navigator.prototype, 'vibrate', { configurable: true, value: ms => { (window.__vib ??= []).push(ms); return true } }))
+  await p.goto(URL_); await waitNote(p, t => t.note === '라'); await sizeTap(p) // 펼쳐야 BPM 숫자가 보인다
+  const vib = () => p.evaluate(() => (window.__vib ?? []).slice())
+  const bpm = () => p.evaluate(() => +document.getElementById('metro-bpm').textContent)
+  const dragBpm = async dy => { const b = await p.locator('#metro-bpm-wrap').boundingBox(); await p.mouse.move(b.x + 30, b.y + 40); await p.mouse.down(); await p.mouse.move(b.x + 30, b.y + 40 - dy, { steps: 12 }); await p.mouse.up() }
+  const b0 = await bpm(); await dragBpm(0); assert.equal(await bpm(), b0); assert.equal((await vib()).length, 0, '값이 그대로면 진동 없음')
+  await dragBpm(100); const v1 = await vib(), b1 = await bpm()
+  assert.ok(b1 > b0 + 40, `BPM ${b0} → ${b1}`)
+  assert.ok(v1.every(ms => ms === 10 || ms === 20), v1.join())
+  assert.equal(v1.filter(ms => ms === 20).length, Math.floor(b1 / 10) - Math.floor(b0 / 10), '지난 10 단위마다 센 틱 하나')
+  assert.ok(v1.length <= b1 - b0, '바뀐 칸보다 많지 않다')
+  await p.click('#rec-hdr-btn'); await sleep(p, 1200)
+  assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true)
+  await dragBpm(-60); assert.ok(await bpm() < b1); assert.equal((await vib()).length, v1.length, '녹음 중엔 진동 없음')
+  await p.click('#rec-hdr-btn'); await sleep(p, 800)
+  const box = await p.locator('#ref-drum-outer').boundingBox()
+  await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await p.mouse.down(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 56, { steps: 8 }); await p.mouse.up(); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.querySelector('.ref-drum-item.active').textContent), '440 Hz')
+  const v2 = (await vib()).slice(v1.length); assert.ok(v2.length >= 1 && v2.includes(20), '442 → 440: 440 에 닿을 때 센 틱 ' + v2.join())
+  await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#haptics-steps .step-btn[data-v="0"]'); await p.click('#settings-back-btn'); await sleep(p, 400)
+  const n = (await vib()).length; await dragBpm(60); assert.equal((await vib()).length, n, '설정 › 진동 꺼짐이면 없음')
+  await p.reload(); await waitNote(p, t => t.note === '라')
+  assert.equal(await p.evaluate(() => document.querySelector('#haptics-steps .step-btn.on').dataset.v), '0', '꺼짐이 남는다')
+})
+
 // 첫 실행(저장 없음)은 기기의 다크 모드를 따른다: 앱 스크립트 없이 첫 그리기부터, 설정 표시도 다크
 await scenario('theme: first launch follows the phone dark mode', 'silence_lowfloor.wav', async (p, ctx) => {
   const bare = await ctx.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_)

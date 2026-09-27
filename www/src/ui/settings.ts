@@ -1,6 +1,7 @@
 /** 설정 페이지의 단계 버튼 ↔ settingsStore */
 import { settingsStore, RMS_LEVELS, SMOOTH_LEVELS } from '../state/index.ts'
 import { q, qsa, on } from './dom.ts'
+import { canVibrate } from '../platform/index.ts'
 
 function bindSteps(groupId: string, onPick: (v: number) => void): void {
   qsa<HTMLElement>(`#${groupId} .step-btn`).forEach(b => on(b, 'click', () => onPick(+b.dataset.v!)))
@@ -17,6 +18,7 @@ export function mountSettings(): void {
   bindSteps('autodelete-steps', v => settingsStore.set({ autoDelete: v === 1 }))
   bindSteps('theme-steps', v => settingsStore.set({ theme: v === 1 ? 'light' : 'dark' }))
   bindSteps('lang-steps', v => settingsStore.set({ lang: v === 1 ? 'en' : 'ko' }))
+  bindSteps('haptics-steps', v => settingsStore.set({ haptics: v === 1 }))
   bindSteps('apitch-steps', v => { if (v === 2 || v === 3 || v === 4) settingsStore.set({ aOctave: v }) })
 
   settingsStore.select(s => s.tolCents, v => markSteps('cents-steps', v), { immediate: true })
@@ -28,5 +30,7 @@ export function mountSettings(): void {
   settingsStore.select(s => s.theme, v => markSteps('theme-steps', v === 'light' ? 1 : 0), { immediate: true })
   settingsStore.select(s => s.lang, v => markSteps('lang-steps', v === 'en' ? 1 : 0), { immediate: true })
   settingsStore.select(s => s.aOctave, v => markSteps('apitch-steps', v), { immediate: true })
+  settingsStore.select(s => s.haptics, v => markSteps('haptics-steps', v ? 1 : 0), { immediate: true })
+  if (!canVibrate()) q('haptics-row').style.display = 'none' // 아이폰 웹: 진동 기능이 없다
   q('settings-version').textContent = `v${__APP_VERSION__}`
 }

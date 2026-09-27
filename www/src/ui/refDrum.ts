@@ -1,6 +1,7 @@
 /** 기준음(A=) 드럼 피커 — 410~466 Hz 세로 드래그. settingsStore.refHz 와 동기화. */
 import { CFG, settingsStore } from '../state/index.ts'
 import { q, on } from './dom.ts'
+import { dragTick } from './dragTick.ts'
 
 const IH = 28, MIN = CFG.ref.min, MAX = CFG.ref.max
 const hzToY = (hz: number) => -(MAX - hz) * IH
@@ -21,13 +22,15 @@ export function mountRefDrum(): void {
     const hz = Math.max(MIN, Math.min(MAX, yToHz(v)))
     items.forEach((el, i) => el.classList.toggle('active', MAX - i === hz))
   }
+  /** 끄는 중 가운데 칸이 바뀌면 눈금 진동 */
+  function dragY(v: number): void { const prev = yToHz(y); setY(v); dragTick(prev, yToHz(y)) }
   function snap(): void { const hz = Math.max(MIN, Math.min(MAX, yToHz(y))); setY(hzToY(hz), true); settingsStore.set({ refHz: hz }) } // 애니메이션 먼저, 그 다음 알림 — 구독자가 transition:none 으로 덮지 않게
 
   on(outer, 'mousedown', (e: MouseEvent) => { drag = true; startY = e.clientY; startDrumY = y; inner.style.transition = 'none'; e.preventDefault() })
-  on(window, 'mousemove', (e: MouseEvent) => { if (drag) setY(clampY(startDrumY + (e.clientY - startY))) })
+  on(window, 'mousemove', (e: MouseEvent) => { if (drag) dragY(clampY(startDrumY + (e.clientY - startY))) })
   on(window, 'mouseup', () => { if (drag) { drag = false; snap() } })
   on(outer, 'touchstart', (e: TouchEvent) => { drag = true; startY = e.touches[0]!.clientY; startDrumY = y; inner.style.transition = 'none' }, { passive: true })
-  on(window, 'touchmove', (e: TouchEvent) => { if (drag) setY(clampY(startDrumY + (e.touches[0]!.clientY - startY))) }, { passive: true })
+  on(window, 'touchmove', (e: TouchEvent) => { if (drag) dragY(clampY(startDrumY + (e.touches[0]!.clientY - startY))) }, { passive: true })
   on(window, 'touchend', () => { if (drag) { drag = false; snap() } }); on(window, 'touchcancel', () => { if (drag) { drag = false; snap() } })
 
   // 외부(설정 복원)에서 refHz 가 바뀌면 드럼 위치 반영. 드래그 중에는 건드리지 않는다.

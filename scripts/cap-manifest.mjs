@@ -28,7 +28,7 @@ export function main(log = console.log) {
   const path = join(ROOT, 'android', 'app', 'src', 'main', 'AndroidManifest.xml')
   if (!existsSync(path)) { log('android/ 없음 — `npx cap add android` 후 다시 실행'); return }
   let xml = readFileSync(path, 'utf8'), changed = false
-  const NEEDED = ['android.permission.RECORD_AUDIO', 'android.permission.MODIFY_AUDIO_SETTINGS', 'android.permission.INTERNET']
+  const NEEDED = ['android.permission.RECORD_AUDIO', 'android.permission.MODIFY_AUDIO_SETTINGS', 'android.permission.INTERNET', 'android.permission.VIBRATE']
   for (const perm of NEEDED) {
     if (!xml.includes(`"${perm}"`)) { xml = xml.replace('</manifest>', `    <uses-permission android:name="${perm}" />\n</manifest>`); changed = true; log('추가: ' + perm) }
   }

@@ -108,6 +108,6 @@ npm run cap:sync         # build:cap + cap sync + scripts/cap-manifest.mjs
 npx cap open android
 ```
 
-`cap-manifest.mjs` sets permissions (RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, INTERNET), portrait lock, and `versionName`/`versionCode` (major·10000 + minor·100 + patch) from package.json. Only bump `version` in package.json. Run `npm run cap:sync` right before a signed build.
+`cap-manifest.mjs` sets permissions (RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, INTERNET, VIBRATE for the drag ticks), portrait lock, and `versionName`/`versionCode` (major·10000 + minor·100 + patch) from package.json. Only bump `version` in package.json. Run `npm run cap:sync` right before a signed build.
 
 Signed APK: Android Studio › Build › Generate Signed App Bundle / APK › APK. Keep the keystore outside the repo and back it up (`*.jks` is gitignored).

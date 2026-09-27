@@ -168,6 +168,8 @@ export const EN: Record<TKey, string> = {
   'set.wake': 'Keep screen on',
   'set.wakeDesc': 'The screen stays on while you practice',
   'set.wakeUnsupported': 'This browser can’t keep the screen on',
+  'set.haptics': 'Vibration',
+  'set.hapticsDesc': 'A light tap for each step when you drag the dial, the BPM or A =',
   'set.fs': 'Full screen',
   'set.fsDesc': 'Hides the address bar in a browser. Already full screen if added to your home screen',
   'set.fsUnsupported': 'On this device, add the app to your home screen to use it full screen',
