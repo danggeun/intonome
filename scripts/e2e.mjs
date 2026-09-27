@@ -877,6 +877,38 @@ await scenario('timer: elapsed counts, detected counts while playing, reset', 'v
   await p.click('#timer-toggle-btn'); await sleep(p, 1200); await p.click('#timer-reset-btn'); await p.click('#toast'); await sleep(p, 100)
   assert.equal(await p.evaluate(() => document.getElementById('timer-toggle-btn').textContent), '정지', 'undo restores running state')
 })
+// 헤더 타이머: 타이머가 돌 때만 보이고, 칸 안 = 소리 낸 시간, 밖 = 경과, 칸은 그 비율만큼 찬다. 누르면 메뉴. 초기화하면 사라진다. 칸 안 글자는 338 px 까지 12 px(뒤 5 px 이상), 그보다 좁으면 없음
+await scenario('timer in the header: shows while timing, fill = played ÷ elapsed, tap opens the menu, reset hides it; the inner time keeps 12 px down to 338 px and drops below', 'violin_A4.wav', async (p, ctx) => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  const st = () => p.evaluate(() => { const h = document.getElementById('hdr-timer'), f = h.querySelector('.ht-fill'), b = h.querySelector('.ht-bar'); return { shown: !h.hidden && getComputedStyle(h).display !== 'none', played: document.getElementById('hdr-timer-played').textContent, elapsed: document.getElementById('hdr-timer-elapsed').textContent, fill: f.getBoundingClientRect().width / (b.getBoundingClientRect().width - 2), label: h.getAttribute('aria-label') } })
+  assert.equal((await st()).shown, false, '타이머를 켜기 전엔 없다')
+  await p.click('#menu-btn'); await p.click('#timer-toggle-btn'); await p.click('.menu-close-btn'); await sleep(p, 3300)
+  const s = await st(); assert.equal(s.shown, true)
+  assert.equal(s.elapsed, await p.evaluate(() => document.getElementById('timer-elapsed').textContent), '밖 = 메뉴의 경과 시간')
+  assert.equal(s.played, await p.evaluate(() => document.getElementById('timer-detected').textContent), '안 = 메뉴의 소리 낸 시간')
+  const [pl, el] = [s.played, s.elapsed].map(x => { const [m, sec] = x.split(':').map(Number); return m * 60 + sec })
+  assert.ok(Math.abs(s.fill - pl / el) < 0.12, `칸이 소리 낸 ÷ 경과(${(pl / el).toFixed(2)})만큼: ${s.fill.toFixed(2)}`)
+  assert.match(s.label, /소리 낸 시간 \d\d:\d\d, 경과 시간 \d\d:\d\d/)
+  // 눌러도 드론 · REC 와 겹치지 않는다
+  const box = await p.evaluate(() => [document.getElementById('hdr-timer').getBoundingClientRect().right, document.getElementById('drone-btn').getBoundingClientRect().left])
+  assert.ok(box[0] <= box[1], '타이머 칸이 DRONE 에 닿지 않는다')
+  await p.click('#hdr-timer'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.getElementById('menu-overlay').classList.contains('open')), true, '누르면 메뉴')
+  await p.click('#timer-toggle-btn'); await p.click('#timer-reset-btn'); await p.click('.menu-close-btn'); await sleep(p, 300)
+  assert.equal((await st()).shown, false, '초기화하면 사라진다')
+  // 폭별: 칸 안 글자 크기와 3자리 분(105:10 / 185:40)이 칸에 들어가는지
+  for (const [w, font] of [[390, '12px'], [375, '12px'], [360, '12px'], [344, '12px'], [338, '12px'], [337, 'none'], [320, 'none']]) {
+    const c = await ctx.browser().newContext({ viewport: { width: w, height: 700 } }); const q = await c.newPage(); await q.goto(URL_); await q.waitForTimeout(500)
+    const r = await q.evaluate(() => {
+      const h = document.getElementById('hdr-timer'); h.hidden = false
+      document.getElementById('hdr-timer-played').textContent = '105:10'; document.getElementById('hdr-timer-elapsed').textContent = '185:40'
+      const inn = document.getElementById('hdr-timer-played'), cs = getComputedStyle(inn), bar = h.querySelector('.ht-bar').getBoundingClientRect(), rg = document.createRange(); rg.selectNodeContents(inn)
+      return { font: cs.display === 'none' ? 'none' : cs.fontSize, fits: cs.display === 'none' || rg.getBoundingClientRect().right <= bar.right - 5, clear: h.getBoundingClientRect().right <= document.getElementById('drone-btn').getBoundingClientRect().left }
+    })
+    assert.deepEqual(r, { font, fits: true, clear: true }, `${w}px`)
+    await c.close()
+  }
+})
 await scenario('drone: pick → red note, tap stops; DRONE again closes the picker; Play A and the drone turn each other off; outside tap only closes', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   const st = () => p.evaluate(() => ({ label: document.getElementById('drone-btn').textContent, on: document.getElementById('drone-btn').classList.contains('on'), pop: document.getElementById('drone-pop').classList.contains('open'), a: document.getElementById('ref-a-btn').classList.contains('on') }))

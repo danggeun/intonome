@@ -9,6 +9,7 @@ export function showMenuInstant(): void {
   const el = q('menu-overlay'); el.style.transition = 'none'; el.classList.add('open'); reflow(el); el.style.transition = ''
 }
 export function hideMenu(): void { q('menu-overlay').classList.remove('open') }
+export function openMenu(): void { q('menu-overlay').classList.add('open') }
 export const openSettings = (): void => q('settings-page').classList.add('open')
 export const closeSettings = (): void => q('settings-page').classList.remove('open')
 

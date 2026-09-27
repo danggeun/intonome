@@ -20,6 +20,7 @@ export const KO = {
 
   // 헤더
   'hdr.menu': '메뉴',
+  'hdr.timer': '연습 타이머: 소리 낸 시간 {played}, 경과 시간 {elapsed}. 누르면 메뉴',
   'hdr.settings': '설정',
   'hdr.drone': 'DRONE',
   'drone.pick': '드론 음 고르기',
