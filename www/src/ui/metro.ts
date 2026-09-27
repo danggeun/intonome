@@ -155,8 +155,8 @@ export function mountMetro(): void {
   attachDrag(q('metro-bpm-wrap')); attachDrag(q('metro-hdr-label'))
   on(q('metro-play-hdr-btn'), 'click', () => { const r = toggleMetro(); if (!r.ok) toast(r.error) })
   on(q('metro-play-btn'), 'click', () => { const r = toggleMetro(); if (!r.ok) toast(r.error) })
-  // 크기 버튼은 순환(접힘 → 펼침 → 전용 → 접힘). 카드를 위아래로 끌어도 한 단계씩 — 손을 따라온다
-  on(q('metro-size-btn'), 'click', sizeUp)
+  // 크기 버튼은 접힘 ⇄ 펼침, 펼침2 에서는 펼침으로. 펼침2 로는 카드를 위로 끌어서 간다 — 손을 따라온다
+  on(q('metro-size-btn'), 'click', () => go(sizeBtnTo()))
   const ignore = '#metro-hdr-label, #metro-bpm-wrap, #dial, input[type=range], button, .m-seg' // BPM ↕ 드래그 영역도 제외 — 없으면 BPM 내리기가 접힘이 된다
   const drag = { start: dragStart, move: dragMove, end: dragEnd, ignore }
   attachVDrag(q('metro-hdr'), drag)
@@ -202,9 +202,9 @@ export function mountMetro(): void {
   let resizeT: ReturnType<typeof setTimeout> | null = null, lastPhone = isPhoneLayout()
   on(window, 'resize', () => {
     if (resizeT) clearTimeout(resizeT)
-    resizeT = setTimeout(() => { const phone = isPhoneLayout(); if (phone !== lastPhone) { lastPhone = phone; syncLayout() } }, 150)
+    resizeT = setTimeout(() => { const phone = isPhoneLayout(); if (phone !== lastPhone) { lastPhone = phone; syncLayout(); syncSizeBtn() } }, 150) // 버튼 목적지도 폭에 달려 있다
   })
-  // full 구독을 collapsed 보다 먼저 — sizeUp 이 { full:false, collapsed:true } 를 한 번에 놓고, 구독은 등록 순서대로 돈다
+  // full 구독을 collapsed 보다 먼저 — go('e') 가 { full:false, collapsed:false } 를 한 번에 놓고, 구독은 등록 순서대로 돈다
   metroStore.select(s => s.full, () => { applyFull(); syncSizeBtn() })
   metroStore.select(s => s.collapsed, () => { syncSizeBtn(); syncLayout() }) // 헤더 재생 버튼이 접힘에 달려 있다
   metroStore.select(s => s.lastTick, ({ tick }) => { if (!metroStore.get().playing) return; litBeat(tick); flashBeat(tick) })
@@ -214,16 +214,8 @@ export function mountMetro(): void {
   syncSizeBtn(); onLangChange(syncSizeBtn)
 }
 
-/** 한 단계 위로 (순환): 접힘 → 펼침 → 전용 → 접힘 */
-function sizeUp(): void {
-  const { collapsed, full } = metroStore.get()
-  if (full) metroStore.set({ full: false, collapsed: true })
-  else if (collapsed) metroStore.set({ collapsed: false })
-  else metroStore.set({ full: true })
-}
-
 // ── 카드 끌기: 손가락을 따라 카드 높이가 바뀌고, 놓으면 다음 단계로 넘어가거나 제자리로 돌아간다 (폰 세로 배치) ──
-// 위로 끌면 접힘 → 펼침 → 펼침2, 아래로 끌면 반대. 넓은 화면·동작 줄이기에서는 아래로 40 px 밀면 한 단계(예전 방식)
+// 위로 끌면 접힘 → 펼침 → 펼침2, 아래로 끌면 반대. 넓은 화면·동작 줄이기에서는 40 px 밀면 한 단계(손을 따라오지 않는다)
 type St = 'c' | 'e' | 'f'
 const UP: Record<St, St | null> = { c: 'e', e: 'f', f: null }
 const DOWN: Record<St, St | null> = { f: 'e', e: 'c', c: null }
@@ -233,8 +225,14 @@ let drag: Drag | null = null
 let handoff: { t: number; m: number; mb: string } | null = null
 let wrapTimer: ReturnType<typeof setTimeout> | null = null
 
-function stateNow(): St { const { collapsed, full } = metroStore.get(); return full ? 'f' : collapsed ? 'c' : 'e' }
+/** 보이는 단계 — 넓은 화면에는 접힘이 없다(collapsed 가 켜져 있어도 펼쳐져 보인다) */
+function stateNow(): St { const { collapsed, full } = metroStore.get(); return full ? 'f' : collapsed && isPhoneLayout() ? 'c' : 'e' }
 function go(st: St): void { metroStore.set(st === 'f' ? { full: true } : st === 'e' ? { full: false, collapsed: false } : { collapsed: true }) }
+/** 크기 버튼의 목적지: 펼침2 → 펼침, 폰은 접힘 ⇄ 펼침, 넓은 화면은 펼침 → 펼침2 */
+function sizeBtnTo(): St {
+  const st = stateNow()
+  return st === 'f' ? 'e' : !isPhoneLayout() ? 'f' : st === 'c' ? 'e' : 'c'
+}
 const liveDrag = (): boolean => isPhoneLayout() && !matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** 상태 st 일 때의 카드 높이 — 클래스를 잠깐 바꿔 재고 되돌린다(그리기 전이라 화면에 안 나온다) */
@@ -258,8 +256,8 @@ function clearWrap(): void {
 
 function dragStart(dir: -1 | 1): boolean {
   const from = stateNow(), to = dir < 0 ? UP[from] : DOWN[from]
-  if (!to) return false
-  if (!liveDrag()) { if (dir < 0) return false; drag = { live: false, dir, from, to, h0: 0, h1: 0, t0: 0, gap: 0, p: 0 }; return true }
+  if (!to || (to === 'c' && !isPhoneLayout())) return false
+  if (!liveDrag()) { drag = { live: false, dir, from, to, h0: 0, h1: 0, t0: 0, gap: 0, p: 0 }; return true }
   const card = q('metro-card'), tuner = q('tuner-card')
   clearAnim(tuner); clearAnim(card); if (wrapTimer) clearWrap() // 이전 전환이 남아 있으면 끝난 상태에서 시작
   const h0 = card.offsetHeight, t0 = tuner.offsetHeight, h1 = measureCard(to)
@@ -307,10 +305,10 @@ function dragEnd(dy: number, vy: number): void {
   animHeight(card, cur, after, ['0px', '0px'])
   wrapTimer = setTimeout(clearWrap, 560) // animHeight 가 인라인 높이를 지우는 570 ms 보다 먼저
 }
-/** 버튼 글리프·라벨 = 다음 목적지 */
+/** 버튼 글리프·라벨 = 다음 목적지 (올라가면 ∧, 내려가면 ∨) */
 function syncSizeBtn(): void {
-  const { collapsed, full } = metroStore.get(), btn = q('metro-size-btn')
-  const toExpand = !full && collapsed, toFull = !full && !collapsed
+  const btn = q('metro-size-btn'), from = stateNow(), to = sizeBtnTo()
+  const toExpand = from === 'c', toFull = to === 'f'
   btn.classList.toggle('to-expand', toExpand)
   btn.classList.toggle('to-full', toFull)
   btn.setAttribute('aria-label', t(toExpand ? 'metro.expand' : toFull ? 'metro.expandMore' : 'metro.collapse'))

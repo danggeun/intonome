@@ -5,6 +5,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 ## [2.4.5] - 2026-09-28
 - The menu no longer has its own Start recording button. REC in the header starts and stops recording; the menu lists the recordings
 - Before the first recording, the menu says there are no recordings yet instead of showing an empty section
+- Metronome size button: it now goes between collapsed and expanded, so collapsing takes one tap. Full screen opens by dragging the card up, and its button goes back one step to expanded
+- With reduced motion turned on, pushing the metronome card up also moves it a step, so full screen can still be reached
+- On a wide screen, where the metronome never collapses, the size button goes between expanded and full screen from the first tap
 
 ## [2.4.4] - 2026-09-27
 - The practice timer shows in the header while it runs, between ☰ and DRONE. The bar fills with the share of the time you actually played; inside it is the time you played, next to it the elapsed time. Tap it to open the timer in the menu. It disappears when you reset the timer

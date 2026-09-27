@@ -205,7 +205,7 @@ button{font-family:inherit;color:inherit;}
 /* 크기 버튼 하나 — 상태에 따라 글리프만 바꾼다: 접힘 ∧(펼치러) · 펼침 ∧(펼침2로) · 전용 ∨(접힘으로) */
 #metro-size-btn{position:relative;width:var(--h-compact);height:var(--h-compact);background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-sm);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;}
 #metro-size-btn::after{content:'';position:absolute;inset:-6px;}
-#metro-size-btn.to-full .nav-glyph.chev{transform:rotate(180deg);} /* 펼침 → 펼침2 도 '위로' — ∧ */
+#metro-size-btn.to-full .nav-glyph.chev{transform:rotate(180deg);} /* 넓은 화면의 펼침 → 펼침2 도 '위로' — ∧ */
 /* 메트로놈 전용 모드 = 펼침의 2단계: 튜너 카드를 숨기고 메트로놈이 그 자리까지 올라온다. 헤더·마이크는 그대로 */
 #main-body.metro-full #tuner-card{display:none;}
 /* 펼침 ↔ 펼침2 ↔ 접힘 전환: display:none 은 애니메이션이 안 되므로 metro.ts 가 두 카드 높이를 픽셀로 잡아 움직인다. .h-anim 동안만 height 트랜지션 */

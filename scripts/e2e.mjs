@@ -60,6 +60,20 @@ const swipeDown = async (p, sel = '#metro-hdr') => {
   for (let i = 1; i <= 6; i++) await p.mouse.move(x, y + (60 * i) / 6)
   await p.mouse.up(); await settled(p)
 }
+/** 카드를 위로 밀어 한 단계 올리기 (펼침 → 펼침2 는 이 길뿐이다, 넓은 화면 빼고) */
+const swipeUp = async (p, sel = '#metro-hdr') => {
+  const b = await p.locator(sel).boundingBox()
+  const x = b.x + b.width / 2, y = b.y + Math.min(20, b.height / 2)
+  await p.mouse.move(x, y); await p.mouse.down()
+  for (let i = 1; i <= 6; i++) await p.mouse.move(x, y - (60 * i) / 6)
+  await p.mouse.up(); await settled(p)
+}
+/** 펼침2 로: 폰은 (접혀 있으면 버튼으로 펼치고) 위로 밀기, 넓은 화면은 버튼 한 번 */
+const toFull = async (p) => {
+  if (await p.evaluate(() => innerWidth >= 700)) await sizeTap(p)
+  else { if (await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed'))) await sizeTap(p); await swipeUp(p) }
+  assert.equal(await p.evaluate(() => document.getElementById('metro-card').classList.contains('full')), true, '펼침2 진입')
+}
 /** 메트로놈 크기 전환(접힘/펼침/펼침2)이 끝날 때까지 — 고정 sleep 대신 상태를 본다 */
 const settled = async (p) => {
   await waitUntil(p, () => !document.querySelector('.h-anim') && !document.getElementById('metro-card').classList.contains('no-anim'), 3000, 'size animation')
@@ -158,7 +172,7 @@ await scenario('metro: play/stop doesn’t change the size, header bpm', 'silenc
   assert.equal(await p.evaluate(() => document.getElementById('metro-size-btn').classList.contains('to-expand')), true, '접힘이면 버튼은 ∧(펼치러)')
   await sizeTap(p); assert.equal(await collapsedEl(), false)
   assert.equal(await ledW(), ledStopped, '펼침의 헤더 점도 같은 크기')
-  assert.equal(await p.evaluate(() => document.getElementById('metro-size-btn').classList.contains('to-full')), true, '펼침이면 버튼은 ⤢(전용으로)')
+  assert.deepEqual(await p.evaluate(() => { const b = document.getElementById('metro-size-btn'); return [b.classList.contains('to-expand'), b.classList.contains('to-full'), b.getAttribute('aria-label')] }), [false, false, '메트로놈 접기'], '펼침이면 버튼은 ∨(접으러)')
   await p.click('#metro-play-btn'); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').textContent), '■')
   assert.equal(await collapsedEl(), false, '펼친 채 재생하면 펼친 채로 남는다')
@@ -176,7 +190,7 @@ await scenario('metro: play/stop doesn’t change the size, header bpm', 'silenc
   assert.equal(await hdr(), 'flex', '정지해도 접혀 있으면 헤더 버튼은 남는다'); assert.equal(await hdrGlyph(), '▶')
   // 접힌 채 재생 → 접힌 채로 남는다
   await sizeTap(p); assert.equal(await collapsedEl(), false)
-  await swipeDown(p); assert.equal(await collapsedEl(), true)
+  await sizeTap(p); assert.equal(await collapsedEl(), true, '펼침의 ∨ → 접힘, 한 번에')
   await sizeTap(p); await p.click('#metro-play-btn'); await sleep(p, 300)
   assert.equal(await collapsedEl(), false, '펼친 채 재생 — 여전히 펼침')
   await p.click('#metro-play-btn'); await sleep(p, 300)
@@ -203,7 +217,7 @@ await scenario('metro: bpm +/- , clamp, drag, time sig 6/8 disables subdiv, dots
 // 전에는 화면의 스윕 방향이 리셋되지 않아 바꾸는 순간의 방향에 따라 좌/우가 갈렸다.
 await scenario('metro: changing the time signature while playing starts the first beat on the left', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel').catch(() => {})
-  await sizeTap(p); await sizeTap(p) // 전용 모드 (13칸 줄이 크게 보인다)
+  await toFull(p) // 전용 모드 (13칸 줄이 크게 보인다)
   await p.click('#metro-play-btn'); await sleep(p, 300)
   /** 다음 정박(hit-acc)이 몇 번 칸에서 나는지 */
   const firstBeatCell = async () => p.evaluate(async () => {
@@ -242,7 +256,7 @@ await scenario('metro: full mode adds −5/+5 at both ends — steps of 5, clamp
   const bpm = () => p.evaluate(() => +document.getElementById('dial-bpm').textContent)
   const shown = () => p.evaluate(() => [...document.querySelectorAll('#metro-btn-row .m-adj5')].map(b => getComputedStyle(b).display))
   assert.deepEqual(await shown(), ['none', 'none'], '펼침에는 없다')
-  await sizeTap(p) // → 전용
+  await swipeUp(p) // → 전용 (위로 밀어서)
   assert.deepEqual(await shown(), ['flex', 'flex'], '전용 모드에만')
   const order = await p.evaluate(() => [...document.querySelectorAll('#metro-btn-row > button')].filter(b => getComputedStyle(b).display !== 'none')
     .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map(b => b.textContent))
@@ -255,7 +269,7 @@ await scenario('metro: full mode adds −5/+5 at both ends — steps of 5, clamp
 await scenario('metro: full mode is the second expanded step — only the tuner hides, header and mic stay, LEDs sweep end to end and hit green at the ends', 'violin_A4.wav', async p => {
   await darkTheme(p) // 아래 색 단언은 다크 토큰 값
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
-  await sizeTap(p); await sizeTap(p) // 접힘 → 펼침 → 전용 (순환, M10)
+  await toFull(p) // 접힘 → 펼침(버튼) → 전용(위로 밀기)
   assert.equal(await p.evaluate(() => document.getElementById('metro-card').classList.contains('full')), true)
   assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('tuner-card')).display), 'none', '튜너 카드 숨김')
   // 펼침2: 헤더·마이크는 펼침과 같다
@@ -291,7 +305,7 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   assert.ok(seen.size >= 6, `불이 여러 칸을 지나가야 한다: ${[...seen]}`)
   assert.ok(hits.has(0) || hits.has(12), `정박은 양 끝 칸에서: ${[...hits]}`)
   assert.ok([...hits].some(h => h === 's6'), `2분할은 가운데 칸(6)에서: ${[...hits]}`)
-  // M10: 전용 모드에서 버튼은 ∨(접힘으로 한 바퀴), 아래 스와이프는 한 단계(펼침으로)
+  // 전용 모드에서 버튼은 ∨, 버튼도 아래 스와이프도 한 단계(펼침으로)
   const sizeBtn = () => p.evaluate(() => { const b = document.getElementById('metro-size-btn'); return { disp: getComputedStyle(b).display, toExpand: b.classList.contains('to-expand'), toFull: b.classList.contains('to-full') } })
   assert.deepEqual(await sizeBtn(), { disp: 'flex', toExpand: false, toFull: false }, '전용 모드의 글리프는 ∨(회전 없음)')
   await swipeDown(p) // 전용 → 펼침 (한 단계)
@@ -299,13 +313,16 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), false, '스와이프는 한 단계 — 펼침까지')
   await swipeDown(p) // 펼침 → 접힘
   assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), true, '한 번 더 밀면 접힘')
-  await sizeTap(p); await sizeTap(p) // 접힘 → 펼침 → 전용
+  await toFull(p)
   // 나가면 튜너가 돌아온다. 마이크는 놓지 않았으니 안내 문구가 한 프레임도 뜨면 안 된다
   await p.click('#metro-size-btn')
   const seenHint = await p.evaluate(async () => { const t0 = performance.now(); let hint = false; while (performance.now() - t0 < 800) { if (document.getElementById('tuner-card').classList.contains('tap-hint')) hint = true; await new Promise(r => setTimeout(r, 16)) } return hint })
   assert.equal(seenHint, false, '나가는 동안 "켜라" 고 말하지 않는다')
   assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('tuner-card')).display), 'flex')
   assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true, '마이크는 내내 켜져 있다')
+  await settled(p)
+  assert.deepEqual(await p.evaluate(() => [document.getElementById('metro-card').classList.contains('full'), document.getElementById('metro-body-wrap').classList.contains('collapsed')]), [false, false], '전용의 ∨ 는 한 단계 — 펼침까지')
+  await sizeTap(p) // 펼침의 ∨ → 접힘
   // 화면을 칠하는 박 표시는 접혔을 때만
   const flashesWhile = async () => { let f = false; for (let i = 0; i < 30; i++) { if (await p.evaluate(() => { const c = document.getElementById('metro-card').classList; return c.contains('flash-strong') || c.contains('lit-weak') })) { f = true; break } await sleep(p, 40) } return f }
   // 접힌 채 재생 — 접혀 있으면 본체 버튼이 안 보이므로 Space 로. 방금 누른 버튼에 포커스가 남아 있으면
@@ -320,7 +337,7 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
 })
 await scenario('metro: full-mode dial — BPM follows the ring, stops at the ends, terms and ticks', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel').catch(() => {})
-  await sizeTap(p); await sizeTap(p) // 접힘 → 펼침 → 전용
+  await toFull(p)
   // 40~200: 5 마다 눈금(33), 20 마다 숫자(9), 용어 4
   const n = await p.evaluate(() => ({ tick: document.querySelectorAll('#dial-svg .dial-tick').length, num: document.querySelectorAll('#dial-svg .dial-num').length, name: document.querySelectorAll('#dial-svg .dial-name').length, beats: document.getElementById('sweep-beats') }))
   assert.deepEqual(n, { tick: 33, num: 9, name: 4, beats: null })
@@ -432,16 +449,39 @@ for (const w of [360, 384, 412]) await scenario(`layout: collapsed at ${w}px —
   assert.deepEqual(three, two, '99 → 100: LED 자리 그대로'); assert.deepEqual(low, two, '40 도 같은 자리')
 }, { viewport: { width: w, height: 800 } })
 
-// 펼침 → 펼침2: 튜너가 같이 줄어들며 카드가 위로 커진다 (튜너가 즉시 사라지면 카드가 위에서부터 아래로 커져 보인다)
-await scenario('metro: expanded → full shrinks the tuner along with it', 'silence_lowfloor.wav', async p => {
-  await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
+// 펼침2 → 펼침(∨ 버튼): 튜너가 카드와 함께 다시 커진다 (튜너가 즉시 나타나면 카드가 한 번에 줄어 보인다)
+await scenario('metro: full → expanded with the button grows the tuner back along with it', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 800); await toFull(p)
   await p.click('#metro-size-btn')
   const mid = await p.evaluate(() => ({ tuner: document.getElementById('tuner-card').offsetHeight, anims: document.getAnimations().map(a => a.effect.target.id).filter(Boolean) }))
-  assert.ok(mid.tuner > 100, '튜너가 즉시 사라지지 않는다 ' + mid.tuner)
   assert.ok(mid.anims.includes('tuner-card') && mid.anims.includes('metro-card'), '두 카드가 함께 움직인다 ' + mid.anims)
   await settled(p); await sleep(p, 300)
-  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('tuner-card')).display), 'none', '끝나면 튜너는 숨김')
+  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('tuner-card')).display), 'flex', '끝나면 튜너가 보인다')
+  assert.ok(await p.evaluate(() => document.getElementById('tuner-card').offsetHeight) > mid.tuner + 100, '튜너가 0 에서 커졌다 ' + mid.tuner)
+  assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), false, '펼침에 멈춘다')
 })
+// 동작 줄이기: 손을 따라오지 않고 40 px 밀면 한 단계 — 위로도 (펼침2 로 가는 길은 밀기뿐이다)
+await scenario('metro: with reduced motion, pushing the card 40 px moves one step, up to full and back down', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 900)
+  const st = () => p.evaluate(() => document.getElementById('metro-card').classList.contains('full') ? 'f' : document.getElementById('metro-body-wrap').classList.contains('collapsed') ? 'c' : 'e')
+  assert.equal(await st(), 'c')
+  await swipeUp(p); assert.equal(await st(), 'e', '위로 밀어 펼침')
+  await swipeUp(p); assert.equal(await st(), 'f', '위로 밀어 펼침2')
+  await swipeDown(p); assert.equal(await st(), 'e', '아래로 밀어 펼침')
+  await swipeDown(p); assert.equal(await st(), 'c', '아래로 밀어 접힘')
+}, { reducedMotion: 'reduce' })
+// 넓은 화면에는 접힘이 없다 — 버튼은 펼침 ⇄ 펼침2, 처음 누를 때부터
+await scenario('metro: on a wide screen the size button goes expanded ⇄ full from the first tap', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 900)
+  const full = () => p.evaluate(() => document.getElementById('metro-card').classList.contains('full'))
+  const btn = () => p.evaluate(() => { const b = document.getElementById('metro-size-btn'); return [b.classList.contains('to-full'), b.getAttribute('aria-label')] })
+  assert.deepEqual(await btn(), [true, '메트로놈 더 펼치기'], '펼침: ∧ 더 펼치기')
+  await sizeTap(p); assert.equal(await full(), true, '첫 누름에 펼침2')
+  assert.deepEqual(await btn(), [false, '메트로놈 접기'], '펼침2: ∨')
+  await sizeTap(p); assert.equal(await full(), false, '∨ → 펼침')
+  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('tuner-card')).display), 'flex')
+  await swipeDown(p); assert.deepEqual(await btn(), [true, '메트로놈 더 펼치기'], '아래로 밀어도 접힘 상태로 가지 않는다')
+}, { viewport: { width: 900, height: 900 } })
 
 // 화면 크기 행렬 — 펼침2 는 어떤 화면에서도 스크롤·넘침이 없고 글자가 읽혀야 한다.
 // 기기별 땜빵이 아니라 규칙(다이얼이 남는 높이를 흡수, 글자는 렌더 크기 고정)으로 닫고, 이 행렬이 회귀를 잡는다.
@@ -453,9 +493,7 @@ const LAYOUT_MATRIX = [
 for (const [name, w, h, top, bot] of LAYOUT_MATRIX) await scenario(`layout: full mode ${name} ${w}×${h} — no scroll or overflow, text keeps its rendered size`, 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel').catch(() => {})
   await p.addStyleTag({ content: `#app{padding-top:${top}px!important;padding-bottom:${bot}px!important}` })
-  // 넓은 화면은 항상 펼침이라 펼침2까지 누르는 횟수가 다르다 — 될 때까지 누른다
-  for (let i = 0; i < 3 && !(await p.evaluate(() => document.getElementById('metro-card').classList.contains('full'))); i++) { await sizeTap(p) }
-  assert.equal(await p.evaluate(() => document.getElementById('metro-card').classList.contains('full')), true, '전용 모드 진입')
+  await toFull(p) // 넓은 화면은 버튼 한 번, 폰은 펼친 뒤 위로 밀기
   const r = await p.evaluate(() => {
     const clip = document.getElementById('metro-body-clip'), card = document.getElementById('metro-card').getBoundingClientRect()
     const dial = document.getElementById('dial').getBoundingClientRect()
@@ -549,7 +587,7 @@ await scenario('i18n: English — no Korean on any screen, nothing clipped, surv
   await waitNote(p, t => t.note === 'A'); await check('tuner (A, letter names)')
   assert.equal(await p.evaluate(() => document.getElementById('tuner-enharmonic').textContent), '', 'no Korean secondary name')
   await sizeTap(p); await check('metronome expanded')
-  await sizeTap(p); await check('metronome full')
+  await swipeUp(p); await check('metronome full')
   await sizeTap(p)
   await p.click('#rec-hdr-btn'); await sleep(p, 1500); await p.click('#rec-hdr-btn'); await sleep(p, 900)
   await p.click('#menu-btn'); await sleep(p, 400); await check('menu with a recording')
