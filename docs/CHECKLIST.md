@@ -42,7 +42,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Settings › Play A pitch (A4 / A3 / A2) is saved and restored; [D] check A3 and A2 by ear
 
 ## Drone
-- [A] DRONE opens a 12-note picker; a note starts the drone and closes it; the button shows the note in red; tapping it stops the drone
+- [A] Header: ☰ alone on the left; DRONE, REC and ⚙ on the right. DRONE opens a 12-note picker; a note starts the drone and closes it; the button shows the note in red; tapping it stops the drone
 - [A] Tapping outside only closes the picker (the tap doesn't reach the metronome); tapping DRONE again or Esc closes it
 - [A] Play A and the drone turn each other off
 - [A] Plays without the mic
@@ -105,6 +105,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] Android 15 edge-to-edge: header clear of the status bar; adaptive launcher icon, and the home-screen web app icon the same size with the outer ring clear of the edges; app name "Intonome"
 - [D] iPhone home-screen app: no gap at the bottom (iOS 26), nothing cut off in either theme
 - [D] iPhone home-screen app opens on the splash (round icon and Intonome on the app background), dark when the phone is in dark mode; re-add the app to pick up a new splash
+- [A] iPhone home-screen app: the first frame matches the splash image pixel for pixel and fades into the app before the 2.5 s safety removal; no such frame in a browser tab
+- [D] iPhone home-screen app: no blink or trace between the splash and the app, with the status bar light or dark
 
 ## Settings / other
 - [A] Keep screen on on/off (Wake Lock)

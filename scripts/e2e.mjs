@@ -614,6 +614,28 @@ await scenario('drag ticks: BPM drag and ref drum vibrate per step, strong on te
   assert.equal(await p.evaluate(() => document.querySelector('#haptics-steps .step-btn.on').dataset.v), '0', '꺼짐이 남는다')
 })
 
+// 아이폰 홈 화면 웹앱: 첫 화면이 스플래시 그림과 같고(픽셀 비교), 앱이 그려지면 걷힌다. 다른 곳에서는 첫 그리기 전에 없어진다
+await scenario('launch: iPhone home-screen app starts on a copy of the splash, then fades to the app; nowhere else', 'silence_lowfloor.wav', async (p, ctx) => {
+  const { PNG } = await import('pngjs'), { default: pixelmatch } = await import('pixelmatch')
+  const standalone = () => Object.defineProperty(Navigator.prototype, 'standalone', { configurable: true, get: () => true })
+  const iphone = { viewport: { width: 393, height: 852 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
+  for (const scheme of ['light', 'dark']) { // 앱 스크립트를 막아 첫 화면 그대로 찍고, 같은 크기 스플래시 PNG 와 비교
+    const c = await ctx.browser().newContext({ ...iphone, colorScheme: scheme }); await c.addInitScript(standalone)
+    const bare = await c.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_); await bare.waitForTimeout(300)
+    assert.equal(await bare.evaluate(() => document.getElementById('launch')?.className), 'show', scheme)
+    const shot = PNG.sync.read(await bare.screenshot()), ref = PNG.sync.read(readFileSync(join(DIST, `splash/iphone-1179x2556-${scheme}.png`)))
+    assert.deepEqual([shot.width, shot.height], [ref.width, ref.height])
+    const diff = pixelmatch(shot.data, ref.data, null, ref.width, ref.height, { threshold: 0.1 })
+    assert.ok(diff / (ref.width * ref.height) < 0.002, `${scheme}: 스플래시와 다른 픽셀 ${diff}`)
+    await c.close()
+  }
+  const c = await ctx.browser().newContext(iphone); await c.addInitScript(standalone)
+  const app = await c.newPage(); await app.goto(URL_)
+  await app.waitForFunction(() => !document.getElementById('launch'), null, { timeout: 3000 })
+  const t = await app.evaluate(() => performance.now()); assert.ok(t < 2000, `앱이 그려지면 걷힌다(안전장치 2.5 초 전에): ${Math.round(t)} ms`); await c.close()
+  await p.goto(URL_); assert.equal(await p.evaluate(() => !!document.getElementById('launch')), false, '브라우저 탭에는 없다')
+})
+
 // 첫 실행(저장 없음)은 기기의 다크 모드를 따른다: 앱 스크립트 없이 첫 그리기부터, 설정 표시도 다크
 await scenario('theme: first launch follows the phone dark mode', 'silence_lowfloor.wav', async (p, ctx) => {
   const bare = await ctx.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_)
