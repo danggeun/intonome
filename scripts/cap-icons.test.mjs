@@ -203,10 +203,10 @@ describe('the iOS / PWA icon is full-bleed', () => {
   })
 })
 
-// maskable 규격: 중앙 지름 80 % 원 안에 내용이 있어야 한다. 가운데에서 가장 먼 잉크까지의 거리(= 필요한 원 반지름)로 잰다
+// maskable: 규격은 중앙 지름 80 % 원이지만, 안드로이드 크롬은 이것을 적응형 아이콘으로 만들어 가운데 약 67–71 % 만 보인다. 설치 앱과 같은 맞춤(66 % × 0.87)인지 잰다. 가운데에서 가장 먼 잉크까지의 거리로
 describe('maskable icons keep a margin inside the safe zone', () => {
   const file = new URL('../www/public/icons/icon-maskable-512.png', import.meta.url)
-  test.skipIf(!existsSync(file))('필요한 원 지름 ≤ 76 % (규격 80 % 에 최소 4 %p 여유)', () => {
+  test.skipIf(!existsSync(file))('필요한 원 지름 ≤ 60 % (보이는 67 % 안에 여유)', () => {
     const p = PNG.sync.read(readFileSync(file))
     // 바탕이 그라디언트라 한 색이 아니다. 바탕 층(1024)의 같은 자리와 비교해 다른 곳만 잉크로 본다
     const bgL = PNG.sync.read(readFileSync(new URL('../resources/icon-background.png', import.meta.url))), sc = bgL.width / p.width
@@ -218,6 +218,6 @@ describe('maskable icons keep a margin inside the safe zone', () => {
       r = Math.max(r, Math.hypot(x + 0.5 - c, y + 0.5 - c))
     }
     const pct = r * 2 / p.width * 100
-    expect(pct, `잉크가 중앙 ${pct.toFixed(1)} % 원을 차지한다 — 런처 마스크에 양끝이 닿는다`).toBeLessThan(76)
+    expect(pct, `잉크가 중앙 ${pct.toFixed(1)} % 원을 차지한다 — 런처 마스크에 양끝이 닿는다`).toBeLessThan(60)
   })
 })

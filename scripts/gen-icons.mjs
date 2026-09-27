@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 앱 아이콘 생성 — resources/ 의 SVG 레이어(1024² 뷰박스)에서 플랫폼별 PNG 를 뽑는다. 그림은 SVG 에서만 고친다.
 //   · iOS / PWA 'any':  icon.svg 를 풀블리드 그대로 (OS 가 스퀘어클로 깎는다 — 미리 둥글면 안 된다)
-//   · PWA maskable:     배경 + 전경을 중앙 원 안으로
+//   · PWA maskable:     배경 + 전경을 적응형과 같은 크기로 (안드로이드 웹앱도 설치 앱과 같은 크기로 보이게)
 //   · Android adaptive: 전경(투명, 바닥 그림자 없음)을 중앙 66 % 안으로, 배경은 icon-background. 밀도별로 직접 렌더
 //   · Android 13 테마:  icon-monochrome(흰 실루엣) — 전경과 같은 맞춤으로 밀도별 렌더
 //   · 스플래시:        logo.png = 아이콘을 원으로 깎은 것. capacitor-assets 가 스플래시 바탕색 가운데에 놓는다(네모 타일이 그대로 뜨지 않게)
@@ -15,9 +15,9 @@ import { fileURLToPath } from 'node:url'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUTDIR = process.argv.includes('--out') ? process.argv[process.argv.indexOf('--out') + 1] : null
 export const LAYERS = { full: 'resources/icon.svg', background: 'resources/icon-background.svg', foreground: 'resources/icon-foreground.svg', mono: 'resources/icon-monochrome.svg', favicon: 'resources/favicon.svg' }
-export const MASKABLE_CIRCLE = 0.74   // 규격 80 % 에 6 %p 여유
 export const ADAPTIVE_SAFE = 0.66     // 108dp 중 보이는 72dp
 export const ADAPTIVE_FIT = ADAPTIVE_SAFE * 0.87   // 보이는 원 지름의 87 %: iOS 아이콘에서 기호가 차지하는 비율(86 %)과 같게
+export const MASKABLE_CIRCLE = ADAPTIVE_FIT   // 안드로이드 크롬은 maskable 을 적응형 아이콘으로 만든다(가운데 약 67–71 % 만 보인다). 0.74 로 두면 바깥 고리가 가장자리에서 잘린다 → 앱과 같은 맞춤
 export const ADAPTIVE_PX = { mdpi: 108, hdpi: 162, xhdpi: 216, xxhdpi: 324, xxxhdpi: 432 }
 export const WEB_ICON_PX = [144, 180, 192, 512]   // 안드로이드 런처 xxhdpi·xxxhdpi(144·192), 아이폰 홈 화면 60pt×3(180), 스플래시·공유(512)
 export const MASKABLE_PX = [144, 192, 512]

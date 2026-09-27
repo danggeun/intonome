@@ -2,6 +2,13 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.4.2] - 2026-09-27
+- New icon colors: the rings around the green light are amber and coral, the app's own colors, and fade outward like beats
+- The icon of the web app added to an Android home screen is the same size as the installed app's. Before, the outer ring touched the edges and was cut off
+- While recording, the elapsed time takes the place of REC inside the button, so nothing sits apart from it
+- DRONE and REC are 30 × 64 and the text is centered in them. The gap between ☰ and DRONE looks the same as the gap between REC and ⚙
+- On first launch the app follows the phone's dark mode, like the splash screen. After you change any setting, it keeps what Settings says
+
 ## [2.4.1] - 2026-09-27
 - DRONE: a new button next to ☰. Pick one of the 12 notes and it keeps sounding (octave 4, the same sound as Play A) while you practice; tap the red note to stop. Tapping DRONE again while the notes are open closes them. Like the metronome, it keeps the screen awake and stops when you leave the app. The first time you open it, a line explains what it's for
 - The tuner ignores the drone and Play A. It cuts out their frequency and every whole multiple of it, which is all a phone speaker and the room can add to them, so with only them sounding the tuner shows nothing and the practice timer doesn't count it. It keeps reading you over them: other strings over Play A, and any interval over the drone. A note that sits exactly on the tone's own pitches (the same note or an octave above, within about 3 cents) is cut with it and shows nothing
