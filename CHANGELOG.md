@@ -9,7 +9,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - Play A follows your instrument: Settings › Play A pitch sets A4 (violin, viola), A3 (cello) or A2 (double bass)
 - Play A and the drone never sound together; turning one on turns the other off
 - Play A lights red while it sounds, like the other buttons that are on
-- DRONE and REC in the header are the same size
+- DRONE and REC in the header are the same size and smaller, as tall as Play A. They are just as easy to tap
 - The MIC button is gone. The tuner's start button turns the mic on, and REC turns it on and starts recording
 - Reference tones left the menu; the drone replaces them
 - The metronome, Play A and the drone share one soft limiter, so a click over the drone no longer clips
@@ -22,7 +22,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - Edge swipe back: a drag that stops before you lift springs back unless it passed 35 % of the width; only a drag still moving fast when you lift counts as a flick
 - New app icon: three white rings around a green light on the app's dark card. The light is the tuner's in-tune green, and the rings spread out like beats. Android shows it at the same size as the iPhone does, and the splash screen shows it round on the app's background
 - The settings footer shows the Intonome wordmark above the version. The tagline stays in the README and the store listing
-- Full screen moved to the bottom of Settings
+- Full screen moved to the bottom of Settings and is an On / Off choice like the other settings. It follows the real state, so it shows Off after you leave full screen with Back or Esc
 
 ## [2.4.0] - 2026-09-25
 - Renamed to **Intonome** (intonation + metronome), with a new web address: danggeun.github.io/intonome. Settings and recordings saved under the old name are cleared once

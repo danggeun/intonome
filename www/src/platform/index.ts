@@ -64,11 +64,14 @@ export async function acquireWakeLock(): Promise<void> {
 export function releaseWakeLock(): void { wakeGen++; wakeLock?.release().catch(() => {}); wakeLock = null } // 이미 풀린 센티널은 reject 할 수 있다
 
 // 전체화면 (웹 전용)
-export function toggleFullscreen(onUnsupported: () => void): void {
-  if (isNative()) return
-  const doc = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void }
+type FsDoc = Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void }
+export const isFullscreen = (): boolean => !!(document.fullscreenElement || (document as FsDoc).webkitFullscreenElement)
+/** 켜기(true) · 끄기(false). 이미 그 상태면 그대로. 켤 수 없는 기기면 onUnsupported */
+export function setFullscreen(want: boolean, onUnsupported: () => void): void {
+  if (isNative() || want === isFullscreen()) return
+  const doc = document as FsDoc
   const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void }
-  if (!document.fullscreenElement && !doc.webkitFullscreenElement) {
+  if (want) {
     if (el.requestFullscreen) el.requestFullscreen()
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
     else onUnsupported()
@@ -76,6 +79,10 @@ export function toggleFullscreen(onUnsupported: () => void): void {
     if (document.exitFullscreen) document.exitFullscreen()
     else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen()
   }
+}
+/** 전체화면이 켜지고 꺼질 때. 뒤로 가기나 Esc 로 나올 때도 온다 */
+export function onFullscreenChange(cb: () => void): void {
+  document.addEventListener('fullscreenchange', cb); document.addEventListener('webkitfullscreenchange', cb)
 }
 
 // 파일 저장

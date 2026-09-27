@@ -12,8 +12,8 @@ import { openMic, closeMic, onMic, A, resumeIfRunning, onEngineFatal, setIdleChe
 import { startAnalysis, lastFrameMs, metroCalibMs } from './audio/analysis.ts'
 import { playbackActive, playbackDiag } from './audio/playback.ts'
 import { restoreRecordings, recoverInProgress, onRecorderError } from './audio/recorder.ts'
-import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, toggleFullscreen, onBackButton, onWakeLockUnsupported } from './platform/index.ts'
-import { q, on } from './ui/dom.ts'
+import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton, onWakeLockUnsupported } from './platform/index.ts'
+import { q, qsa, on } from './ui/dom.ts'
 import { toast } from './ui/toast.ts'
 import { mountTuner, showTapHint, hideTapHint, setHistSec, histDiag, retheme, setMicOpener, showMicOff } from './ui/tuner.ts'
 import { mountTheme, onThemeChange } from './ui/theme.ts'
@@ -168,7 +168,11 @@ onBackButton(() => {
 // 설치 앱·홈 화면 웹앱은 이미 전체화면이라 행을 숨긴다
 const fsRow = q('fullscreen-row')
 if (isNative() || matchMedia('(display-mode: standalone)').matches) fsRow.style.display = 'none'
-on(q('fullscreen-btn'), 'click', () => toggleFullscreen(() => toast(t('set.fsUnsupported'))))
+// 켜짐 · 꺼짐 표시는 실제 상태를 따른다: 뒤로 가기나 Esc 로 나와도 꺼짐으로 바뀐다
+const fsBtns = qsa<HTMLElement>('#fullscreen-steps .step-btn')
+const markFs = (): void => { const v = isFullscreen() ? '1' : '0'; fsBtns.forEach(b => b.classList.toggle('on', b.dataset.v === v)) }
+fsBtns.forEach(b => on(b, 'click', () => setFullscreen(b.dataset.v === '1', () => toast(t('set.fsUnsupported')))))
+onFullscreenChange(markFs); markFs()
 
 /**
  * 오디오가 멈춘 채 남았을 때(사용자 동작 없이 열린 경우 — 예: 새 버전 적용 뒤 자동 새로고침) 시작 버튼을 띄우되,
