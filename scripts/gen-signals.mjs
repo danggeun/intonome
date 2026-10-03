@@ -209,6 +209,17 @@ for (const [name, note] of single) {
   // 공명하는 개방현: 스톱한 G3 + 개방 G2 가 −20 dB 로 울림
   const g3 = bowed(() => midiHz(n2m('G3')), 2), g2ring = bowed(() => midiHz(n2m('G2')), 2, { vibCents: 0, noiseDb: -60 })
   single('cello_G3_with_openG2_ringing', mix(g3, g2ring, 0.1), n2m('G3'), { note: 'sympathetic open string −20 dB' })
+  // 다른 연주자들 속에서: 내 음 + 각자 연습하는 세 명(중음 간격 위아래, 조금씩 다른 음정·비브라토)이 합쳐서 −12 dB, 홀 잡음 −30 dB.
+  // 튜너는 내 음을 보여야 한다 — 위 음으로 넘어가는 규칙이 있으면 남의 음을 고른다
+  const crowd = (name, mine, others) => {
+    const me = bowed(() => midiHz(n2m(mine)), 2)
+    let bg = new Float32Array(me.length)
+    for (const [i, [note, cents]] of others.entries()) bg = mix(bg, bowed(() => midiHz(n2m(note)) * Math.pow(2, cents / 1200), 2, { vibHz: 4.8 + i * 0.7, vibCents: 12 + i * 4, attack: 0.05 + i * 0.1 }))
+    const x = scaleToSnr(me, bg, 12)
+    single(name, scaleToSnr(x, pinkNoise(x.length, 1), 30), n2m(mine), { note: `${mine} with three other players at -12 dB` })
+  }
+  crowd('violin_A4_in_crowd', 'A4', [['D4', 12], ['F#4', -15], ['C#5', 8]])
+  crowd('violin_G3_in_crowd', 'G3', [['D4', -9], ['B3', 14], ['E3', 6]])
   // 플라졸렛(자연 하모닉스): 배음 1~2개만
   single('violin_E6_flageolet', bowed(() => midiHz(n2m('E6')), 2, { harmAmp: h => (h === 1 ? 1 : h === 2 ? 0.15 : 0), vibCents: 0, noiseDb: -40 }), n2m('E6'), { note: 'flageolet 1–2 partials' })
   // 스타카토 런 + 쉼표: 120 bpm 8분음표(150 ms 소리 + 100 ms 공백), 중간에 8분 쉼표(250 ms)

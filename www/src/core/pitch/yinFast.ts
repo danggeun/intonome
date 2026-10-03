@@ -1,6 +1,8 @@
 /**
  * FFT 기반 YIN — d(τ) = Σ_{j<W} x[j]² + Σ_{j<W} x[j+τ]² − 2·r(τ), r(τ) = Σ_{j<W} x[j]·x[j+τ] 를 O(N log N) 으로.
  * 누적합 + 크기 2N FFT 상호상관(순환 방지). CMND·임계 탐색·포물선 보간은 core/yin.ts 와 같은 규칙.
+ * 고른 주기가 더 짧은 주기의 정수배이고 그 짧은 주기의 골짜기도 거의 그만큼 또렷하면 짧은 쪽을 고른다 — 다른 소리가 섞이면
+ * 임계 탐색이 내 주기 대신 배경과 함께 반복되는 긴 주기(하위배음)에 멈춘다.
  * conf = 1 − CMND(τ*) : 0(비주기) ~ 1(완전 주기)
  */
 import { makeFFT, type FFT } from './fft.ts'
@@ -15,6 +17,7 @@ export interface YinFast {
 export function createYinFast(windowSize: number, opts: { threshold?: number; hzMin?: number; hzMax?: number } = {}): YinFast {
   const N = windowSize, W = N >> 1
   const threshold = opts.threshold ?? 0.10
+  const SUB_CLARITY = 0.9 // 짧은 주기의 선명도(1 − CMND)가 고른 주기의 이 비율 이상이면 짧은 쪽
   const M = N * 2
   const fft: FFT = makeFFT(M)
   const aRe = new Float64Array(M), aIm = new Float64Array(M), xRe = new Float64Array(M), xIm = new Float64Array(M)
@@ -58,6 +61,15 @@ export function createYinFast(windowSize: number, opts: { threshold?: number; hz
         for (let tau = tauMin; tau < tauMax; tau++) { if (c[tau]! < mn) { mn = c[tau]!; t = tau } }
         if (t === -1 || mn > 0.35) return NONE // 0.5 면 conf 가 정확히 confMin(0.5)이 되어 폴백 프레임이 항상 트래커에 들어간다
       }
+      // 하위배음 보정: 후보 = t 와, t 의 정수분의 1(3 % 안) 자리에 있는 더 짧은 국소 최소들. 후보 중 가장 또렷한 선명도의
+      // SUB_CLARITY 배 이상인 가장 짧은 후보가 주기다 — 실제 주기의 1/2·1/3 자리 골짜기는 얕아서 탈락하고, 잡음 속의 긴 배수 주기는 짧은 쪽에 진다
+      { const cands: number[] = []; let top = 1 - c[t]!
+        for (let tau = tauMin + 1; tau < t; tau++) {
+          if (!(c[tau]! <= c[tau - 1]! && c[tau]! <= c[tau + 1]!)) continue
+          const r = t / tau, n = Math.round(r)
+          if (n >= 2 && Math.abs(r - n) <= 0.03 * n) { cands.push(tau); if (1 - c[tau]! > top) top = 1 - c[tau]! }
+        }
+        for (const tau of cands) if (1 - c[tau]! >= SUB_CLARITY * top) { t = tau; break } }
       const b = (t > 0 && t < W - 1) ? t + (c[t + 1]! - c[t - 1]!) / (2 * (2 * c[t]! - c[t - 1]! - c[t + 1]!)) : t
       if (b <= 0 || !isFinite(b)) return NONE
       const conf = Math.max(0, Math.min(1, 1 - c[t]!))
