@@ -51,7 +51,6 @@ export const EN: Record<TKey, string> = {
   'tuner.playA': 'Play A',
   'tuner.playAAria': 'Play reference A',
   'tuner.startSub': 'We’ll ask to use the mic',
-  'tuner.doubleStop': 'Double stop · {note} {cents} ¢',
 
   'audio.cantStart': 'Couldn’t start audio',
   'audio.interruptedMetro': 'Audio was interrupted, so the metronome stopped',

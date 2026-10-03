@@ -20,6 +20,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Settings: tolerance ±5/10/15/20/25 changes the band width
 - [A] Settings: response slow/normal/fast, mic sensitivity low/normal/high → saved and restored
 - [A] The tuner keeps working while the metronome clicks (only click windows are down-weighted)
+- [A] Another player's note above yours at −10 dB (fifth, third, sixth, fourth), even if it started first, never replaces your note; two notes at the same level read as the lower one, steadily
 
 ## Metronome
 - [A] Plays without the mic

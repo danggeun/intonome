@@ -13,7 +13,7 @@ www/src/
   persist/     Settings in localStorage, recordings in IndexedDB
   platform/    Web / Capacitor branches (status bar, wake lock, full screen, file saving, back button)
   core/        Pure logic, no browser APIs, all unit-tested:
-               pitch/(fft, yinFast, spectrum, tracker, dual, analyzer) · playing/detector · metro/(sequencer, arrival, sweep, dial)
+               pitch/(fft, yinFast, spectrum, tracker, analyzer) · playing/detector · metro/(sequencer, arrival, sweep, dial)
                i18n/(ko, en), drone, note, wav, peaks, format, recPolicy, hist, trace, hzReadout, softclip, playbackGain, container,
                yin (reference only, not bundled)
 ```
@@ -39,7 +39,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
                          │  1024-sample transferable Float32Array over a direct MessagePort
                          ▼
                   Analysis Worker (analysis.worker)             ≈43 Hz
-                    app-tone filter (only while Play A or the drone sounds) → ring buffer → 4096 window → FFT-YIN → spectrum (octave correction)
+                    app-tone filter (only while Play A or the drone sounds) → ring buffer → 4096 window → FFT-YIN → spectrum (octave correction: the lowest sounding harmonic series, never a second voice above it)
                     → tracker → playing detector
                     a reference other than 440 is normalized before the tracker and restored for display
                          ▼
