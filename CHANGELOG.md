@@ -2,6 +2,11 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.4.6] - 2026-10-03
+- The tuner reads your own string in a room full of other players. It now always shows the loudest sound it hears and no longer switches to a second note above it, which in a hall meant someone else's note
+- The double-stop line under the note is gone with it. A double stop reads as its lower note, steadily, like a single-note tuner
+- In fast passages the next note shows one to three frames (20–60 ms) later than before; that early switch was the same mechanism
+
 ## [2.4.5] - 2026-09-28
 - The menu no longer has its own Start recording button. REC in the header starts and stops recording; the menu lists the recordings
 - Before the first recording, the menu says there are no recordings yet instead of showing an empty section

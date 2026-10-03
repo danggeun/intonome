@@ -100,21 +100,6 @@ function drawHistory(inTune: boolean): void {
   c.globalAlpha = 1; c.restore()
 }
 
-// 중음(더블스톱) 둘째 성부: 화면은 위 성부, 아래 성부는 이 줄에. 최소 표시 400 ms — 개방현이 문턱을 스쳐도 글자가 번쩍이지 않게
-const DUAL_MIN_MS = 400
-let dualUntil = 0, dualMidi = -1, dualCents = 0
-function renderDual(midi: number, cents: number): boolean {
-  const el = q('tuner-dual'), now = performance.now()
-  if (midi >= 0) { dualMidi = midi; dualCents = cents; dualUntil = now + DUAL_MIN_MS }
-  if (dualMidi < 0 || now >= dualUntil) { if (el.className) { el.className = ''; el.textContent = '' } dualMidi = -1; return true }
-  const ok = Math.abs(dualCents) <= settingsStore.get().tolCents
-  const { name } = noteLabel(dualMidi, settingsStore.get().noteNames, getLang())
-  el.textContent = t('tuner.doubleStop', { note: name + octaveOf(dualMidi), cents: (dualCents > 0 ? '+' : '') + dualCents })
-  el.className = ok ? 'on tune' : 'on'
-  return ok
-}
-function clearDual(): void { dualUntil = 0; dualMidi = -1; const el = q('tuner-dual'); el.className = ''; el.textContent = '' }
-
 // 음 표시
 function renderEmpty(): void {
   const nEl = q('tuner-note')
@@ -124,18 +109,16 @@ function renderEmpty(): void {
   if (off && micOpener) showOffStart()
   q('tuner-oct').textContent = ''; q('tuner-cents').textContent = ''; q('tuner-enharmonic').textContent = ''; q('tuner-acc').textContent = ''
   hzReadout.reset(); q('tuner-hz').textContent = ''
-  clearDual()
   q('tuner-card').classList.remove('in-tune')
 }
-/** inTune = 위 성부가 허용 범위 안(음이름 색), allInTune = 모든 성부가 안(카드 글로우). 단음이면 같다 */
-function renderNote(midi: number, cents: number, inTune: boolean, allInTune: boolean, hz: number): void {
+function renderNote(midi: number, cents: number, inTune: boolean, hz: number): void {
   const { name, secondary } = noteLabel(midi, settingsStore.get().noteNames, getLang())
   const base = name.replace('♯', ''), acc = name.includes('♯') ? '♯' : ''
   const nEl = q('tuner-note'); nEl.textContent = base; nEl.className = inTune ? 'tune' : ''
   const accEl = q('tuner-acc'); accEl.textContent = acc; accEl.classList.toggle('tune', inTune)
   q('tuner-oct').textContent = String(octaveOf(midi))
   q('tuner-enharmonic').textContent = secondary
-  q('tuner-card').classList.toggle('in-tune', allInTune)
+  q('tuner-card').classList.toggle('in-tune', inTune)
   q('tuner-cents').textContent = (cents > 0 ? '+' : '') + cents + ' ¢'
   const t = hzReadout.push(hz, midi, performance.now()); if (t !== null) q('tuner-hz').textContent = t
 }
@@ -172,8 +155,7 @@ export function mountTuner(): void {
     raf = null; if (!dirty) return; dirty = false
     const s = tunerStore.get()
     if (s.hz === -1) { renderEmpty(); drawHistory(false); return }
-    const dualOk = renderDual(s.dualMidi, s.dualCents)
-    renderNote(s.midi, s.cents, s.inTune, s.inTune && dualOk, s.hz); drawHistory(s.inTune && dualOk)
+    renderNote(s.midi, s.cents, s.inTune, s.hz); drawHistory(s.inTune)
   }
   tunerStore.select(s => s.sampleRate, sr => resizeHist(sr), { immediate: true })
   // 캔버스 크기가 바뀌면 마이크 프레임이 없어도 다시 그린다 — 안 그리면 옛 크기의 비트맵이 늘어나 ♭♯ 가 길쭉해진다(시작 버튼 화면)

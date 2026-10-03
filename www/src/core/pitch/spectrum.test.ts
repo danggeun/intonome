@@ -92,41 +92,53 @@ describe('double-stop interpretation', () => {
   })
 })
 
-describe('follows the melody (upper voice) in double stops — regardless of level or timing', () => {
+describe('the tuner shows the loudest sound, never a second voice above it', () => {
   const SR = 48000, N = 4096, HOP = 1024
   const NOTE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
   const mi = (n: string) => { const m = /^([A-G]#?)(-?\d)$/.exec(n)!; return NOTE.indexOf(m[1]!) + (+m[2]! + 1) * 12 }
   const fq = (n: string) => 440 * Math.pow(2, (mi(n) - 69) / 12)
   let seed = 11; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff - .5 }
-  /** 두 음을 겹친 1.2 초 — 아래 음 배율(lowGain), 위 음 시작 지연(stagger), 활 잡음(noise) */
-  function ds(a: string, b: string, lowGain = 1, stagger = 0, noise = 0.02): Float32Array {
-    const n = Math.floor(SR * 1.2), x = new Float32Array(n), fa = fq(a), fb = fq(b)
-    for (let i = 0; i < n; i++) { const t = i / SR
-      const va = 0.45 * lowGain * (1 + 0.15 * Math.sin(2 * Math.PI * 5.3 * t)), vb = t < stagger ? 0 : 0.45 * (1 + 0.15 * Math.sin(2 * Math.PI * 6.1 * t + 1))
-      let s = 0
-      for (let k = 1; k <= 10; k++) { if (fa * k < SR / 2) s += (va / k) * (k % 2 ? 1 : .7) * Math.sin(2 * Math.PI * fa * k * t + k * .7)
-                                       if (fb * k < SR / 2) s += (vb / k) * (k % 2 ? 1 : .7) * Math.sin(2 * Math.PI * fb * k * t + k * .3) }
-      x[i] = s * .4 + rnd() * noise }
+  /** 현악기다운 음 하나 — 1/k 배음, 느린 진폭 흔들림(활 압력), 시작 시각 */
+  type Voice = { note: string; gain: number; from?: number; wobbleHz?: number }
+  function mix(voices: Voice[], sec = 1.2, noise = 0.02): Float32Array {
+    const n = Math.floor(SR * sec), x = new Float32Array(n)
+    for (const [vi, v] of voices.entries()) {
+      const f = fq(v.note), from = v.from ?? 0, wob = v.wobbleHz ?? 5.3 + vi * .8
+      for (let i = 0; i < n; i++) { const t = i / SR; if (t < from) continue
+        const a = 0.45 * v.gain * (1 + 0.15 * Math.sin(2 * Math.PI * wob * t + vi))
+        let s = 0
+        for (let k = 1; k <= 10; k++) { if (f * k < SR / 2) s += (a / k) * (k % 2 ? 1 : .7) * Math.sin(2 * Math.PI * f * k * t + k * .7 + vi) }
+        x[i] = x[i]! + s * .4 }
+    }
+    for (let i = 0; i < n; i++) x[i] = x[i]! + rnd() * noise
     return x
   }
-  /** 정착 후 프레임 중 위 성부가 표시된 비율 */
-  function upperRate(x: Float32Array, upper: string, skipSec: number): number {
+  /** skipSec 뒤 프레임 중 음이름이 note 인 비율 */
+  function rate(x: Float32Array, note: string, skipSec: number): number {
     const an = createAnalyzer({ sampleRate: SR }); an.setSettings({ rmsMin: .014, smoothing: .14, refHz: 440, tolCents: 15 })
     const w = new Float32Array(N); let U = 0, F = 0
     for (let end = HOP; end <= x.length; end += HOP) { w.fill(0); const s0 = Math.max(0, end - N); w.set(x.subarray(s0, end), N - (end - s0))
-      const f = an.process(w); if (end / SR < skipSec) continue; F++; if (f.midi === mi(upper)) U++ }
+      const f = an.process(w); if (end / SR < skipSec) continue; F++; if (f.midi === mi(note)) U++ }
     return U / F
   }
   const PAIRS: [string, string][] = [['G3', 'D4'], ['D4', 'A4'], ['A4', 'E5'], ['G3', 'B3'], ['D4', 'F#4'], ['G3', 'E4'], ['A3', 'C#4'], ['E4', 'A4']]
-  test.each(PAIRS)('%s + %s — 아래 음이 6배 커도(개방현 공명) 위 성부 표시', (a, b) => {
-    expect(upperRate(ds(a, b, 6), b, .35)).toBeGreaterThan(0.95)
+  // 다른 연주자: 내 음보다 10 dB 작은 음이 중음 간격(5도·3도·6도·4도) 위에서 울려도 화면은 내 음이다 — 강당에서 조율할 수 있어야 한다
+  test.each(PAIRS)('%s with another player on %s at −10 dB → shows %s', (mine, other) => {
+    expect(rate(mix([{ note: mine, gain: 1 }, { note: other, gain: 0.316 }]), mine, .35)).toBeGreaterThan(0.98)
   })
-  test.each(PAIRS)('%s + %s — 아래 음이 먼저 시작해도 위 성부 표시', (a, b) => {
-    expect(upperRate(ds(a, b, 3, 0.3), b, .65)).toBeGreaterThan(0.95)
+  test.each(PAIRS)('%s with another player on %s at −10 dB who started first → still %s from the first frames', (mine, other) => {
+    expect(rate(mix([{ note: other, gain: 0.316 }, { note: mine, gain: 1, from: 0.3 }]), mine, .65)).toBeGreaterThan(0.98)
   })
-  test('the label doesn’t wobble while a double stop is held', () => {
+  // 두 명이 같은 세기로 위아래에서 연주하면 어느 쪽인지 알 길이 없다 — 가장 낮은 배음렬(아래 음)을 흔들림 없이 보여 준다
+  test.each(PAIRS)('%s + %s at the same level → the lower note, steadily', (lo, up) => {
+    expect(rate(mix([{ note: lo, gain: 1 }, { note: up, gain: 1 }]), lo, .35)).toBeGreaterThan(0.98)
+  })
+  test.each(PAIRS)('%s + %s with the upper 6 dB louder → still the lower note', (lo, up) => {
+    expect(rate(mix([{ note: lo, gain: 1 }, { note: up, gain: 2 }]), lo, .35)).toBeGreaterThan(0.98)
+  })
+  test('the label doesn’t wobble while two notes are held', () => {
     const an = createAnalyzer({ sampleRate: SR }); an.setSettings({ rmsMin: .014, smoothing: .14, refHz: 440, tolCents: 15 })
-    const x = ds('D4', 'A4', 3), w = new Float32Array(N); let last = -1, sw = 0
+    const x = mix([{ note: 'D4', gain: 3 }, { note: 'A4', gain: 1 }]), w = new Float32Array(N); let last = -1, sw = 0
     for (let end = HOP; end <= x.length; end += HOP) { w.fill(0); const s0 = Math.max(0, end - N); w.set(x.subarray(s0, end), N - (end - s0))
       const f = an.process(w); if (end / SR < .35) continue; if (last >= 0 && f.midi !== last) sw++; last = f.midi }
     expect(sw).toBe(0)

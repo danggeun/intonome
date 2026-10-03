@@ -53,7 +53,6 @@ export const KO = {
   'tuner.playA': 'A 듣기',
   'tuner.playAAria': '기준음 A 듣기',
   'tuner.startSub': '마이크 사용을 물어볼게요',
-  'tuner.doubleStop': '더블스톱 · {note} {cents} ¢',
 
   // 오디오
   'audio.cantStart': '오디오를 시작할 수 없습니다',

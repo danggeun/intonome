@@ -169,10 +169,6 @@ button{font-family:inherit;color:inherit;}
 #tuner-acc{position:absolute;top:4px;left:calc(100% + 2px);font-family:'DM Mono',monospace;font-size:var(--fs-d1);font-weight:var(--fw-md);color:var(--tuner-ink);white-space:nowrap;transition:color var(--t-fast);}
 #tuner-acc.tune{color:var(--ok);}
 #tuner-oct{position:absolute;bottom:4px;left:calc(100% + 12px);font-family:'DM Mono',monospace;font-size:var(--fs-xl);color:var(--tuner-text-2);white-space:nowrap;}
-/* 중음 둘째 성부 — 비어 있으면 자리도 차지하지 않게 절대 배치. 초록 = 그 음도 맞음, 흰색 = 벗어남 */
-#tuner-dual{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);font-family:'DM Mono',monospace;font-size:var(--fs-sm);color:var(--tuner-text-1);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;}
-#tuner-dual.on{opacity:1;}
-#tuner-dual.tune{color:var(--ok-text);}
 #tuner-right{position:absolute;right:0;top:0;bottom:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;padding:2px 0;}
 /* Hz 는 ¢ 의 거울 자리. 값은 6칸 고정폭(core/hzReadout)이라 white-space:pre 로 앞 공백을 살린다 */
 #tuner-left{position:absolute;left:0;top:0;bottom:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:2px 0;pointer-events:none;}

@@ -14,7 +14,7 @@ Web (PWA) and Android. Works offline; audio never leaves the device.
 
 ## Features
 
-- **Tuner**: 40 Hz to 4.2 kHz, A = 410–466 Hz, tolerance ±5–25 ¢, pitch trace, double stops.
+- **Tuner**: 40 Hz to 4.2 kHz, A = 410–466 Hz, tolerance ±5–25 ¢, pitch trace. Reads your own string in a room full of players; a double stop reads as its lower note.
 - **Metronome**: sample-accurate clicks, 40–200 BPM, 2/4 · 3/4 · 4/4 · 6/8, four subdivisions, a full-screen dial.
 - **Play A and drone**: the A in your string's octave, or any of the 12 notes held while you practice. The tuner ignores both and keeps reading you.
 - **Recorder and editor**: waveform, A-B loop, bookmarks, 0.5–1.5× speed, save a section as WAV. Recordings are recovered if the app is killed.
