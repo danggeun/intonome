@@ -5,7 +5,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 ## [2.4.6] - 2026-10-03
 - The tuner reads your own string in a room full of other players. It now always shows the loudest sound it hears and no longer switches to a second note above it, which in a hall meant someone else's note
 - The double-stop line under the note is gone with it. A double stop reads as its lower note, steadily, like a single-note tuner
-- In fast passages the next note shows one to three frames (20–60 ms) later than before; that early switch was the same mechanism
+- When other sounds blur the period, the tuner no longer drops one or two octaves below your note: it prefers the shortest period the sound clearly repeats at
+- In fast passages the next note can show up to about 30 ms later than before; that early switch was the same mechanism
+- The benchmark has two new signals with three other players at -12 dB; 2.4.5 scored 0 on them
 
 ## [2.4.5] - 2026-09-28
 - The menu no longer has its own Start recording button. REC in the header starts and stops recording; the menu lists the recordings
