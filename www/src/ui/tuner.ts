@@ -84,20 +84,22 @@ function drawHistory(inTune: boolean): void {
   c.fillStyle = `rgba(${inkRgb},.42)`; c.font = "14px 'DM Mono', monospace"; c.textBaseline = 'bottom'
   c.textAlign = 'left'; c.fillText('\u266d', 8, H - 7)
   c.textAlign = 'right'; c.fillText('\u266f', W - 8, H - 7)
-  c.lineWidth = 3; c.lineCap = 'round' // 90 cm 에서 보이는 굵기
-  // 무엇을 잇고 무엇을 버릴지는 core/trace.ts 가 정한다
+  c.lineWidth = 3; c.lineCap = 'round'; c.lineJoin = 'round' // 90 cm 에서 보이는 굵기
+  // 트레이스는 항상 흰색 — 초록 선은 초록 띠 위에서 대비가 가장 낮아진다. '선이 띠 안' = '맞음' 이라 정보 손실은 없다.
+  // 오래된 쪽(위)이 옅어지는 건 그라디언트 한 번으로: 선분마다 반투명으로 따로 그으면 둥근 끝이 이음새마다 겹쳐 점이 찍힌다
+  const grad = c.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, `rgba(${inkRgb},.22)`); grad.addColorStop(1, `rgb(${inkRgb})`)
+  c.strokeStyle = grad
+  // 무엇을 잇고 무엇을 버릴지는 core/trace.ts 가 정한다. 이어지는 선분은 한 경로로 긋는다
   const { segs, breaks } = buildSegments(hist, histMidi)
   lastSkipped = breaks
+  const px = (v: number) => W / 2 + Math.max(-50, Math.min(50, v)) * ppc, py = (i: number) => (i + .5) * rH
+  let open = false, prevEnd = -1
   for (const [i, j] of segs) {
-    const v0 = hist[i]!, v1 = hist[j]!
-    const y0 = (i + .5) * rH, y1 = (j + .5) * rH
-    const x0 = W / 2 + Math.max(-50, Math.min(50, v0)) * ppc, x1 = W / 2 + Math.max(-50, Math.min(50, v1)) * ppc
-    c.globalAlpha = .22 + (i / (N - 1)) * .78
-    // 트레이스는 항상 흰색 — 초록 선은 초록 띠 위에서 대비가 가장 낮아진다. '선이 띠 안' = '맞음' 이라 정보 손실은 없다
-    c.strokeStyle = `rgb(${inkRgb})`
-    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke()
+    if (!open || i !== prevEnd) { if (open) c.stroke(); c.beginPath(); c.moveTo(px(hist[i]!), py(i)); open = true }
+    c.lineTo(px(hist[j]!), py(j)); prevEnd = j
   }
-  c.globalAlpha = 1; c.restore()
+  if (open) c.stroke()
+  c.restore()
 }
 
 // 음 표시

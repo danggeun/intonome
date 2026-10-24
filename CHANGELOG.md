@@ -2,6 +2,9 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.5.2] - 2026-10-24
+- The pitch trace no longer shows beads along its faded, older part. Each frame's piece was stroked separately with its own transparency, and the round ends of neighbouring pieces overlapped into a brighter dot at every joint. The line is now one path per unbroken run, faded by a single gradient from top to bottom
+
 ## [2.5.1] - 2026-10-24
 - With nothing played, the tuner shows nothing. A note now appears only after three consecutive frames (about 70 ms) read the same pitch within 20 cents; before, one confident frame was enough, so a syllable of distant talk, a bird or a click put a note on the screen for a moment, and since 2.5.0 it lingered half a second. On 60 s of synthetic outdoor ambience (talk snippets, birds, clicks, a passing car, wind): 2.4.6 showed a note 3 times a minute, 2.5.0 8 to 13 times, now 0. Practice time was never counted for these and still isn't
 - The first note after silence shows 46 ms later than in 2.5.0 (about 120 ms after the onset instead of 70). Once a note is on the screen nothing changes: note changes, the trace, the hold after the sound stops and the tuning accuracy are the same. The microphone sensitivity setting is unrelated and unchanged
