@@ -24,7 +24,7 @@ describe('analyzer: reference pitch (refHz) correction', () => {
   })
   test('at refHz=442, 440 reads A4 −8 ¢ (in tune at ±15)', () => {
     const f = settle(442, 440)
-    expect(f.midi).toBe(69); expect(f.cents).toBe(-8); expect(f.inTune).toBe(true)
+    expect(f.midi).toBe(69); expect(Math.round(f.cents)).toBe(-8); expect(f.inTune).toBe(true)
   })
   test('cello C2 (65.4 Hz) is C2 regardless of refHz', () => {
     for (const ref of [415, 442, 466]) { const f = settle(ref, 65.41 * ref / 440); expect(f.midi).toBe(36) }

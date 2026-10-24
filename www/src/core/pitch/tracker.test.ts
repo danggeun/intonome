@@ -65,6 +65,28 @@ describe('tracker', () => {
     expect(worst).toBeLessThanOrEqual(50)
   })
 
+  test('a far candidate never drags the needle — the display is either the old value or the confirmed new one, never in between', () => {
+    // 2.4.6 까지: 옥타브 아래 후보(−1200 ¢)가 들어오면 전환을 기다리는 동안 dispA 가 그쪽으로 미끄러져 시3·도♯3 같은 낸 적 없는 중간 음이 찍혔다
+    const t = createTracker()
+    for (let i = 0; i < 6; i++) t.push(196, 0.95, true, 0.2)
+    const a0 = t.push(196, 0.95, true, 0.2).a
+    const near = (x: number, y: number) => Math.abs(x - y) < 1
+    // 한 프레임 튐: 중앙값이 삼킨다 — 바늘 그대로
+    let o = t.push(98, 0.95, true, 0.2); expect(o.midi).toBe(55); expect(near(o.a, a0)).toBe(true)
+    o = t.push(196, 0.95, true, 0.2); expect(o.midi).toBe(55); expect(near(o.a, a0)).toBe(true)
+    // 이어지는 후보: 어느 프레임에서도 표시값은 옛 값(0 ¢ 근처) 아니면 새 값(−1200 ¢ 근처) — 그 사이 값은 없다
+    const seen: number[] = []
+    for (let i = 0; i < 6; i++) { o = t.push(98, 0.95, true, 0.2); seen.push(o.midi); expect(near(o.a, a0) || near(o.a, a0 - 1200), `frame ${i}: a=${o.a.toFixed(1)}`).toBe(true) }
+    expect(seen[0]).toBe(55); expect(seen[5]).toBe(43); expect(new Set(seen).size).toBe(2) // 솔3 → 솔2 로 한 번만 바뀐다
+  })
+  test('a slide keeps being followed past the switch band (the needle is already near the median)', () => {
+    const t = createTracker()
+    for (let i = 0; i < 6; i++) t.push(440, 0.95, true, 0.2)
+    let prev = -Infinity, back = 0, last = 0
+    for (let i = 1; i <= 16; i++) { const o = t.push(440 * Math.pow(2, i * 20 / 1200), 0.95, true, 0.2); if (o.a < prev - 1e-9) back++; prev = o.a; last = o.a } // 20 ¢ 씩 320 ¢ 까지 (라→시 를 지나 도♯ 까지)
+    expect(back).toBe(0); expect(last).toBeGreaterThan(250) // 뒤로 간 적 없고, 끝에서 목표(320 ¢) 가까이
+  })
+
   test('held count: +1 per missing frame, 0 on a fresh measurement (so the trace leaves no horizontal line)', () => {
     const t = createTracker()
     for (let i = 0; i < 4; i++) expect(t.push(440, 0.95, true, A).held).toBe(0)

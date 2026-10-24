@@ -22,6 +22,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] The tuner keeps working while the metronome clicks (only click windows are down-weighted)
 - [A] One note bowed again and again (G3 / D3 / A4 / A2 / E5; 40, 50 or 250 ms between strokes; smooth and rough attacks; three noise seeds) never goes to "--", never changes note, and leaves one unbroken pitch trace; after the sound stops the note lingers about 0.5 s (unit tests with the real analyzer)
 - [A] Another player's note above yours at −10 dB (fifth, third, sixth, fourth), even if it started first, never replaces your note; two notes at the same level read as the lower one, steadily
+- [A] The tuning routine over room rumble (brown noise): G3 alone with a −20 dB fundamental reads G3 in every frame; G3 + D4, D4 + A4 and A4 + E5 bowed together read the lower string in every frame (three noise seeds); single notes with irregular spectra are never shown an octave up (unit tests with the real analyzer; benchmark signals *_rumble)
+- [A] The needle never shows a value between two notes: a far candidate doesn't move it until confirmed, then it snaps; a slide is followed continuously (tracker unit tests)
 
 ## Metronome
 - [A] Plays without the mic

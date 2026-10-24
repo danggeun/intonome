@@ -47,6 +47,8 @@ function pinkNoise(n, gain = 1) {
   }
   return out
 }
+/** 갈색 잡음(1/f²): 방·폰의 저역 웅웅거림. 밴드 중앙값보다 저역이 20~30 dB 높다 */
+function brownNoise(n, gain = 1) { const out = new Float32Array(n); let b = 0; for (let i = 0; i < n; i++) { b = 0.997 * b + randn() * 0.08; out[i] = b * 0.3 * gain } return out }
 function whiteNoise(n, gain = 1) { const out = new Float32Array(n); for (let i = 0; i < n; i++) out[i] = randn() * 0.3 * gain; return out }
 
 /**
@@ -220,6 +222,14 @@ for (const [name, note] of single) {
   }
   crowd('violin_A4_in_crowd', 'A4', [['D4', 12], ['F#4', -15], ['C#5', 8]])
   crowd('violin_G3_in_crowd', 'G3', [['D4', -9], ['B3', 14], ['E3', 6]])
+  // 조율 루틴, 저역 웅웅 잡음(갈색, 1/f²)이 깔린 방: 바이올린 G 현은 기본음이 2배음보다 20 dB 약하다(몸통 공명이 280 Hz 위). 두 현을 같이 그으면 합성 주기는
+  // 두 음의 최대공약수(레4+라4 → 레3)인데 그 자리에는 소리가 없다 — 잡음 둔덕을 거기 있는 피크로 세면 아래 옥타브가 뜬다. 화면은 (아래) 음 그대로여야 한다
+  const violinG = h => (h === 1 ? 0.1 : Math.pow(h, -1.1) * (h % 2 === 0 ? 0.79 : 1))
+  const rumbly = (name, tone, m, note) => single(name, scaleToSnr(tone, brownNoise(tone.length, 1), 25), m, { note })
+  rumbly('violin_G3_rumble', bowed(() => midiHz(n2m('G3')), 2, { harmAmp: violinG }), n2m('G3'), 'G3 with a -20 dB fundamental over room rumble at -25 dB')
+  rumbly('violin_fifth_G3_D4_rumble', mix(bowed(() => midiHz(n2m('G3')), 2, { harmAmp: violinG }), bowed(() => midiHz(n2m('D4')), 2, { vibHz: 5.1 })), n2m('G3'), 'G3 + D4 bowed together over room rumble -> the lower note')
+  rumbly('violin_fifth_D4_A4_rumble', mix(bowed(() => midiHz(n2m('D4')), 2), bowed(() => midiHz(n2m('A4')), 2, { vibHz: 5.1 })), n2m('D4'), 'D4 + A4 bowed together over room rumble -> the lower note')
+  rumbly('violin_fifth_A4_E5_rumble', mix(bowed(() => midiHz(n2m('A4')), 2), bowed(() => midiHz(n2m('E5')), 2, { vibHz: 5.1 })), n2m('A4'), 'A4 + E5 bowed together over room rumble -> the lower note')
   // 플라졸렛(자연 하모닉스): 배음 1~2개만
   single('violin_E6_flageolet', bowed(() => midiHz(n2m('E6')), 2, { harmAmp: h => (h === 1 ? 1 : h === 2 ? 0.15 : 0), vibCents: 0, noiseDb: -40 }), n2m('E6'), { note: 'flageolet 1–2 partials' })
   // 스타카토 런 + 쉼표: 120 bpm 8분음표(150 ms 소리 + 100 ms 공백), 중간에 8분 쉼표(250 ms)

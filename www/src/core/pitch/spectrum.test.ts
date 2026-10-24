@@ -144,3 +144,60 @@ describe('the tuner shows the loudest sound, never a second voice above it', () 
     expect(sw).toBe(0)
   })
 })
+
+describe('the open strings in a room with low rumble — the tuning routine', () => {
+  // 피드백 #12(2026-10-24): 아이폰 웹앱에서 솔(G3)만 안 잡히고 두 현을 같이 그으면 뚝뚝 끊겼다. 바이올린 G 현은 기본음이 2·3배음보다 15~25 dB 약하고,
+  // 방·폰의 저역 웅웅 잡음은 밴드 중앙값보다 20~30 dB 높다 — 그 둔덕을 피크로 세면 옥타브 내리기가 솔3 를 솔2 로, 5도 중음의 최대공약수(레3)가 레4 자리를 빼앗았다
+  const SR = 48000, N = 4096, HOP = 1024
+  const NOTE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  const mi = (n: string) => { const m = /^([A-G]#?)(-?\d)$/.exec(n)!; return NOTE.indexOf(m[1]!) + (+m[2]! + 1) * 12 }
+  const fq = (n: string) => 440 * Math.pow(2, (mi(n) - 69) / 12)
+  const gauss = (seed: number) => { let s = seed; return () => { let u = 0, v = 0; while (!u) u = (s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32; while (!v) v = (s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32; return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) } }
+  /** 현 하나: 배음 세기(dB) h2 = 0, h3 −3, h4 −6, h5 −10, h6 −12, 그 위 −14 − 2(h−7); 기본음은 f0Db. 비브라토 ±5 ¢, 어택 80 ms */
+  function string(note: string, f0Db: number, seed: number, sec: number, levels?: (h: number) => number): Float32Array {
+    const f = fq(note), n = Math.round(sec * SR), x = new Float32Array(n); let ph = 0
+    const hdb = levels ?? ((h: number) => h === 1 ? f0Db : h === 2 ? 0 : h === 3 ? -3 : h === 4 ? -6 : h === 5 ? -10 : h === 6 ? -12 : -14 - 2 * (h - 7))
+    for (let i = 0; i < n; i++) { const t = i / SR, env = Math.min(1, t / 0.08), ff = f * 2 ** (5 * Math.sin(2 * Math.PI * 5.3 * t + seed) / 1200); ph += 2 * Math.PI * ff / SR
+      let s = 0; for (let h = 1; h <= 20; h++) { if (ff * h > SR * .45) break; s += 10 ** (hdb(h) / 20) * Math.sin(ph * h + h * 0.7) }
+      x[i] = 0.18 * s * env }
+    return x
+  }
+  /** 저역 웅웅 잡음(갈색, 1/f²): 세기는 현의 가장 센 배음 대비 dB */
+  function rumble(n: number, db: number, seed: number): Float32Array {
+    const g = gauss(seed), x = new Float32Array(n); let b = 0
+    for (let i = 0; i < n; i++) { b = 0.997 * b + g() * 0.08; x[i] = 0.18 * 10 ** (db / 20) * b }
+    return x
+  }
+  const sum = (...xs: Float32Array[]) => { const y = new Float32Array(xs[0]!.length); for (const x of xs) for (let i = 0; i < y.length; i++) y[i] = y[i]! + x[i]!; return y }
+  /** t ≥ skip 의 프레임이 보여 준 음이름 분포 { midi → 비율 } */
+  function shown(x: Float32Array, skip = 0.4): Map<number, number> {
+    const an = createAnalyzer({ sampleRate: SR, windowSize: N, hzMin: 40, hzMax: 4200 }); an.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: 15 })
+    const m = new Map<number, number>(); let F = 0
+    for (let end = N; end <= x.length; end += HOP) { const f = an.process(x.subarray(end - N, end)); if (end / SR < skip) continue; F++; const k = f.hz > 0 ? f.midi : -1; m.set(k, (m.get(k) ?? 0) + 1) }
+    for (const [k, v] of m) m.set(k, v / F)
+    return m
+  }
+  const only = (m: Map<number, number>, note: string) => (m.get(mi(note)) ?? 0)
+
+  test.each([[-20, -20], [-20, -30], [-30, -20], [-12, -20]])('G3 alone, fundamental %i dB, rumble %i dB → G3 in every frame', (f0Db, nz) => {
+    for (const seed of [3, 4, 5]) expect(only(shown(sum(string('G3', f0Db, 7, 1.6), rumble(Math.round(1.6 * SR), nz, seed))), 'G3')).toBe(1)
+  }, 20000)
+  const FIFTHS: Array<[string, string, number]> = []
+  for (const [lo, up] of [['G3', 'D4'], ['D4', 'A4'], ['A4', 'E5']] as const) for (const nz of [-20, -25]) FIFTHS.push([lo, up, nz])
+  test.each(FIFTHS)('%s + %s bowed together over rumble at %i dB → the lower note in every frame', (lo, up, nz) => {
+    for (const seed of [3, 5, 7])
+      expect(only(shown(sum(string(lo, lo === 'G3' ? -20 : 0, 7, 1.6), string(up, 0, 13, 1.6), rumble(Math.round(1.6 * SR), nz, seed))), lo), `${lo}+${up} rumble ${nz} seed ${seed}`).toBe(1)
+  }, 20000)
+  // 5도 중음의 최대공약수 배음렬을 알아보는 규칙(5·7 배음 자리가 비었다)이 한 음을 중음으로 오해해 한 옥타브 올리면 안 된다 —
+  // 배음 세기가 들쭉날쭉한(몸통 공명의 골, ±12 dB) 단음도, 기본음이 약한 단음도
+  test.each(['G3', 'D4', 'A4', 'C3', 'A2'])('%s with an irregular spectrum is never shown an octave up', note => {
+    for (let seed = 1; seed <= 8; seed++) {
+      const g = gauss(seed * 7919), dips = Array.from({ length: 21 }, () => 12 * (2 * (g() > 0 ? 1 : 0) - 1) * Math.abs(g()) / 2)
+      const x = string(note, -20 + dips[1]!, seed, 1.0, h => (h === 1 ? -20 : h === 2 ? 0 : h === 3 ? -3 : -6 - 2 * (h - 4)) + dips[h]!)
+      const m = shown(sum(x, rumble(x.length, -25, seed)), 0.3)
+      expect(m.get(mi(note) + 12) ?? 0, `${note} seed ${seed} shown an octave up`).toBe(0)
+      expect(m.get(mi(note) + 19) ?? 0, `${note} seed ${seed} shown a twelfth up`).toBe(0)
+      expect(only(m, note), `${note} seed ${seed}`).toBeGreaterThan(0.97)
+    }
+  }, 20000)
+})

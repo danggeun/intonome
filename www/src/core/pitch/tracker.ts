@@ -69,12 +69,12 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
       const diff = med - dispA, err = Math.abs(diff), sign = diff > 0 ? 1 : diff < 0 ? -1 : 0
       sameSignRun = sign !== 0 && sign === errSign ? sameSignRun + 1 : 1; errSign = sign
       const boost = sameSignRun >= 4 ? Math.min(1, Math.max(0, (err - 30) / 60)) : 0
-      dispA += diff * (alpha + (1 - alpha) * boost)
       const dev = med - (midi - 69) * 100
+      // 바늘은 중앙값이 지금 음의 띠 안에 있거나(보통) 바늘 가까이 있을 때(라벨이 아직 안 바뀐 슬라이드) 따라간다. 둘 다 아니면 — 멀리 떨어진 다른 음 후보 —
+      // 확인(switchFrames)되기 전엔 끌려가지 않는다: 한 옥타브 떨어진 후보로 미끄러지는 동안 낸 적 없는 중간 음이 화면에 뜨기 때문
+      if (Math.abs(dev) <= p.switchCents || err <= p.switchCents) dispA += diff * (alpha + (1 - alpha) * boost)
       if (Math.abs(dev) <= p.switchCents) outside = 0
-      else {
-        if (++outside >= p.switchFrames) { midi = Math.round(med / 100) + 69; dispA = med; outside = 0 }
-      }
+      else if (++outside >= p.switchFrames) { midi = Math.round(med / 100) + 69; dispA = med; outside = 0 }
       // 표시 일관성: 부스트가 dispA 를 한 프레임에 새 음까지 옮겨도 라벨은 switchFrames 를 기다리므로, ±50 ¢ 를 넘으면 라벨을 즉시 맞춘다
       if (Math.abs(dispA - (midi - 69) * 100) > HALF_SEMITONE) { midi = Math.round(dispA / 100) + 69; outside = 0 }
       return out()

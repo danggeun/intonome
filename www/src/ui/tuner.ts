@@ -119,7 +119,7 @@ function renderNote(midi: number, cents: number, inTune: boolean, hz: number): v
   q('tuner-oct').textContent = String(octaveOf(midi))
   q('tuner-enharmonic').textContent = secondary
   q('tuner-card').classList.toggle('in-tune', inTune)
-  q('tuner-cents').textContent = (cents > 0 ? '+' : '') + cents + ' ¢'
+  const c = Math.round(cents); q('tuner-cents').textContent = (c > 0 ? '+' : '') + c + ' ¢'
   const t = hzReadout.push(hz, midi, performance.now()); if (t !== null) q('tuner-hz').textContent = t
 }
 

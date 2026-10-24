@@ -29,6 +29,7 @@ export interface Frame {
   /** 표시 주파수 (트래커 출력), 없으면 -1 */
   hz: number
   midi: number
+  /** 가장 가까운 음에서의 편차 (¢, 반올림 안 함 — 글자는 화면이 반올림) */
   cents: number
   inTune: boolean
   playing: boolean
@@ -91,9 +92,10 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
     },
   }
   function refK(): number { return s.refHz / 440 }
-  /** hzNorm 은 440 격자로 정규화된 값. 표시 주파수는 되돌리고, cents 는 정규화 공간에서 계산하면 곧 refHz 기준이다 */
+  /** hzNorm 은 440 격자로 정규화된 값. 표시 주파수는 되돌리고, cents 는 정규화 공간에서 계산하면 곧 refHz 기준이다.
+   * cents 는 반올림하지 않는다 — 트레이스가 1 ¢(≈ 3 px) 격자에 걸려 계단처럼 보였다. 글자는 화면이 반올림하고, 맞음 판정은 그 글자와 같은 값으로 */
   function fill(f: Frame, hzNorm: number, midi: number): void {
     const ref440 = 440 * Math.pow(2, (midi - 69) / 12)
-    f.hz = hzNorm * refK(); f.midi = midi; f.cents = Math.round(1200 * Math.log2(hzNorm / ref440)); f.inTune = Math.abs(f.cents) <= s.tolCents
+    f.hz = hzNorm * refK(); f.midi = midi; f.cents = 1200 * Math.log2(hzNorm / ref440); f.inTune = Math.abs(Math.round(f.cents)) <= s.tolCents
   }
 }

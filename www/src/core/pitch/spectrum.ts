@@ -28,6 +28,8 @@ const UPPER_RATIOS = [9 / 8, 6 / 5, 5 / 4, 4 / 3, 7 / 5, 3 / 2, 8 / 5, 5 / 3, 9 
 const VETO_DB = 12 // 정합성 거부권을 가질 피크의 최소 세기 (최대 피크 대비)
 const K_MAX = 12 // f0 위로 조사할 배수 상한. 장2도(8:9)·단6도(5:8) 중음까지 덮는다
 const REL_DB = 40 // 배음으로 인정할 프레임 최대 피크 대비 상한 (창 누설 피크 배제)
+const HOLE_DB = 15 // 배음렬 구멍 판정: 양옆 배수보다 이만큼 낮아야 빈 자리
+const DROP_DB = [15, 20] as const // 옥타브 내리기: f0/2 · 1.5f0 피크가 배음렬의 가장 센 피크에서 이 안에 있어야 한다
 
   /** hz 근처(±max(1빈, tolRatio))의 국소 최대 빈. 이웃 피크의 창 누설 스커트는 단조 구간이라 제외된다 */
   function peakNear(hz: number, tolRatio: number): { db: number; bin: number } {
@@ -54,6 +56,14 @@ const REL_DB = 40 // 배음으로 인정할 프레임 최대 피크 대비 상�
     return p.db - localFloor(p.bin) >= minDb && p.db >= maxDb - REL_DB
   }
 
+  /** k·f0 자리가 배음렬의 '구멍' 인가 — 양옆 배수 (k±1)·f0 피크보다 둘 다 HOLE_DB 이상 낮다. 한 음의 배음은 1/h 로 서서히 줄어 이웃과 비슷하고, 없는 자리는 잡음 바닥이다 */
+  function hole(k: number, f0: number): boolean {
+    return peakNear(k * f0, 0.03).db < Math.min(peakNear((k - 1) * f0, 0.03).db, peakNear((k + 1) * f0, 0.03).db) - HOLE_DB
+  }
+  /** S(있는 배수들)가 완전5도 중음의 최대공약수 배음렬 모양인가: 2·3 과 6·8·9 중 하나는 있는데 5·7 자리가 구멍이다. 8f0 가 대역 밖이면 판단 불가 → 아니다 */
+  function fifthGap(S: number[], f0: number): boolean {
+    return 8 * f0 < sr / 2 && S.includes(2) && S.includes(3) && (S.includes(6) || S.includes(8) || S.includes(9)) && hole(5, f0) && hole(7, f0)
+  }
   /** r 이 중음 간격(UPPER_RATIOS) 중 하나와 3 % 안에서 맞는가 */
   function isUpperRatio(r: number): boolean { return UPPER_RATIOS.some(u => Math.abs(r / u - 1) < 0.03) }
 
@@ -82,16 +92,22 @@ const REL_DB = 40 // 배음으로 인정할 프레임 최대 피크 대비 상�
     // 화면의 음은 늘 '지금 울리는 가장 낮은 배음렬의 기본음' 이다. 다른 악기·중음의 위 음으로 넘어가는 규칙은 두지 않는다 —
     // 그런 규칙은 다른 연주자가 있는 방에서 남의 음을 내 음보다 먼저 고른다. 프레임 사이에 기억하는 상태도 없다
     octaveCorrect(f0) {
-      const p0 = peakNear(f0, 0.03).db
-      // 한 옥타브 위로 틀린 경우: f0/2 와 3f0/2 가 f0 피크에 견줄 만큼(−15/−20 dB 이내) 있어야 한다 — 공명 개방현만으로 떨어지지 않게
-      if (present(f0 / 2) && present(f0 * 1.5) && peakNear(f0 / 2, 0.03).db >= p0 - 15 && peakNear(f0 * 1.5, 0.03).db >= p0 - 20) return f0 / 2
+      // 한 옥타브 위로 틀린 경우: 아래 옥타브의 홀수 배음 f0/2 와 3f0/2 가 진짜로 있고, 이 배음렬의 가장 센 피크에 견줄 만큼(−15/−20 dB 이내) 세야 한다 —
+      // 공명 개방현·잡음만으로 떨어지지 않게. 기준은 f0 피크가 아니라 k=1..4 중 가장 센 피크: 바이올린 G 현처럼 기본음이 2·3배음보다 20 dB 약한 음은 흔하고,
+      // 약한 기본음을 기준으로 재면 저역 잡음이 그 문턱을 넘어 솔3 를 솔2 로 내린다
+      let ref = -Infinity
+      for (let k = 1; k <= 4; k++) { if (f0 * k >= sr / 2) break; const v = peakNear(f0 * k, 0.03).db; if (v > ref) ref = v }
+      if (present(f0 / 2) && present(f0 * 1.5) && peakNear(f0 / 2, 0.03).db >= ref - DROP_DB[0] && peakNear(f0 * 1.5, 0.03).db >= ref - DROP_DB[1]) return f0 / 2
 
       // f0 위쪽 배수 자리 조사. 중음이면 YIN 은 두 음의 최대공약수(가상 기본음)를 내고, 실제 음은 그 정수배 자리에 있다
       const S: number[] = []
       for (let k = 1; k <= K_MAX; k++) { if (f0 * k >= sr / 2) break; if (present(f0 * k, 6)) S.push(k) }
       if (S.length === 0) return f0 // 근거 없음 — 호출부가 신뢰도로 처리한다
       const m = S[0]!
-      if (m === 1) return f0
+      // f0 자리에 피크가 있어도 기본음이 아닐 수 있다: 완전5도 중음(레4+라4)은 최대공약수(레3) 주기로 울려 YIN 이 레3 를 내고, 방·폰의 저역 웅웅 잡음이
+      // 그 자리에 '피크' 를 만든다(저역 잡음은 밴드 중앙값보다 20~30 dB 높다). 배음렬의 모양으로 가른다 — 한 음이면 2·3·4·5·6·7 이 다 있고(1/h 로 서서히 줄어든다),
+      // 5도의 최대공약수 배음렬 {2,3,4,6,8,9,…} 은 5·7 자리가 비어 있다. 그러면 가장 낮은 실제 배음렬은 2f0 (아래 음)
+      if (m === 1) return fifthGap(S, f0) ? f0 * 2 : f0
       // 두 번째 배음렬 후보: m 의 배수가 아니면서 m 과의 비율이 중음 간격(옥타브 이내 단순 비율)인 자리 — 우연한 높은 k 배제
       const other = S.find(k => k % m !== 0 && isUpperRatio(k / m))
       // 정합성: m·other 의 배수가 아닌 강한 피크(최대 −VETO_DB 이내)가 있으면 기본음이 약한 단음의 배음렬이다 (첼로 C2) → f0 유지.
