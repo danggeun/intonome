@@ -3,7 +3,7 @@
  * BPM/볼륨 변경은 다음 틱부터 반영, 박자·세분 변경은 마디를 처음부터 다시 센다.
  */
 import { metroStore, sessionStore, settingsStore, CFG, type SubDiv, type TimeSig } from '../state/index.ts'
-import { totalTicks as _totalTicks } from '../core/metro/sequencer.ts'
+import { totalTicks as _totalTicks, type Pattern } from '../core/metro/sequencer.ts'
 import { getContext, micOpen, muteAnalysis, audioSupported, suspendIfIdle, output, outputLatency } from './engine.ts'
 import { t } from '../core/i18n/index.ts'
 import metroWorkletUrl from './metro.worklet.ts?worker&url'
@@ -15,7 +15,7 @@ let tickN = 0
 
 export function totalTicks(): number { return _totalTicks(settingsStore.get()) }
 
-function pattern() { const s = settingsStore.get(); return { bpm: s.bpm, timeSig: s.timeSig, subDiv: s.subDiv, volume: s.metroVol, muted: sessionStore.get().recording } }
+function pattern(): Pattern { const s = settingsStore.get(); return { bpm: s.bpm, timeSig: s.timeSig, subDiv: s.subDiv, volume: s.metroVol, muted: sessionStore.get().recording, refHz: s.refHz } }
 
 async function ensureNode(): Promise<AudioWorkletNode> {
   const ac = getContext()
@@ -65,5 +65,5 @@ export function setTimeSig(v: TimeSig): void { const patch: { timeSig: TimeSig; 
 export function setSubDiv(v: SubDiv): void { settingsStore.set({ subDiv: v }); restartBar() }
 export function setMetroVol(v: number): void { settingsStore.set({ metroVol: v }) }
 
-settingsStore.select(s => [s.bpm, s.metroVol].join(), pushPattern)
+settingsStore.select(s => [s.bpm, s.metroVol, s.refHz].join(), pushPattern) // 기준음이 바뀌면 클릭 음높이도 그 기준의 반음 사이로
 sessionStore.select(s => s.recording, pushPattern) // 녹음 중 클릭 무음 (시각 피드백은 유지)

@@ -20,7 +20,9 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Reference drum (410–466 Hz) drag → A= updates, cents recalculated, setting saved
 - [A] Settings: tolerance ±5/10/15/20/25 changes the band width
 - [A] Settings: response slow/normal/fast, mic sensitivity low/normal/high → saved and restored
-- [A] The tuner keeps working while the metronome clicks (only click windows are down-weighted)
+- [A] The tuner keeps working while the metronome clicks, at any tempo and subdivision (16ths up to 160 bpm, triplets, 8ths): a held note shows in every frame with the click at 0.3× and 1× the instrument, an A major scale under 16ths at A = 415/442/466 shows every note within 0.2 s, notes on either side of each click pitch read at ±25 cents, and the clicks alone never show as a note (unit tests with the real sequencer and analyzer)
+- [A] Click pitches sit exactly between two notes of the reference pitch, for every reference 410–466 Hz; no note played less than 30 cents off is taken for a click (unit tests)
+- [A] The cents number and the green are calm: vibrato ±15 cents keeps the number still while the trace swings; +14 cents with ±6 vibrato at ±15 tolerance keeps the green on; after turning a peg the number reads 0 within 0.45 s; a 25-cent step reads within 3 cents when the line arrives (unit tests)
 - [A] One note bowed again and again (G3 / D3 / A4 / A2 / E5; 40, 50 or 250 ms between strokes; smooth and rough attacks; three noise seeds) never goes to "--", never changes note, and leaves one unbroken pitch trace; after the sound stops the note lingers about 0.5 s (unit tests with the real analyzer)
 - [A] Another player's note above yours at −10 dB (fifth, third, sixth, fourth), even if it started first, never replaces your note; two notes at the same level read as the lower one, steadily
 - [A] The tuning routine over room rumble (brown noise): G3 alone with a −20 dB fundamental reads G3 in every frame; G3 + D4, D4 + A4 and A4 + E5 bowed together read the lower string in every frame (three noise seeds); single notes with irregular spectra are never shown an octave up (unit tests with the real analyzer; benchmark signals *_rumble)
@@ -36,7 +38,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Playing never changes the size; the size button goes collapsed ⇄ expanded, and from full one step down to expanded. Full is reached by dragging the card up (on a wide screen, where nothing collapses, the button goes expanded ⇄ full)
 - [A] Dragging the card follows the finger: up grows a step, down shrinks a step; a short drag springs back. With reduced motion a 40 px push moves one step, up or down
 - [A] Volume slider (card and full mode stay in sync) → saved and restored
-- [A] While recording, clicks are silent and beats stay visible
+- [A] While recording, clicks are silent and beats stay visible; starting a recording with the metronome on says so ("녹음 시작 · 녹음에 섞이지 않게 메트로놈 소리를 껐어요"), and so does starting the metronome during a recording (e2e)
 - [A] Timing: the worklet renders 120 bpm with ≤1-sample jitter over 20 s (OfflineAudioContext e2e)
 - [A] Changing BPM while playing takes effect on the next tick without restarting
 - [A] Full mode fits every tested screen size without scrolling; dial text keeps its rendered size

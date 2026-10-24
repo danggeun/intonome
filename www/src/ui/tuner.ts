@@ -113,7 +113,8 @@ function renderEmpty(): void {
   hzReadout.reset(); q('tuner-hz').textContent = ''
   q('tuner-card').classList.remove('in-tune')
 }
-function renderNote(midi: number, cents: number, inTune: boolean, hz: number): void {
+/** readCents = 사람이 읽는 숫자(차분한 값), inTune 도 그 숫자로 정해진다 */
+function renderNote(midi: number, readCents: number, inTune: boolean, hz: number): void {
   const { name, secondary } = noteLabel(midi, settingsStore.get().noteNames, getLang())
   const base = name.replace('♯', ''), acc = name.includes('♯') ? '♯' : ''
   const nEl = q('tuner-note'); nEl.textContent = base; nEl.className = inTune ? 'tune' : ''
@@ -121,7 +122,7 @@ function renderNote(midi: number, cents: number, inTune: boolean, hz: number): v
   q('tuner-oct').textContent = String(octaveOf(midi))
   q('tuner-enharmonic').textContent = secondary
   q('tuner-card').classList.toggle('in-tune', inTune)
-  const c = Math.round(cents); q('tuner-cents').textContent = (c > 0 ? '+' : '') + c + ' ¢'
+  q('tuner-cents').textContent = (readCents > 0 ? '+' : '') + readCents + ' ¢'
   const t = hzReadout.push(hz, midi, performance.now()); if (t !== null) q('tuner-hz').textContent = t
 }
 
@@ -157,7 +158,7 @@ export function mountTuner(): void {
     raf = null; if (!dirty) return; dirty = false
     const s = tunerStore.get()
     if (s.hz === -1) { renderEmpty(); drawHistory(false); return }
-    renderNote(s.midi, s.cents, s.inTune, s.hz); drawHistory(s.inTune)
+    renderNote(s.midi, s.readCents, s.inTune, s.hz); drawHistory(s.inTune) // 숫자는 읽는 값, 선은 매 프레임 cents
   }
   tunerStore.select(s => s.sampleRate, sr => resizeHist(sr), { immediate: true })
   // 캔버스 크기가 바뀌면 마이크 프레임이 없어도 다시 그린다 — 안 그리면 옛 크기의 비트맵이 늘어나 ♭♯ 가 길쭉해진다(시작 버튼 화면)

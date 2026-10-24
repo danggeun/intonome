@@ -15,7 +15,7 @@ const db = v => (v <= 0 ? -Infinity : 20 * Math.log10(v))
 function renderNow(kind, volume) {
   // 각 종류의 첫 등장 틱: accent 0, beat 3(subDiv 3), sub 1
   const tick = kind === 'accent' ? 0 : kind === 'beat' ? 3 : 1
-  const seq = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 3, volume, muted: false })
+  const seq = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 3, volume, muted: false, refHz: 440 })
   seq.start(0)
   const total = Math.ceil(4 * sr), buf = new Float32Array(total), out = new Float32Array(128)
   const marks = []
@@ -61,7 +61,7 @@ for (const kind of KINDS) {
 }
 // 리미터가 실제로 필요한지 (겹침 최악 조건)
 {
-  const seq = createSequencer(sr, { bpm: 220, timeSig: 4, subDiv: 3, volume: 1, muted: false }); seq.start(0)
+  const seq = createSequencer(sr, { bpm: 220, timeSig: 4, subDiv: 3, volume: 1, muted: false, refHz: 440 }); seq.start(0)
   const out = new Float32Array(128); let raw = 0, limited = 0
   for (let s = 0; s < 5 * sr; s += 128) { out.fill(0); seq.render(out, s); for (const v of out) { raw = Math.max(raw, Math.abs(v)); limited = Math.max(limited, Math.abs(softClip(v))) } }
   console.log(`\n최악 겹침(220 BPM 16분음표, 슬라이더 1.0): 리미터 전 피크 ${db(raw).toFixed(2)} dBFS → 후 ${db(limited).toFixed(2)} dBFS (하드 클리핑 없음: ${limited < 1})`)

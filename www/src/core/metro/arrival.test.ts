@@ -41,7 +41,7 @@ describe('arrival: candidate agreement rules', () => {
 // 앱과 같은 흐름 (클릭 렌더 → 방 → 워커 규칙 → 분석기)
 const SR = 48000, WIN = 4096, CH = 1024, BLK = 256
 function renderMetro(sec: number, bpm = 80) {
-  const seq = createSequencer(SR, { bpm, timeSig: 4, subDiv: 1, volume: 1, muted: false }); seq.start(0)
+  const seq = createSequencer(SR, { bpm, timeSig: 4, subDiv: 1, volume: 1, muted: false, refHz: 440 }); seq.start(0)
   const n = Math.ceil(sec * SR), buf = new Float32Array(n), out = new Float32Array(128), marks: Array<{ sample: number }> = []
   for (let s = 0; s < n; s += 128) { out.fill(0); for (const ev of seq.render(out, s)) marks.push(ev); buf.set(out.subarray(0, Math.min(128, n - s)), s) }
   return { buf, marks }

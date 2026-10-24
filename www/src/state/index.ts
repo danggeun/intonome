@@ -67,6 +67,8 @@ export interface TunerState {
   hz: number
   midi: number
   cents: number
+  /** 사람이 읽는 cents 숫자 — 차분하게(core/pitch/readout). 초록(inTune)도 이 값으로 */
+  readCents: number
   inTune: boolean
   /** 추정 신뢰도 0..1 (YIN 주기성) */
   conf: number
@@ -79,7 +81,7 @@ export interface TunerState {
   lastActivityMs: number
 }
 export const tunerStore = createStore<TunerState>({
-  micReady: false, micReopening: false, running: false, frame: 0, hz: -1, midi: -1, cents: 0, inTune: false, conf: 0, held: 0, sampleRate: 44100, playing: false, lastActivityMs: Date.now(),
+  micReady: false, micReopening: false, running: false, frame: 0, hz: -1, midi: -1, cents: 0, readCents: 0, inTune: false, conf: 0, held: 0, sampleRate: 44100, playing: false, lastActivityMs: Date.now(),
 })
 
 // 메트로놈

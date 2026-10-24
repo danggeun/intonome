@@ -2,6 +2,14 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.5.3] - 2026-10-24
+- The tuner keeps working with the metronome on, at any tempo and subdivision. Every click hid about 0.2 s from the tuner, so once clicks came closer than that, nothing was left: from 16ths at 66 bpm, triplets at 86 and 8ths at 130 the tuner showed nothing at all, even with earphones (2.5.1 lowered these limits; in 2.5.0 they were about 15 % higher). Now the click is ignored only when the tuner actually reads the click's pitch. On a held A4: 0 % → 100 % of frames at all of these settings and up to 16ths at 160 bpm; an A major scale under 16ths at 100 bpm shows every note within 0.2 s
+- To make that safe, the clicks sit exactly between two notes of your reference pitch (A =) — 19 to 34 cents from the old 1800 / 1100 / 750 Hz, and they move with the A = drum. A note you play less than 30 cents off is never the click's pitch. Where a click and a high note together read like a different note for two frames, a note change inside a click needs one more frame (23 ms)
+- The cents number and the green are calm. The number shows the average of the last 0.37 s (two vibrato cycles) and changes only when that average moves 1.5 cents; when the pitch moves steadily one way, as when turning a peg, it follows at once. The green uses the same number, so they always agree. The trace and the note name are as fast as before. Vibrato ±15 cents: the number changed 43 times a second, now 0; +14 cents with ±6 vibrato at the ±15 tolerance: the green flickered 9 times a second, now 0. After you stop turning a peg the number reads 0 about 0.4 s later (was 0.17 s)
+- Starting a recording with the metronome on now says that the metronome is muted so it stays out of the recording, and so does starting the metronome during a recording. The beat lights keep going as before
+- e2e: the card-swipe helper drags past the step threshold and pauses before letting go, so the result no longer depends on how fast the test machine is
+- New unit tests: 23 metronome + tuner cases (2.5.2 fails 19), click pitches for every reference 410–466 Hz, the calm readout and the click-window switch rule
+
 ## [2.5.2] - 2026-10-24
 - The pitch trace no longer shows beads along its faded, older part. Each frame's piece was stroked separately with its own transparency, and the round ends of neighbouring pieces overlapped into a brighter dot at every joint. The line is now one path per unbroken run, faded by a single gradient from top to bottom
 

@@ -57,6 +57,7 @@ export const EN: Record<TKey, string> = {
   'audio.interruptedTap': 'Audio was interrupted. Tap the screen to restart',
 
   'metro.playStop': 'Play/stop metronome',
+  'metro.silentWhileRec': 'The metronome is muted while recording',
   'metro.expand': 'Expand metronome',
   'metro.expandMore': 'Expand metronome further',
   'metro.collapse': 'Collapse metronome',
@@ -83,6 +84,7 @@ export const EN: Record<TKey, string> = {
   'menu.rec': 'Recordings',
 
   'rec.started': 'Recording',
+  'rec.startedMetroSilent': 'Recording · The metronome is muted so it stays out of the recording',
   'rec.done': 'Recording saved',
   'rec.empty': 'No recordings yet',
   'rec.showOlder': 'Show {n} older {n|recording|recordings}',

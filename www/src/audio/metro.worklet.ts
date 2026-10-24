@@ -11,7 +11,7 @@ declare function registerProcessor(name: string, ctor: unknown): void
 declare class AudioWorkletProcessor { readonly port: MessagePort; constructor() }
 
 class MetroProcessor extends AudioWorkletProcessor {
-  private seq = createSequencer(sampleRate, { bpm: 80, timeSig: 4, subDiv: 1, volume: .7, muted: false })
+  private seq = createSequencer(sampleRate, { bpm: 80, timeSig: 4, subDiv: 1, volume: .7, muted: false, refHz: 440 })
   constructor() {
     super()
     this.port.onmessage = (e: MessageEvent) => {

@@ -1,12 +1,14 @@
 /**
  * 메트로놈 시퀀서 — 샘플 단위로 클릭 위치를 정하고 파형을 버퍼에 렌더한다. 순수 (워클릿·테스트 공용).
  * 오디오 스레드는 백그라운드에서 스로틀되지 않고, 샘플 단위 위치로 튜너 뮤트 구간을 정확히 잡는다.
- * 클릭음: 강박 1800 / 박 1100 / 세분 750 Hz 삼각파, 50 ms 지수 감쇠. 붓점('d')은 3:1.
+ * 클릭음: 강박 1800 / 박 1100 / 세분 750 Hz 근처 삼각파(기준음의 두 반음 사이 — clickPitch.ts), 50 ms 지수 감쇠. 붓점('d')은 3:1.
  */
+import { CLICK_BASE_HZ, clickHz } from './clickPitch.ts'
 export type SubDiv = 1 | 2 | 3 | 4 | 'd' // 4 = 16분음표
 export type TimeSig = 1 | 2 | 3 | 4 | 6 // 1 = 박자표 없음(정박만)
 
-export interface Pattern { bpm: number; timeSig: TimeSig; subDiv: SubDiv; volume: number; muted: boolean }
+/** refHz = 튜너 기준음(A=). 클릭 음높이를 그 기준의 두 반음 사이에 둔다 */
+export interface Pattern { bpm: number; timeSig: TimeSig; subDiv: SubDiv; volume: number; muted: boolean; refHz: number }
 
 export interface ClickEvent { tick: number; sample: number; kind: 'accent' | 'beat' | 'sub' }
 
@@ -29,7 +31,6 @@ export function tickIntervalS(p: Pick<Pattern, 'bpm' | 'timeSig' | 'subDiv'>, ti
   return b / p.subDiv
 }
 
-const FREQ = { accent: 1800, beat: 1100, sub: 750 } as const
 /** 클릭 피크 (슬라이더 최대). 위계 0 / −4.4 / −10.5 dB */
 const VOL = { accent: 1.0, beat: .60, sub: .30 } as const
 /** 감쇠 바닥(피크 대비 2 %) → τ = 50 / ln(50) ≈ 12.8 ms, 세기와 무관 */
@@ -89,7 +90,7 @@ export function createSequencer(sampleRate: number, initial: Pattern): Sequencer
           events.push({ tick, sample: startSample, kind })
           const vol = VOL[kind] * p.volume
           // phase 0.25 = 삼각파 영점에서 시작 (0 이면 +1 스텝 트랜지언트). vol≈0 은 렌더 생략 (0·∞ = NaN 방지)
-          if (!p.muted && vol > 0.001) active.push({ startSample, phase: 0.25, freq: FREQ[kind], vol, seed: (startSample * 2654435761) >>> 0, prev: 0 })
+          if (!p.muted && vol > 0.001) active.push({ startSample, phase: 0.25, freq: clickHz(CLICK_BASE_HZ[kind], p.refHz), vol, seed: (startSample * 2654435761) >>> 0, prev: 0 })
           lastClickSample = nextClickSample; lastTick = tick
           nextClickSample += tickIntervalS(p, tick) * sampleRate
           tick = (tick + 1) % totalTicks(p)

@@ -53,20 +53,23 @@ const sleep = (p, ms) => p.waitForTimeout(ms)
 /** 색·캔버스 픽셀을 다크 토큰 기준으로 재는 시나리오용 — 기본 테마는 라이트라 다크를 저장해 두고 연다 */
 const darkTheme = p => p.addInitScript(() => { const s = localStorage.getItem('intonome_settings_v1'); if (!s || JSON.parse(s).__seed) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', noteNames: 'ko', theme: 'dark' })) })
 /** 카드를 아래로 밀어 한 단계 내리기. 헤더의 빈 가운데에서 시작한다 */
+/** 한 단계 넘기는 끌기: 단계 거리의 30 % 를 확실히 넘게(200 px) 끌고, 멈춘 뒤 놓는다 — 놓는 속도를 0 으로 만들어 러너 속도와 무관하게 거리로만 판정되게.
+ * (60 px 를 끌고 바로 놓으면 튕김 속도에 기대는데, 느린 러너에서는 손 떼기가 100 ms 넘게 늦게 도착해 속도 0 → 되돌아갔다) */
+const SWIPE_PX = 200
 const swipeDown = async (p, sel = '#metro-hdr') => {
   const b = await p.locator(sel).boundingBox()
   const x = b.x + b.width / 2, y = b.y + Math.min(20, b.height / 2)
   await p.mouse.move(x, y); await p.mouse.down()
-  for (let i = 1; i <= 6; i++) await p.mouse.move(x, y + (60 * i) / 6)
-  await p.mouse.up(); await settled(p)
+  for (let i = 1; i <= 10; i++) await p.mouse.move(x, y + (SWIPE_PX * i) / 10)
+  await p.waitForTimeout(150); await p.mouse.up(); await settled(p)
 }
 /** 카드를 위로 밀어 한 단계 올리기 (펼침 → 펼침2 는 이 길뿐이다, 넓은 화면 빼고) */
 const swipeUp = async (p, sel = '#metro-hdr') => {
   const b = await p.locator(sel).boundingBox()
   const x = b.x + b.width / 2, y = b.y + Math.min(20, b.height / 2)
   await p.mouse.move(x, y); await p.mouse.down()
-  for (let i = 1; i <= 6; i++) await p.mouse.move(x, y - (60 * i) / 6)
-  await p.mouse.up(); await settled(p)
+  for (let i = 1; i <= 10; i++) await p.mouse.move(x, y - (SWIPE_PX * i) / 10)
+  await p.waitForTimeout(150); await p.mouse.up(); await settled(p)
 }
 /** 펼침2 로: 폰은 (접혀 있으면 버튼으로 펼치고) 위로 밀기, 넓은 화면은 버튼 한 번 */
 const toFull = async (p) => {
@@ -215,6 +218,21 @@ await scenario('metro: bpm +/- , clamp, drag, time sig 6/8 disables subdiv, dots
 })
 // 재생 중 박자표를 바꾸면 마디가 다시 시작되고 첫 박은 왼쪽 끝
 // 전에는 화면의 스윕 방향이 리셋되지 않아 바꾸는 순간의 방향에 따라 좌/우가 갈렸다.
+await scenario('rec: recording with the metronome on says the click is muted, and so does starting the metronome while recording', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 900)
+  const toasts = () => p.evaluate(() => [...document.querySelectorAll('#toast-host .toast')].map(t => t.textContent).join(' | '))
+  await p.click('#metro-play-hdr-btn'); await sleep(p, 400)
+  await p.click('#rec-hdr-btn'); await sleep(p, 1200)
+  assert.ok((await toasts()).includes('녹음 시작 · 녹음에 섞이지 않게 메트로놈 소리를 껐어요'), await toasts())
+  await p.click('#metro-play-hdr-btn'); await sleep(p, 2800) // 정지, 토스트가 사라질 때까지
+  await p.click('#metro-play-hdr-btn'); await sleep(p, 400)
+  assert.ok((await toasts()).includes('녹음 중이라 메트로놈 소리는 꺼져 있어요'), await toasts())
+  await p.click('#rec-hdr-btn'); await sleep(p, 800); await p.click('#metro-play-hdr-btn'); await sleep(p, 2800)
+  // 메트로놈 없이 녹음하면 평소 문구
+  await p.click('#rec-hdr-btn'); await sleep(p, 1200)
+  const t = await toasts(); assert.ok(t.includes('녹음 시작') && !t.includes('메트로놈'), t)
+  await p.click('#rec-hdr-btn'); await sleep(p, 800)
+})
 await scenario('metro: changing the time signature while playing starts the first beat on the left', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel').catch(() => {})
   await toFull(p) // 전용 모드 (13칸 줄이 크게 보인다)
@@ -1065,7 +1083,7 @@ await scenario('metro accuracy: worklet renders 120 bpm clicks with ≤1-sample 
     await ac.audioWorklet.addModule(url)
     const n = new AudioWorkletNode(ac, 'gp-metro', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1] })
     n.connect(ac.destination)
-    n.port.postMessage({ type: 'pattern', pattern: { bpm: 120, timeSig: 4, subDiv: 1, volume: .7, muted: false } }); n.port.postMessage({ type: 'start' })
+    n.port.postMessage({ type: 'pattern', pattern: { bpm: 120, timeSig: 4, subDiv: 1, volume: .7, muted: false, refHz: 440 } }); n.port.postMessage({ type: 'start' })
     await new Promise(r => setTimeout(r, 200)) // 오프라인 렌더는 순식간이라 포트 메시지가 먼저 도착하도록
     const buf = await ac.startRendering(); const x = buf.getChannelData(0)
     // 온셋: 200 ms 이상 조용하다가 |x|>0.05 가 되는 샘플

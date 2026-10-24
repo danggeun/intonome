@@ -175,3 +175,38 @@ describe('nothing is played — the tuner shows nothing', () => {
     expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.15)
   })
 })
+
+describe('the number and the green are calm; the line stays live', () => {
+  // 비브라토 ±15 ¢ 에서 숫자가 초당 43 번, 허용 경계(+14 ¢)에서 초록이 초당 9 번 바뀌었다 (2.5.2). 숫자와 초록은 0.37 s 평균으로 읽고, 선은 매 프레임 그대로
+  const sr = 48000, N = 4096, HOP = 1024
+  function frames(centsAt: (t: number) => number, sec: number, tol = 15) {
+    const n = Math.round(sec * sr), x = new Float32Array(n); let ph = 0
+    for (let i = 0; i < n; i++) { const t = i / sr; ph += 2 * Math.PI * 440 * Math.pow(2, centsAt(t) / 1200) / sr; let s = 0; for (let h = 1; h <= 10; h++) s += Math.sin(ph * h + h) / h; x[i] = 0.12 * s * Math.min(1, t / 0.08) }
+    const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: tol })
+    const out: Array<{ t: number; read: number; cents: number; inTune: boolean }> = []
+    for (let end = N; end <= n; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0) out.push({ t: end / sr, read: f.readCents, cents: f.cents, inTune: f.inTune }) }
+    return out
+  }
+  const changesPerS = (o: ReturnType<typeof frames>, k: 'read' | 'inTune') => { const s = o.filter(f => f.t > 0.8); let c = 0; for (let i = 1; i < s.length; i++) if (s[i]![k] !== s[i - 1]![k]) c++; return c / (s.length * HOP / sr) }
+  test.each([[5.5], [4.5], [6.5]])('vibrato ±15 ¢ at %s Hz: the number barely moves, the line still swings', hz => {
+    const o = frames(t => 15 * Math.sin(2 * Math.PI * hz * t), 4)
+    expect(changesPerS(o, 'read')).toBeLessThan(1)
+    const late = o.filter(f => f.t > 0.8); expect(Math.max(...late.map(f => Math.abs(f.read)))).toBeLessThanOrEqual(2)
+    expect(Math.max(...late.map(f => f.cents)) - Math.min(...late.map(f => f.cents))).toBeGreaterThan(4) // 선은 비브라토를 보여 준다
+  })
+  test('+14 ¢ with ±6 ¢ vibrato at a ±15 tolerance: green stays on, number and green agree', () => {
+    const o = frames(t => 14 + 6 * Math.sin(2 * Math.PI * 5.5 * t), 4)
+    expect(changesPerS(o, 'inTune')).toBe(0); expect(o.filter(f => f.t > 0.8).every(f => f.inTune && Math.abs(f.read) <= 15)).toBe(true)
+  })
+  test('turning a peg from −30 to 0 ¢ over 2 s: the number follows within 7 ¢ and reads 0 within 0.45 s after stopping', () => {
+    const o = frames(t => t < 0.5 ? -30 : t < 2.5 ? -30 + 15 * (t - 0.5) : 0, 4)
+    for (const f of o) if (f.t > 0.9 && f.t < 2.5) expect(Math.abs(f.read - (-30 + 15 * (f.t - 0.5)))).toBeLessThanOrEqual(7)
+    const zero = o.find(f => f.t >= 2.5 && f.read === 0); expect(zero).toBeDefined(); expect(zero!.t - 2.5).toBeLessThan(0.45)
+    expect(o.filter(f => f.t > 3.2).every(f => f.read === 0 && f.inTune)).toBe(true)
+  })
+  test('a 25 ¢ step: the number is within 3 ¢ when the line arrives (0.4 s) and exact within 0.75 s', () => {
+    const o = frames(t => t < 1.5 ? 0 : 25, 3)
+    const near = o.find(f => f.t >= 1.5 && Math.abs(f.read - 25) <= 3), exact = o.find(f => f.t >= 1.5 && Math.abs(f.read - 25) <= 1)
+    expect(near!.t - 1.5).toBeLessThan(0.45); expect(exact!.t - 1.5).toBeLessThan(0.75)
+  })
+})

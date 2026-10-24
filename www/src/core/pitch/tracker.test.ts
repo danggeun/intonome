@@ -94,6 +94,15 @@ describe('tracker', () => {
     expect(back).toBe(0); expect(last).toBeGreaterThan(250) // 뒤로 간 적 없고, 끝에서 목표(320 ¢) 가까이
   })
 
+  test('inside metronome click windows a different note needs three frames, outside two', () => {
+    const settle = () => { const t = createTracker(); for (let i = 0; i < 6; i++) t.push(440, 0.95, true, A); return t }
+    const a = settle(); expect(a.push(659, .95, true, A, true).midi).toBe(69); expect(a.push(659, .95, true, A, true).midi).toBe(69)
+    expect(a.push(440, .95, true, A, true).midi).toBe(69) // 클릭이 섞인 두 프레임의 가짜 음은 화면에 안 나온다
+    // 중앙값(3)이 새 음으로 넘어간 뒤부터 센다: 평소엔 셋째 프레임, 클릭 구간에선 넷째 프레임에 바뀐다
+    const b = settle(); for (let i = 0; i < 3; i++) expect(b.push(659, .95, true, A, true).midi).toBe(69); expect(b.push(659, .95, true, A, true).midi).toBe(76)
+    const c = settle(); c.push(659, .95, true, A); c.push(659, .95, true, A); expect(c.push(659, .95, true, A).midi).toBe(76)
+  })
+
   test('held count: +1 per missing frame, 0 on a fresh measurement (so the trace leaves no horizontal line)', () => {
     const t = createTracker()
     for (let i = 0; i < 4; i++) expect(t.push(440, 0.95, true, A).held).toBe(0)

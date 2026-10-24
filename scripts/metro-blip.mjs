@@ -6,7 +6,7 @@ const KR=['도','도♯','레','레♯','미','파','파♯','솔','솔♯','라
 const name=m=>m<0?'—':KR[((m%12)+12)%12]+(Math.floor(m/12)-1)
 /** 80 BPM 4/4 를 4초 렌더 (앱과 같은 시퀀서) */
 function renderMetro(volume=1.0){
-  const seq=createSequencer(SR,{bpm:80,timeSig:4,subDiv:1,volume,muted:false})
+  const seq=createSequencer(SR,{bpm:80,timeSig:4,subDiv:1,volume,muted:false,refHz:440})
   seq.start(0)
   const total=Math.ceil(6*SR), buf=new Float32Array(total), out=new Float32Array(128), marks=[]
   for(let s=0;s<total;s+=128){ out.fill(0); for(const ev of seq.render(out,s)) marks.push(ev); buf.set(out.subarray(0,Math.min(128,total-s)),s) }

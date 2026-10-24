@@ -43,6 +43,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
                     → tracker (a note is shown only after 3 consecutive frames within 20 cents of each other; a change is confirmed over 2 frames and the needle never moves towards an unconfirmed far candidate; the last note is held ≈ 0.5 s after the sound stops; no frame is ever blanked for being unlike its neighbours) → playing detector
                     a reference other than 440 is normalized before the tracker and restored for display
                          ▼
+                  readout: the cents number and the in-tune green come from a 0.37 s average that changes only when it moves 1.5 cents (core/pitch/readout); the trace uses every frame
                   tunerStore.set(...) → ui/tuner renders only the latest value on rAF
 ```
 
@@ -50,7 +51,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
 - Everything the app plays (metronome, Play A, drone) goes through one soft limiter, `output()` in engine.ts.
 - Play A and the drone are the same sound (a triangle wave at the same level and fade) and never sound together. The app knows their frequency f exactly, and whatever the phone speaker and the room add to them lands only on whole multiples of f. While one sounds, the worker cuts f and every multiple up to 8 kHz out of the mic signal (a narrow notch at each, as wide in Hz as the one at f) and low-passes at 5 kHz before analysis (`core/drone.ts`, 0.3 s to settle). A window where what is left is under 12 % of what was cut is analyzed as silence, so the tuner shows nothing and the practice timer doesn't count it. A played note whose partials all land on multiples of f (the same note or an octave above, in tune within about 3 cents) is cut with it.
 - The sample rate is not forced. No SharedArrayBuffer (COOP/COEP can't be set on Pages or in Capacitor).
-- The metronome runs in its own worklet (metro.worklet + core/metro/sequencer). Click times (including output latency) are sent to the worker, which lowers confidence for frames in that window.
+- The metronome runs in its own worklet (metro.worklet + core/metro/sequencer). Each click sits exactly between two notes of the current reference pitch (core/metro/clickPitch, near 1800 / 1100 / 750 Hz), so a note played less than 30 cents off is never the click's pitch. Click times (including output latency) are sent to the worker; in a window that overlaps a click, the tuner ignores the frame only if it reads the click's pitch (any octave), and a change to another note needs 3 frames instead of 2. Nothing else is dropped, so the tuner keeps reading at any tempo and subdivision.
 - Recording uses MediaRecorder: mp4 (AAC) first on iOS and Safari, webm/opus elsewhere. Chunks go to IndexedDB every 10 s, and an unfinished recording is recovered on the next launch.
 
 ## 3. Data

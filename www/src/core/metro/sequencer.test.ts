@@ -17,7 +17,7 @@ describe('sequencer', () => {
     expect(tickKind({ subDiv: 3, timeSig: 4 }, 0)).toBe('accent'); expect(tickKind({ subDiv: 3, timeSig: 4 }, 3)).toBe('beat'); expect(tickKind({ subDiv: 3, timeSig: 4 }, 4)).toBe('sub')
   })
   test('120 bpm 4/4: clicks exactly 0.5 s apart to the sample, zero drift over 60 s', () => {
-    const seq = createSequencer(sr, { bpm: 120, timeSig: 4, subDiv: 1, volume: .7, muted: false }); seq.start()
+    const seq = createSequencer(sr, { bpm: 120, timeSig: 4, subDiv: 1, volume: .7, muted: false, refHz: 440 }); seq.start()
     const { events } = run(seq, 60)
     expect(events.length).toBe(120)
     const d = events.slice(1).map((e, i) => e.sample - events[i]!.sample)
@@ -26,7 +26,7 @@ describe('sequencer', () => {
     expect(events[0]!.kind).toBe('accent'); expect(events[1]!.kind).toBe('beat')
   })
   test('bpm change applies from the next tick without restart', () => {
-    const seq = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 1, volume: .7, muted: false }); seq.start()
+    const seq = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 1, volume: .7, muted: false, refHz: 440 }); seq.start()
     const a = run(seq, 2.1).events // 0, 1, 2 s
     seq.setPattern({ bpm: 120 })
     const b = run(seq, 2, 128, Math.ceil(2.1 * sr / 128) * 128).events
@@ -36,14 +36,14 @@ describe('sequencer', () => {
     expect(all[3]).toBeCloseTo(2.5, 2); expect(all[4]).toBeCloseTo(3, 2); expect(all[5]).toBeCloseTo(3.5, 2)
   })
   test('bpm change when the new interval is already past: next click comes immediately, not in the past', () => {
-    const seq = createSequencer(sr, { bpm: 40, timeSig: 4, subDiv: 1, volume: .7, muted: false }); seq.start()
+    const seq = createSequencer(sr, { bpm: 40, timeSig: 4, subDiv: 1, volume: .7, muted: false, refHz: 440 }); seq.start()
     run(seq, 1.2) // 클릭 0 s, 다음 1.5 s 예약
     seq.setPattern({ bpm: 240 }) // 새 간격 0.25 s → 0.25 s 는 이미 지남
     const b = run(seq, 0.3, 128, Math.ceil(1.2 * sr / 128) * 128).events
     expect(b[0]!.sample).toBeGreaterThanOrEqual(Math.ceil(1.2 * sr / 128) * 128); expect(b[0]!.sample).toBeLessThan(1.25 * sr)
   })
   test('volume 0: no NaN, silence', () => {
-    const seq = createSequencer(sr, { bpm: 120, timeSig: 4, subDiv: 1, volume: 0, muted: false }); seq.start()
+    const seq = createSequencer(sr, { bpm: 120, timeSig: 4, subDiv: 1, volume: 0, muted: false, refHz: 440 }); seq.start()
     const out = new Float32Array(128); let bad = 0; for (let s = 0; s < sr; s += 128) { out.fill(0); seq.render(out, s); for (const v of out) if (v !== 0 || Number.isNaN(v)) bad++ }
     expect(bad).toBe(0)
   })
@@ -51,13 +51,13 @@ describe('sequencer', () => {
     expect([0, 1, 2, 3, 4, 5].map(t => tickKind({ subDiv: 1, timeSig: 6 }, t))).toEqual(['accent', 'sub', 'sub', 'beat', 'sub', 'sub'])
   })
   test('muted: events still fire, no audio', () => {
-    const seq = createSequencer(sr, { bpm: 120, timeSig: 4, subDiv: 1, volume: .7, muted: true }); seq.start()
+    const seq = createSequencer(sr, { bpm: 120, timeSig: 4, subDiv: 1, volume: .7, muted: true, refHz: 440 }); seq.start()
     const { events, peak } = run(seq, 2); expect(events.length).toBe(4); expect(peak).toBe(0)
   })
   // 클릭 레벨
   /** 한 클릭만 렌더해 피크·RMS 를 잰다 (시작 오프셋 0, 블록 128) */
   function oneClick(volume: number, ticks: number) {
-    const seq = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 1, volume, muted: false }); seq.start(0)
+    const seq = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 1, volume, muted: false, refHz: 440 }); seq.start(0)
     const len = Math.round(CLICK_DUR_S * sr), buf = new Float32Array(len + 256)
     const out = new Float32Array(128)
     for (let s = 0; s < buf.length; s += 128) { out.fill(0); seq.render(out, s); buf.set(out.subarray(0, Math.min(128, buf.length - s)), s) }
@@ -89,14 +89,14 @@ describe('sequencer', () => {
     expect(gainDb).toBeGreaterThan(2.0)
   })
   test('never exceeds 1.0 after the limiter (including subdivision tails overlapping the next beat)', () => {
-    const seq = createSequencer(sr, { bpm: 220, timeSig: 4, subDiv: 3, volume: 1.0, muted: false }); seq.start(0)
+    const seq = createSequencer(sr, { bpm: 220, timeSig: 4, subDiv: 3, volume: 1.0, muted: false, refHz: 440 }); seq.start(0)
     const out = new Float32Array(128); let peak = 0
     for (let s = 0; s < 5 * sr; s += 128) { out.fill(0); seq.render(out, s); for (const v of out) peak = Math.max(peak, Math.abs(softClip(v))) }
     expect(peak).toBeLessThan(1)
   })
   test('musical hierarchy (downbeat/beat/subdivision) keeps the v1 ratios', () => {
     const a = oneClick(1.0, 1)
-    const seqB = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 2, volume: 1.0, muted: false })
+    const seqB = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 2, volume: 1.0, muted: false, refHz: 440 })
     void seqB
     // VOL = 1.0 / .60 / .30 → 0 / −4.4 / −10.5 dB. v1 은 .75/.42/.18 = 0 / −5.1 / −12.4 dB
     expect(20 * Math.log10(0.60 / 1.0)).toBeCloseTo(-4.4, 1)
@@ -120,7 +120,7 @@ describe('sequencer', () => {
   })
 
   test('click renders across block boundaries and decays to ~0 within 50 ms', () => {
-    const seq = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 1, volume: .7, muted: false }); seq.start(100)
+    const seq = createSequencer(sr, { bpm: 60, timeSig: 4, subDiv: 1, volume: .7, muted: false, refHz: 440 }); seq.start(100)
     const out = new Float32Array(128); let first = -1, last = -1
     for (let s = 0; s < sr; s += 128) { out.fill(0); seq.render(out, s); for (let i = 0; i < 128; i++) if (Math.abs(out[i]!) > 1e-3) { if (first < 0) first = s + i; last = s + i } }
     expect(first).toBe(100); expect(last - first).toBeLessThan(0.05 * sr)

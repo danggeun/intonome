@@ -16,20 +16,22 @@ export interface TrackerParams {
   switchCents: number
   /** 다른 음 후보가 이 프레임 수만큼 연속되면 전환 */
   switchFrames: number
+  /** 메트로놈 클릭과 겹친 프레임이면 전환에 이만큼 필요 — 클릭과 연주 음이 섞여 생긴 가상 기본음(예: C#6 + 클릭 → F#5)이 두 프레임 이어진다(실측) */
+  clickSwitchFrames: number
   /** 유효 프레임이 끊긴 뒤 표시를 유지하는 프레임 수 — 활을 들었다 놓는 틈(≈ 0.3 s)에 음이름이 사라졌다 나오지 않게 */
   releaseFrames: number
 }
 /** cents 는 가장 가까운 음에서의 편차이므로 정의상 이 값을 넘을 수 없다 */
 const HALF_SEMITONE = 50
-export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 3, acquireCents: 20, medianLen: 3, switchCents: 65, switchFrames: 2, releaseFrames: 20 }
+export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 3, acquireCents: 20, medianLen: 3, switchCents: 65, switchFrames: 2, clickSwitchFrames: 3, releaseFrames: 20 }
 
 /** @property held 유효 프레임이 끊겨 직전 값을 그대로 다시 내보낸 횟수 (0 = 방금 측정한 값). 트레이스가 유지 프레임을 구분하는 데 쓴다 */
 export interface TrackOut { hz: number; midi: number; a: number; held: number }
 const NONE: TrackOut = { hz: -1, midi: -1, a: NaN, held: 0 }
 
 export interface Tracker {
-  /** @param hz 원시 추정 (-1 없음) @param conf 0..1 @param valid RMS 게이트 등 외부 조건 @param alpha 평활 계수 */
-  push(hz: number, conf: number, valid: boolean, alpha: number): TrackOut
+  /** @param hz 원시 추정 (-1 없음) @param conf 0..1 @param valid RMS 게이트 등 외부 조건 @param alpha 평활 계수 @param click 메트로놈 클릭과 겹친 프레임 */
+  push(hz: number, conf: number, valid: boolean, alpha: number, click?: boolean): TrackOut
   reset(): void
 }
 
@@ -49,7 +51,7 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
 
   return {
     reset,
-    push(hz, conf, valid, alpha) {
+    push(hz, conf, valid, alpha, click = false) {
       const ok = valid && hz > 0 && conf >= p.confMin
       if (!ok) {
         validRun = 0
@@ -77,7 +79,7 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
       // 확인(switchFrames)되기 전엔 끌려가지 않는다: 한 옥타브 떨어진 후보로 미끄러지는 동안 낸 적 없는 중간 음이 화면에 뜨기 때문
       if (Math.abs(dev) <= p.switchCents || err <= p.switchCents) dispA += diff * (alpha + (1 - alpha) * boost)
       if (Math.abs(dev) <= p.switchCents) outside = 0
-      else if (++outside >= p.switchFrames) { midi = Math.round(med / 100) + 69; dispA = med; outside = 0 }
+      else if (++outside >= (click ? p.clickSwitchFrames : p.switchFrames)) { midi = Math.round(med / 100) + 69; dispA = med; outside = 0 }
       // 표시 일관성: 부스트가 dispA 를 한 프레임에 새 음까지 옮겨도 라벨은 switchFrames 를 기다리므로, ±50 ¢ 를 넘으면 라벨을 즉시 맞춘다
       if (Math.abs(dispA - (midi - 69) * 100) > HALF_SEMITONE) { midi = Math.round(dispA / 100) + 69; outside = 0 }
       return out()

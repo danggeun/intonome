@@ -61,6 +61,7 @@ export const KO = {
 
   // 메트로놈
   'metro.playStop': '메트로놈 재생/정지',
+  'metro.silentWhileRec': '녹음 중이라 메트로놈 소리는 꺼져 있어요',
   'metro.expand': '메트로놈 펼치기',
   'metro.expandMore': '메트로놈 더 펼치기',
   'metro.collapse': '메트로놈 접기',
@@ -89,6 +90,7 @@ export const KO = {
 
   // 녹음
   'rec.started': '녹음 시작',
+  'rec.startedMetroSilent': '녹음 시작 · 녹음에 섞이지 않게 메트로놈 소리를 껐어요',
   'rec.done': '녹음 완료',
   'rec.empty': '아직 녹음이 없어요',
   'rec.showOlder': '이전 녹음 {n}개 보기',

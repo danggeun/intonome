@@ -238,8 +238,8 @@ if (!isNative() && 'serviceWorker' in navigator) {
       const tol = settingsStore.get().tolCents
       for (const f of frames) {
         const st = tunerStore.get()
-        if (!f) tunerStore.set({ frame: st.frame + 1, hz: -1, midi: -1, cents: 0, inTune: false, conf: 0 })
-        else tunerStore.set({ frame: st.frame + 1, hz: 440 * Math.pow(2, (f.midi - 69) / 12), midi: f.midi, cents: f.cents, inTune: Math.abs(f.cents) <= tol, conf: 0.9, held: f.held ?? 0 })
+        if (!f) tunerStore.set({ frame: st.frame + 1, hz: -1, midi: -1, cents: 0, readCents: 0, inTune: false, conf: 0 })
+        else tunerStore.set({ frame: st.frame + 1, hz: 440 * Math.pow(2, (f.midi - 69) / 12), midi: f.midi, cents: f.cents, readCents: Math.round(f.cents), inTune: Math.abs(Math.round(f.cents)) <= tol, conf: 0.9, held: f.held ?? 0 })
       }
     },
   },
