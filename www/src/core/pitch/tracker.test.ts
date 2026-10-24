@@ -3,27 +3,34 @@ import { createTracker } from './tracker.ts'
 
 const A = 0.14
 describe('tracker', () => {
-  test('locks instantly on confident frame, holds through short dropouts, releases after releaseFrames', () => {
+  test('acquires after three consistent frames, holds through short dropouts, releases after releaseFrames', () => {
     const t = createTracker()
+    expect(t.push(440, 0.95, true, A).midi).toBe(-1); expect(t.push(440, 0.95, true, A).midi).toBe(-1) // 자신 있는 한두 프레임으로는 안 띄운다
     expect(t.push(440, 0.95, true, A).midi).toBe(69)
     for (let i = 0; i < 20; i++) expect(t.push(-1, 0, false, A).midi).toBe(69) // 20 misses (≈ 430 ms) 동안 유지 — 활을 들었다 놓는 틈
     expect(t.push(-1, 0, false, A).midi).toBe(-1) // 21 → release
   })
-  test('low-confidence needs two frames', () => {
+  test('scattered pitches never acquire — a syllable, a bird, a click (two periodic frames) show nothing', () => {
     const t = createTracker()
-    expect(t.push(440, 0.6, true, A).midi).toBe(-1)
-    expect(t.push(440, 0.6, true, A).midi).toBe(69)
+    for (const hz of [440, 523, 392, 659, 440, 466]) expect(t.push(hz, 0.95, true, A).midi).toBe(-1) // 프레임마다 다른 음
+    for (const hz of [440, 440]) expect(t.push(hz, 0.95, true, A).midi).toBe(-1) // 두 프레임만 같은 음
+    expect(t.push(-1, 0, false, A).midi).toBe(-1)
+    // 미끄러져 올라오는 피치(프레임당 30 ¢)는 멈출 때까지 안 띄운다
+    const t2 = createTracker(); const up = (c: number) => 440 * Math.pow(2, c / 1200)
+    for (const c of [-150, -120, -90, -60, -30]) expect(t2.push(up(c), 0.95, true, A).midi).toBe(-1)
+    expect(t2.push(up(0), 0.95, true, A).midi).toBe(-1); expect(t2.push(up(0), 0.95, true, A).midi).toBe(-1) // 창에 아직 −30 이 남아 있다
+    expect(t2.push(up(0), 0.95, true, A).midi).toBe(69)
   })
   test('hysteresis: a momentary ±60¢ jump keeps the note name (the smoothed value is still within half a semitone)', () => {
     const t = createTracker()
-    t.push(440, 0.95, true, A)
+    for (let i = 0; i < 3; i++) t.push(440, 0.95, true, A)
     const up60 = 440 * Math.pow(2, 60 / 1200)
     // 3프레임까지는 평활 때문에 표시값이 +40 ¢ 을 넘지 않는다 → 라벨 유지
     for (let i = 0; i < 3; i++) expect(t.push(up60, 0.95, true, A).midi).toBe(69)
   })
   test('hysteresis: a sustained +60¢ eventually switches to the neighbor (it really is closer)', () => {
     const t = createTracker()
-    t.push(440, 0.95, true, A)
+    for (let i = 0; i < 3; i++) t.push(440, 0.95, true, A)
     const up60 = 440 * Math.pow(2, 60 / 1200)
     let last = 69
     for (let i = 0; i < 12; i++) last = t.push(up60, 0.95, true, A).midi
@@ -38,7 +45,7 @@ describe('tracker', () => {
   })
   test('outlier frame is rejected by weighted median', () => {
     const t = createTracker()
-    t.push(440, 0.95, true, A); t.push(440, 0.95, true, A)
+    for (let i = 0; i < 3; i++) t.push(440, 0.95, true, A)
     const r = t.push(880, 0.6, true, A) // 한 프레임 옥타브 튐
     expect(r.midi).toBe(69); expect(Math.abs(1200 * Math.log2(r.hz / 440))).toBeLessThan(5)
   })

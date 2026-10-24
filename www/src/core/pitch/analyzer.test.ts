@@ -137,3 +137,41 @@ describe('one note, bowed again and again, reads as one unbroken line', () => {
     expect(linger).toBeGreaterThan(0.35); expect(linger).toBeLessThan(0.65)
   })
 })
+
+describe('nothing is played — the tuner shows nothing', () => {
+  // 피드백(2026-10-24): 바깥에서 그냥 켜 두면 주변 소리에 음이 틱틱 떴다. 말소리 음절·새소리·딸깍은 한두 프레임만 주기적이거나 피치가 미끄러진다 —
+  // 같은 음으로 3 프레임 이어질 때만 새로 띄운다
+  const sr = 48000, N = 4096, HOP = 1024
+  /** 야외 20 s: 분홍+갈색 배경 −45/−40 dBFS, 사건(멀리서 말소리 음절·새·딸깍·차·바람) 최대 −24 dBFS, 시드 고정 */
+  function ambient(seedIn: number, sec = 20): Float32Array {
+    let seed = seedIn; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32
+    const randn = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) }
+    const n = Math.round(sec * sr), x = new Float32Array(n), db = (d: number) => 10 ** (d / 20)
+    { let b0 = 0, b1 = 0, b2 = 0, br = 0; for (let i = 0; i < n; i++) { const w = randn(); b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.96900 * b2 + w * 0.1538520; br = 0.997 * br + w * 0.08; x[i] = (b0 + b1 + b2) * 0.25 * db(-45) * 3 + br * db(-40) * 0.5 } }
+    const add = (t0: number, dur: number, fn: (t: number, u: number) => number) => { const s = Math.round(t0 * sr), m = Math.round(dur * sr); for (let i = 0; i < m && s + i < n; i++) x[s + i] = x[s + i]! + fn(i / sr, i / m) }
+    for (let t = 1; t < sec - 1;) {
+      const k = rnd(), lvl = -24 - rnd() * 12
+      if (k < 0.35) { const f0 = 100 + rnd() * 160, dur = 0.08 + rnd() * 0.17, glide = (rnd() - .5) * .6; let ph = rnd() * 6
+        add(t, dur, (_, u) => { ph += 2 * Math.PI * f0 * (1 + glide * u) / sr; let s = 0; for (let h = 1; h <= 12; h++) s += Math.sin(ph * h) / h * (h === 2 || h === 3 ? 1.5 : 1); return s * db(lvl) * 0.3 * Math.sin(Math.PI * u) }); t += dur + 0.05 + rnd() * 0.4 }
+      else if (k < 0.55) { const f0 = 2000 + rnd() * 2000, dur = 0.03 + rnd() * 0.05; let ph = 0; add(t, dur, (_, u) => { ph += 2 * Math.PI * f0 * (1 + 0.3 * u) / sr; return Math.sin(ph) * db(lvl) * Math.sin(Math.PI * u) }); t += dur + 0.1 + rnd() * 0.6 }
+      else if (k < 0.7) { const dur = 0.02 + rnd() * 0.03; add(t, dur, (_, u) => randn() * db(lvl) * Math.exp(-u * 6)); t += dur + 0.2 + rnd() * 1.0 }
+      else if (k < 0.82) { const dur = 2 + rnd() * 2; let b = 0; add(t, dur, (_, u) => { b = 0.99 * b + randn() * 0.14; return b * db(lvl - 6) * Math.sin(Math.PI * u) }); t += dur + rnd() * 1.5 }
+      else { const dur = 1 + rnd() * 2; let b = 0; add(t, dur, (_, u) => { b = 0.998 * b + randn() * 0.06; return b * db(lvl) * Math.sin(Math.PI * u) }); t += dur + rnd() * 2 }
+    }
+    return x
+  }
+  test.each([[1], [2], [3]])('20 s of outdoor ambience (seed %i): no note, no playing time', seed => {
+    const x = ambient(seed), a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
+    let shown = 0, playing = 0
+    for (let end = N; end <= x.length; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0) shown++; if (f.playing) playing++ }
+    expect(shown, 'frames with a note').toBe(0); expect(playing, 'frames counted as playing').toBe(0)
+  }, 20000)
+  test('a note that starts over the same ambience still shows within 150 ms', () => {
+    const x = ambient(1, 6), f0 = 442 * Math.pow(2, -14 / 12); let ph = 0 // G3
+    for (let i = Math.round(3 * sr); i < x.length; i++) { const t = i / sr - 3; ph += 2 * Math.PI * f0 * 2 ** (5 * Math.sin(2 * Math.PI * 5.3 * t) / 1200) / sr; let s = 0; for (let h = 1; h <= 12; h++) s += Math.sin(ph * h + h) / h; x[i] = x[i]! + 0.1 * s * Math.min(1, t / 0.08) }
+    const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
+    let first = -1
+    for (let end = N; end <= x.length; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0 && first < 0) { first = end / sr - 3; expect(f.midi).toBe(55) } }
+    expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.15)
+  })
+})

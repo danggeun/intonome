@@ -40,7 +40,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
                          ▼
                   Analysis Worker (analysis.worker)             ≈43 Hz
                     app-tone filter (only while Play A or the drone sounds) → ring buffer → 4096 window → FFT-YIN → spectrum (octave correction: the lowest sounding harmonic series, never a second voice above it; a weak fundamental is judged against the note's strongest partial, and a fifth's virtual fundamental is told apart by the holes at its 5th and 7th multiples)
-                    → tracker (a change is confirmed over 2 frames and the needle never moves towards an unconfirmed far candidate; the last note is held ≈ 0.5 s after the sound stops; no frame is ever blanked for being unlike its neighbours) → playing detector
+                    → tracker (a note is shown only after 3 consecutive frames within 20 cents of each other; a change is confirmed over 2 frames and the needle never moves towards an unconfirmed far candidate; the last note is held ≈ 0.5 s after the sound stops; no frame is ever blanked for being unlike its neighbours) → playing detector
                     a reference other than 440 is normalized before the tracker and restored for display
                          ▼
                   tunerStore.set(...) → ui/tuner renders only the latest value on rAF

@@ -6,8 +6,10 @@
 export interface TrackerParams {
   /** 후보로 인정할 최소 신뢰도 */
   confMin: number
-  /** 첫 프레임에 즉시 락을 허용하는 신뢰도 */
-  confInstant: number
+  /** 무음에서 음을 새로 띄우는 데 필요한 연속 유효 프레임 수 (≤ medianLen) — 말소리 음절·새소리·딸깍은 한두 프레임만 주기적이라 걸러진다 */
+  acquireFrames: number
+  /** 그 프레임들의 원시 추정이 중앙값에서 이만큼(cents) 안에 모여야 새로 띄운다 — 미끄러지는 피치·튀는 값은 음이 아니다 */
+  acquireCents: number
   /** 가중 중앙값 창 길이 (프레임) */
   medianLen: number
   /** 현재 음에서 이만큼(cents) 벗어나면 "다른 음 후보" */
@@ -19,7 +21,7 @@ export interface TrackerParams {
 }
 /** cents 는 가장 가까운 음에서의 편차이므로 정의상 이 값을 넘을 수 없다 */
 const HALF_SEMITONE = 50
-export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, confInstant: 0.85, medianLen: 3, switchCents: 65, switchFrames: 2, releaseFrames: 20 }
+export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 3, acquireCents: 20, medianLen: 3, switchCents: 65, switchFrames: 2, releaseFrames: 20 }
 
 /** @property held 유효 프레임이 끊겨 직전 값을 그대로 다시 내보낸 횟수 (0 = 방금 측정한 값). 트레이스가 유지 프레임을 구분하는 데 쓴다 */
 export interface TrackOut { hz: number; midi: number; a: number; held: number }
@@ -60,7 +62,8 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
       candA.push(a); candW.push(conf); if (candA.length > p.medianLen) { candA.shift(); candW.shift() }
       const med = weightedMedian()
       if (midi === -1) {
-        if (conf < p.confInstant && validRun < 2) return NONE // 낮은 신뢰도는 두 프레임 확인
+        // 새로 띄우기: 같은 음으로 acquireFrames 연속(≈ 70 ms) — 한 프레임의 높은 신뢰도만으로 띄우면 주변 말소리·새소리가 틱틱 뜬다
+        if (validRun < p.acquireFrames || candA.some(a => Math.abs(a - med) > p.acquireCents)) return NONE
         midi = Math.round(med / 100) + 69; dispA = med; outside = 0
         return out()
       }

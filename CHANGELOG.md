@@ -2,6 +2,12 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.5.1] - 2026-10-24
+- With nothing played, the tuner shows nothing. A note now appears only after three consecutive frames (about 70 ms) read the same pitch within 20 cents; before, one confident frame was enough, so a syllable of distant talk, a bird or a click put a note on the screen for a moment, and since 2.5.0 it lingered half a second. On 60 s of synthetic outdoor ambience (talk snippets, birds, clicks, a passing car, wind): 2.4.6 showed a note 3 times a minute, 2.5.0 8 to 13 times, now 0. Practice time was never counted for these and still isn't
+- The first note after silence shows 46 ms later than in 2.5.0 (about 120 ms after the onset instead of 70). Once a note is on the screen nothing changes: note changes, the trace, the hold after the sound stops and the tuning accuracy are the same. The microphone sensitivity setting is unrelated and unchanged
+- Metronome clicks before the first note no longer put a note on the screen in the benchmark (false 12.5 -> 0 % on the clicks signal)
+- New unit tests: 20 s of outdoor ambience at three noise seeds shows no note and counts no playing time; a note starting over that ambience shows within 150 ms; scattered or sliding pitches never acquire. 2.4.6 and 2.5.0 fail them
+
 ## [2.5.0] - 2026-10-24
 The tuning routine on a violin — A, then D with A, G with D, E with A, each string alone — with nothing that flickers, blanks or jumps. From a tester's and the developer's own use on an iPhone (2.4.6): the G string was often not read, and bowing two strings made the display cut out "뚝 뚝 뚝".
 - The G string reads. A violin G has a fundamental 15–25 dB weaker than its 2nd and 3rd partials, and a room or a phone adds low rumble. The octave check compared the lower-octave evidence with that weak fundamental, so rumble at 98 Hz passed it and G3 showed as G2 or kept switching. It now compares with the strongest partial of the note. Synthetic G3 with a −20 dB fundamental over rumble: 2.4.6 showed G3 in 60 % of frames, G2 in 16 %, nothing in 17 %; now G3 in every frame

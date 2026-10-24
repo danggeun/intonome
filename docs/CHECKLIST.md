@@ -14,6 +14,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] 440 Hz input with A=442 → A4 (라4), −8 ¢ (WAV injection e2e)
 - [A] Cello C2 (65 Hz) → C2 (도2)
 - [A] Silence → "--", empty history
+- [A] Outdoor ambience with nothing played (distant talk, birds, clicks, a passing car, wind; three noise seeds) → "--" in every frame and no playing time; a note starting over it shows within 150 ms (unit tests with the real analyzer)
 - [A] Inside the tolerance the note turns green, the card gets `in-tune`, the band is green
 - [A] Sharps show the enharmonic flat
 - [A] Reference drum (410–466 Hz) drag → A= updates, cents recalculated, setting saved
