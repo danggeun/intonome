@@ -78,10 +78,16 @@ export function parseStored(raw: string | null): Partial<Settings> {
   return out
 }
 
+/** 첫 실행(저장 없음)의 언어: 폰의 첫 번째 언어가 한국어면 한국어, 아니면 영어. index.html 의 첫 그리기 스크립트와 같은 규칙 */
+export function firstRunLang(langs: readonly string[] | undefined, lang: string | undefined): Settings['lang'] {
+  return /^ko(-|$)/i.test(langs?.[0] ?? lang ?? '') ? 'ko' : 'en'
+}
+
 export function loadSettings(): void {
   let raw: string | null = null
   try { raw = localStorage.getItem(SETTINGS_KEY) } catch { /* 사파리 프라이빗 등 */ }
-  settingsStore.set(parseStored(raw)) // 저장이 없으면(첫 실행) 기본값: 영어 · 다크 (state/index.ts). 영어는 음이름이 늘 C D E, 한국어로 바꾸면 도레미가 기본
+  // 저장이 없으면(첫 실행) 언어만 폰을 따르고 나머지는 기본값(다크 · state/index.ts). 영어는 음이름이 늘 C D E, 한국어는 도레미가 기본. 한 번이라도 저장됐으면 그 값
+  settingsStore.set(raw === null ? { lang: firstRunLang(navigator.languages, navigator.language) } : parseStored(raw))
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null

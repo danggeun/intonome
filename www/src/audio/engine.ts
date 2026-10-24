@@ -196,4 +196,6 @@ export function resumeIfRunning(): void {
 /** 메트로놈 클릭 구간을 워커에 알려 그 창의 프레임을 버리게 한다 (같은 컨텍스트 시계) */
 export function muteAnalysis(fromT: number, untilT: number, at: number): void { if (A.worker) sendToWorker({ type: 'mute', from: fromT, until: untilT, at }) }
 
+// 이어폰을 꽂거나 빼면 앱 음(드론 · A 듣기)이 마이크에 들리는지 워커가 다시 잰다. 이 알림이 없는 기기에서도 워커가 소리로 알아본다
+if (typeof navigator !== 'undefined') navigator.mediaDevices?.addEventListener?.('devicechange', () => { if (A.worker && toneForAnalysis !== null) sendToWorker({ type: 'toneRecheck' }) })
 settingsStore.select(s => `${s.rmsMin}|${s.smoothing}|${s.refHz}|${s.tolCents}`, () => { if (A.worker) sendToWorker({ type: 'settings', settings: analyzerSettings() }) }) // 무관한 설정 변경마다 워커에 보내지 않는다

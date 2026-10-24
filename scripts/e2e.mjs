@@ -16,7 +16,7 @@ const args = Object.fromEntries(process.argv.slice(2).map((a, i, arr) => a.start
 const DIST = resolve(typeof args.dist === 'string' ? args.dist : join(ROOT, 'dist'))
 const PORT = +(args.port || 4174)
 const SIG = join(ROOT, 'test-assets', 'signals')
-if (!existsSync(join(SIG, 'violin_A4.wav'))) execSync('node scripts/gen-signals.mjs', { cwd: ROOT, stdio: 'ignore' })
+if (!existsSync(join(SIG, 'violin_A4.wav')) || !existsSync(join(SIG, 'e2e', 'violin_A4_open.wav'))) execSync('node scripts/gen-signals.mjs', { cwd: ROOT, stdio: 'ignore' })
 
 // 정적 서버 (vite preview 는 outDir 고정이라 직접 띄운다)
 const server = spawn('npx', ['-y', 'serve', '-s', '-l', String(PORT), DIST], { stdio: 'ignore', detached: process.platform !== 'win32', shell: process.platform === 'win32' }) // detached: 프로세스 그룹째 종료 (자식 serve 잔존 방지)
@@ -32,7 +32,7 @@ const results = []
 let browser
 /** --only <정규식> 로 시나리오 이름을 골라 돌린다  */
 const ONLY = typeof args.only === 'string' ? new RegExp(args.only) : null
-/** 앱 기본은 영어 · 다크(2.4.4). 시나리오는 한국어 문구 · 라이트 색으로 짜여 있어, 저장이 없으면 한국어 · 라이트 · 도레미를 심고 연다(__seed 표시: 앱이 한 번 저장하면 사라진다). { fresh: true } 면 심지 않는다 */
+/** 앱 기본은 다크, 첫 실행 언어는 폰을 따른다(테스트 브라우저는 영어 폰).  시나리오는 한국어 문구 · 라이트 색으로 짜여 있어, 저장이 없으면 한국어 · 라이트 · 도레미를 심고 연다(__seed 표시: 앱이 한 번 저장하면 사라진다). { fresh: true } 면 심지 않는다 */
 const SEED = () => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', noteNames: 'ko', __seed: 1 })) }
 async function scenario(name, wav, fn, { fresh = false, ...ctxOpts } = {}) {
   if (ONLY && !ONLY.test(name)) return
@@ -705,7 +705,7 @@ await scenario('launch: iPhone home-screen app starts on a copy of the splash, t
 })
 
 // 첫 실행(저장 없음)은 기기의 다크 모드를 따른다: 앱 스크립트 없이 첫 그리기부터, 설정 표시도 다크
-// 첫 실행(저장 없음) 기본값: 영어 · 다크. 폰이 라이트 모드여도. 앱 스크립트 없이 첫 그리기부터 다크 · 한국어 원문은 가려져 있다
+// 첫 실행(저장 없음) 기본값: 영어 폰이면 영어 · 다크. 폰이 라이트 모드여도. 앱 스크립트 없이 첫 그리기부터 다크 · 한국어 원문은 가려져 있다
 await scenario('first launch: English and dark, even with the phone in light mode', 'silence_lowfloor.wav', async (p, ctx) => {
   const bare = await ctx.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_)
   assert.deepEqual(await bare.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending'), meta: document.querySelector('meta[name="theme-color"]').content })), { theme: null, lang: 'en', hidden: true, meta: '#181b21' }, '첫 그리기 전')
@@ -717,6 +717,18 @@ await scenario('first launch: English and dark, even with the phone in light mod
   await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#lang-steps .step-btn[data-v="0"]'); await sleep(p, 200)
   assert.equal(await p.evaluate(() => document.querySelector('#notenames-steps .step-btn.on').dataset.v), '0')
 }, { colorScheme: 'light', fresh: true })
+// 한국어 폰의 첫 실행: 첫 그리기부터 한국어(음이름 도레미), 테마는 그대로 다크. 설정에서 영어로 바꾸면 저장되어 폰이 한국어여도 영어로 연다
+await scenario('first launch on a Korean phone: Korean from the first paint; English chosen in Settings stays English', 'silence_lowfloor.wav', async (p, ctx) => {
+  const bare = await ctx.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_)
+  assert.deepEqual(await bare.evaluate(() => ({ lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending') })), { lang: 'ko', hidden: false }, '첫 그리기 전')
+  await bare.close()
+  await p.goto(URL_); await sleep(p, 600)
+  assert.deepEqual(await p.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, names: document.querySelector('#notenames-steps .step-btn.on').dataset.v, label: document.querySelector('[data-t="set.lang"]').textContent })),
+    { theme: null, lang: 'ko', langOn: '0', names: '0', label: '언어' })
+  await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#lang-steps .step-btn[data-v="1"]'); await sleep(p, 800)
+  await p.reload(); await sleep(p, 600)
+  assert.equal(await p.evaluate(() => document.documentElement.lang), 'en', '저장된 영어')
+}, { fresh: true, locale: 'ko-KR' })
 
 // 녹음 / 편집
 // 녹음 중 조각이 IDB 에 남아 있으면(앱이 죽었다) 다음 실행에서 항목으로 복구된다
@@ -1108,6 +1120,19 @@ await scenario('metro: bpm change while playing does not restart (beats keep com
   const seen = new Set(); for (let i = 0; i < 25; i++) { seen.add(await p.evaluate(() => Array.from(document.querySelectorAll('#beat-vis .led')).findIndex(d => d.classList.contains('mv') || d.className.includes('hit')))); await sleep(p, 60) }
   assert.ok(seen.size >= 2, 'beat dots advancing after bpm change: ' + [...seen].join(','))
   await p.click('#metro-play-btn') // U1: 펼친 채 재생 중이라 헤더 버튼은 없다
+})
+// 이어폰: 앱 음이 마이크에 들어가지 않는다(가짜 마이크는 파일이라 이어폰과 같다). 기준음 440 = 파일의 라 — 늘 잘라내면 같은 음이 '--' 가 된다
+await scenario('Play A with earphones (the tone never reaches the mic): the same A keeps reading in tune', 'e2e/violin_A4_open.wav', async p => {
+  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', noteNames: 'ko', refHz: 440 })))
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#ref-a-btn'); await sleep(p, 700)
+  assert.equal(await p.evaluate(() => document.getElementById('ref-a-btn').classList.contains('on')), true, 'A 듣기 on')
+  const seen = []; for (let i = 0; i < 26; i++) { seen.push(await tunerText(p)); await sleep(p, 100) } // 2.6 s = 파일 한 바퀴(비브라토 없이 그은 개방현 2 s + 무음 0.6 s)
+  const la = seen.filter(t => t.note === '라')
+  assert.ok(la.length >= 15, `라 ${la.length}/26: ${seen.map(t => t.note).join('')}`)
+  const near = la.filter(t => Math.abs(parseInt(t.cents, 10)) <= 3) // 파일이 다시 시작할 때의 어택은 평소에도 잠깐 위로 읽힌다
+  assert.ok(near.length >= 0.8 * la.length, la.map(t => t.cents).join(' '))
+  await p.click('#ref-a-btn')
 })
 await scenario('drone and Play A sound without the mic (single AudioContext); A 듣기 does not ask for the mic', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel')

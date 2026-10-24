@@ -16,6 +16,8 @@ export type WorkerIn =
   | { type: 'mute'; from: number; until: number; at: number }
   /** 앱 음(드론 · A 듣기)이 켜짐(hz)·꺼짐(null). at = 그 변화가 마이크에 닿을 예상 시각(AudioContext 시계, 출력 지연 포함) */
   | { type: 'tone'; hz: number | null; at: number }
+  /** 소리 장치가 바뀌었다(이어폰을 꽂거나 뺐다) — 앱 음이 마이크에 들리는지 다시 잰다 */
+  | { type: 'toneRecheck' }
 
 /** 워커 → 메인 */
 export type WorkerOut =

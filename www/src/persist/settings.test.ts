@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { parseStored } from './settings.ts'
+import { parseStored, firstRunLang } from './settings.ts'
 import { RMS_LEVELS, SMOOTH_LEVELS } from '../state/index.ts'
 
 describe('parseStored', () => {
@@ -54,7 +54,7 @@ describe('parseStored', () => {
     expect(parseStored(JSON.stringify({ v: 2, theme: 'dark' })).theme).toBe('dark')
     expect(parseStored(JSON.stringify({ v: 2, theme: 'auto' }))).toEqual({})
   })
-  test('language: only ko/en pass, anything else is ignored (Korean by default)', () => {
+  test('language: only ko/en pass, anything else is ignored (the first-run language applies)', () => {
     expect(parseStored(JSON.stringify({ v: 2, lang: 'en' })).lang).toBe('en')
     expect(parseStored(JSON.stringify({ v: 2, lang: 'ko' })).lang).toBe('ko')
     expect(parseStored(JSON.stringify({ v: 2, lang: 'fr' }))).toEqual({})
@@ -80,5 +80,18 @@ describe('parseStored hardening', () => {
     expect(parseStored(JSON.stringify({ v: 2, timeSig: 6, subDiv: 'd' }))).toMatchObject({ timeSig: 6, subDiv: 1 })
     expect(parseStored(JSON.stringify({ timeSig: 6, subDiv: 2, savedAt: 0 }))).toMatchObject({ timeSig: 6, subDiv: 1 })
     expect(parseStored(JSON.stringify({ v: 2, timeSig: 4, subDiv: 3 }))).toMatchObject({ timeSig: 4, subDiv: 3 })
+  })
+})
+
+describe('first run language (nothing saved yet)', () => {
+  test('follows the phone: Korean first → Korean, anything else → English', () => {
+    expect(firstRunLang(['ko-KR', 'en-US'], 'ko-KR')).toBe('ko')
+    expect(firstRunLang(['ko'], 'ko')).toBe('ko')
+    expect(firstRunLang(undefined, 'ko-KR')).toBe('ko')
+    expect(firstRunLang(['en-US', 'ko-KR'], 'en-US'), 'the first language decides').toBe('en')
+    expect(firstRunLang(['ja-JP'], 'ja-JP')).toBe('en')
+    expect(firstRunLang(['kok-IN'], 'kok-IN'), 'Konkani is not Korean').toBe('en')
+    expect(firstRunLang([], '')).toBe('en')
+    expect(firstRunLang(undefined, undefined)).toBe('en')
   })
 })

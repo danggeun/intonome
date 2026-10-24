@@ -282,3 +282,20 @@ for (const [name, note] of single) {
 }
 
 console.log('signals written to', OUT)
+
+// e2e 전용 (벤치는 최상위 폴더만 읽는다): 비브라토 없이 그은 개방현 라(440) — 사람 손처럼 음정이 천천히 ±0.5 ¢, 주기마다 ±1.5 ¢ 흔들리고 세기가 3 % 흔들린다.
+// 앱 음(A 듣기)은 크기·위상이 그대로라 이것과 구별된다. 맨 끝에 두어 위 신호들의 난수 순서를 바꾸지 않는다
+{
+  mkdirSync(join(OUT, 'e2e'), { recursive: true })
+  const f = 440, n = Math.round(2 * SR), x = new Float32Array(n), env = envelope(n, 0.08, 0.2)
+  const aw = Math.exp(-1 / (0.3 * SR)), af = Math.exp(-1 / (0.003 * SR)), aa = Math.exp(-1 / (0.03 * SR))
+  let ph = 0, wan = 0, fast = 0, shim = 0
+  for (let i = 0; i < n; i++) {
+    wan = aw * wan + 0.5 * Math.sqrt(1 - aw * aw) * randn(); fast = af * fast + 1.5 * Math.sqrt(1 - af * af) * randn(); shim = aa * shim + 0.03 * Math.sqrt(1 - aa * aa) * randn()
+    ph += 2 * Math.PI * f * Math.pow(2, (wan + fast) / 1200) / SR
+    let s = 0; for (let h = 1; h <= 20 && f * h < SR * 0.45; h++) s += Math.pow(h, -1.1) * (h % 2 === 0 ? 0.79 : 1) * Math.sin(ph * h)
+    x[i] = s * 0.35 * env[i] * (1 + shim)
+  }
+  const noise = bowNoise(n, -30); for (let i = 0; i < n; i++) x[i] += noise[i] * env[i]
+  writeWav('e2e/violin_A4_open', concat(silence(0.3), x, silence(0.3)))
+}

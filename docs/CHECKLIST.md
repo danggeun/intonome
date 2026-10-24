@@ -55,6 +55,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Plays without the mic
 - [A] Play A or the drone alone never shows on the tuner: all 12 drone notes and Play A4/A3/A2 at 440 and 442 Hz, through heavy speaker distortion, room echoes and noise, show nothing in every frame (unit tests with the real analyzer)
 - [A] The tuner reads the player over them: an octave below, a fifth below, and a second, third, fourth, fifth, sixth and seventh above the drone; the other strings over Play A; the same note, an octave and two octaves above from 5 cents off (unit tests)
+- [A] With earphones (the tone never reaches the mic) the same note reads: Play A with an A string at −10…+10 ¢ reads within 1 ¢, a drone's tonic and octave read; through the speaker every frame is the same as before; unplugging with the tone on brings the cut back within about 0.25 s (at once on `devicechange`); a faint leak counts as heard only above a tenth of the sensitivity threshold (unit tests). e2e: a bowed open A without vibrato at A = 440 keeps reading with Play A on
+- [D] With earphones on a phone: Play A and the A string in tune show 0; unplug while it sounds — the tuner shows nothing while only the tone sounds
 - [D] On a phone speaker: the drone sounds like Play A, the tuner shows nothing while only it or Play A sounds and reads you over it, and the screen stays on; leaving the app stops it
 
 ## Recording
@@ -105,8 +107,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Text and control contrast meets WCAG AA in both themes
 - [A] Haptic feedback: dragging the dial, the BPM or the A = drum taps once per step (8 ms), firmer on every ten (16 ms), none while recording, none when Settings › Haptic feedback is off (kept after reload)
 - [D] Haptic ticks feel like a detent, not a buzz, when spinning the dial fast; the tuner doesn't read them while dragging with the mic on; on an iPhone home-screen app (iOS 18) the ticks are felt, otherwise the row is hidden or silent
-- [A] First launch: English and dark even with the phone in light mode (applied before the first paint, Korean source text hidden until English is in); then Settings › Appearance and Language; status bar follows
-- [A] Language: English by default, Korean in Settings › Language (note names then default to 도 레 미); no Korean left on any screen in English, nothing clipped, survives a reload
+- [A] First launch: dark even with the phone in light mode; English on a phone whose first language isn't Korean (applied before the first paint, Korean source text hidden until English is in), Korean on a Korean phone (from the first paint, note names 도 레 미); then Settings › Appearance and Language; status bar follows; a language chosen in Settings is kept on a Korean phone too
+- [A] Language: follows the phone's first language on first launch (Korean → Korean, anything else → English), then Settings › Language (note names then default to 도 레 미); no Korean left on any screen in English, nothing clipped, survives a reload
 - [A] Header LED row fits with a three-digit BPM on 360 px phones
 - [D] Readable from 60–90 cm; REC, size and drum usable while holding a bow
 - [D] Larger system font sizes on the tuner card layout
