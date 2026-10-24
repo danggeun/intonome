@@ -53,8 +53,10 @@ function frames(mic: Float32Array, toneF: number) {
     filter.process(mic.subarray(p, p + HOP), y.subarray(p, p + HOP), rem.subarray(p, p + HOP))
     const end = p + HOP; if (end < N) continue
     const win = y.subarray(end - N, end), gate = onlyTone(rms(win), rms(rem.subarray(end - N, end)))
-    const frame = an.process(gate ? silent : win), raw = bare.process(win) // raw: 판정 없이 잘라낸 소리만 분석
-    if ((end - N) / sr >= TONE_SETTLE_S) out.push({ frame, raw, gate })
+    // 워커처럼 필터가 자리 잡기 전엔 무음으로 — 자리 잡기 전 소리에서 잡힌 음이 유지 시간(releaseFrames) 동안 남아 뒤 프레임을 물들이지 않게. raw: 판정 없이 잘라낸 소리만 분석
+    const settled = (end - N) / sr >= TONE_SETTLE_S
+    const frame = an.process(gate || !settled ? silent : win), raw = bare.process(settled ? win : silent)
+    if (settled) out.push({ frame, raw, gate })
   }
   return out
 }

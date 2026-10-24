@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { createAnalyzer } from './analyzer.ts'
+import { keepInTrace, buildSegments } from '../trace.ts'
 
 const sr = 44100, N = 4096
 const tone = (f: number, harm = 4) => Float32Array.from({ length: N }, (_, i) => { let s = 0; for (let h = 1; h <= harm; h++) s += Math.sin(2 * Math.PI * f * h * i / sr) / h; return 0.3 * s })
@@ -79,5 +80,60 @@ describe('spectral match penalty', () => {
     let last = -1
     for (let end = N; end <= x.length; end += 1024) last = a.process(x.subarray(end - N, end)).hz
     expect(Math.abs(1200 * Math.log2(last / 440))).toBeLessThan(5)
+  })
+})
+
+describe('one note, bowed again and again, reads as one unbroken line', () => {
+  const sr = 48000, N = 4096, HOP = 1024
+  /** 한 음을 활로 여러 번 긋는 소리: 활마다 짧은 틈(−30 dB) → 어택(소음 섞인 흔들리는 음정, 세기 올라감) → 지속. 5.5 Hz 비브라토 ±5 ¢. 잡음은 시드 고정 */
+  function bowed(hz: number, strokeS: number, gapS: number, strokes = 6, seed = 9, ATT = 0.08, ATT_NOISE_DB = -10): Float32Array {
+    const WOB = 40, LEAD = 0.4
+    const randn = () => { let u = 0, v = 0; while (!u) u = (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32; while (!v) v = (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32; return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) }
+    const x = new Float32Array(Math.round((LEAD + strokes * strokeS) * sr)); let ph = 0, hp = 0, hpIn = 0
+    for (let i = 0; i < x.length; i++) {
+      const t = i / sr; if (t < LEAD) continue
+      const u = (t - LEAD) % strokeS, gap = u < gapS, att = !gap && u < gapS + ATT, k = att ? (u - gapS) / ATT : 1
+      const amp = gap ? 10 ** (-30 / 20) : att ? 0.3 + 0.7 * k : 1
+      const f = hz * 2 ** ((5 * Math.sin(2 * Math.PI * 5.5 * t) + (att ? WOB * (1 - k) * randn() * 0.3 : 0)) / 1200)
+      ph += 2 * Math.PI * f / sr; let s = 0; for (let h = 1; h <= 16; h++) { if (f * h > sr * .45) break; s += h ** -1.1 * (h % 2 ? 1 : .79) * Math.sin(ph * h) }
+      const r = randn(), y = .95 * (hp + r - hpIn); hpIn = r; hp = y // 1차 하이패스 백색잡음 = 활 소음
+      const noiseDb = att ? ATT_NOISE_DB * (1 - k) + -30 * k : -30
+      x[i] = (s * .35 + y * 10 ** (noiseDb / 20) * 0.3) * amp
+    }
+    return x
+  }
+  const expectMidi = (hz: number) => Math.round(69 + 12 * Math.log2(hz / 440))
+
+  // 2.4.6 까지: 활을 바꾸는 순간의 거친 한 프레임이 옥타브로 튀면 '안정성 게이트' 가 네 프레임을 비웠고, 트레이스가 거기서 끊겼다 — 테스터의 "라~ 라~ 라~ 가 자꾸 끊긴다"
+  const cases: Array<[string, number, number, number, number, number]> = []
+  for (const seed of [9, 21, 33]) {
+    for (const [name, hz] of [['G3', 196], ['A4', 440], ['A2', 110], ['E5', 659.26]] as const) cases.push([`${name}, 40 ms between strokes, 80 ms attack, noise seed ${seed}`, hz, 0.04, seed, 0.08, -10])
+    for (const [name, hz] of [['G3', 196], ['D3', 146.83]] as const) cases.push([`${name}, 50 ms between strokes, 100 ms rougher attack, noise seed ${seed}`, hz, 0.05, seed, 0.10, -8])
+    for (const [name, hz] of [['G3', 196], ['A4', 440]] as const) cases.push([`${name}, 250 ms between strokes (lifted bow), noise seed ${seed}`, hz, 0.25, seed, 0.08, -10])
+  }
+  test.each(cases)('%s: the note never goes to "--", never changes, and the trace is one line', (_, hz, gap, seed, att, attNoiseDb) => {
+    const x = bowed(hz, 0.5, gap, 6, seed, att, attNoiseDb)
+    const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .20, refHz: 440, tolCents: 15 })
+    const cents: Array<number | null> = [], midi: Array<number | null> = []
+    for (let end = N; end <= x.length; end += HOP) {
+      const f = a.process(x.subarray(end - N, end)); if (end / sr < 0.6) continue // 첫 활의 음이름이 확정된 뒤부터
+      expect(f.hz, `t=${(end / sr).toFixed(2)} s shows a note`).toBeGreaterThan(0)
+      expect(f.midi, `t=${(end / sr).toFixed(2)} s is still the same note`).toBe(expectMidi(hz))
+      const keep = keepInTrace(f.hz, f.held); cents.push(keep ? f.cents : null); midi.push(keep ? f.midi : null)
+    }
+    expect(cents.length).toBeGreaterThan(100)
+    expect(cents.filter(c => c === null).length, 'no empty frame in the trace').toBe(0)
+    const { segs, breaks } = buildSegments(cents, midi) // 선분 [i, i+1] 의 목록 — 빠진 프레임 없이 끝까지 이어져야 한다
+    expect(segs.length, 'a line piece between every pair of frames').toBe(cents.length - 1); expect(breaks).toBe(0)
+    for (let i = 1; i < segs.length; i++) expect(segs[i]![0], `line continues at frame ${segs[i]![0]}`).toBe(segs[i - 1]![1])
+  })
+
+  test('after the last stroke the note lingers about half a second, then "--"', () => {
+    const x = bowed(440, 0.5, 0.04, 2), a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .20, refHz: 440, tolCents: 15 })
+    const tail = new Float32Array(sr), all = new Float32Array(x.length + tail.length); all.set(x) // 1 s of silence after the sound
+    let lastShown = -1, soundEnd = x.length / sr
+    for (let end = N; end <= all.length; end += HOP) if (a.process(all.subarray(end - N, end)).hz > 0) lastShown = end / sr
+    const linger = lastShown - soundEnd
+    expect(linger).toBeGreaterThan(0.35); expect(linger).toBeLessThan(0.65)
   })
 })

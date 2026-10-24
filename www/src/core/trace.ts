@@ -5,8 +5,8 @@
 /** 정확한 스케일의 전환 Δcents 는 평균 22 ¢ · 최대 31 ¢, 흔들린 연주(±40 ¢대)는 85 ¢ 초과 */
 export const TRACE_JOIN_MAX = 40
 
-/** 유지(held) 프레임 허용 수 — held ≤ 이 값이면 그린다. 0 이면 활 바꿈의 한두 프레임 유지가 선을 점선으로 끊는다 */
-export const TRACE_HELD_MAX = 2
+/** 유지(held) 프레임 허용 수 — held ≤ 이 값이면 직전 값으로 잇는다. 활 바꿈은 틈·어택으로 한두 프레임 비니 그 둘 + 여유. 소리가 끝난 뒤의 긴 유지는 빈칸 */
+export const TRACE_HELD_MAX = 4
 
 /** 이 프레임을 트레이스에 쌓을 것인가. hz -1(무음)·유지 초과는 빈칸. 바늘·음이름은 이 규칙과 무관 */
 export function keepInTrace(hz: number, held: number, heldMax = TRACE_HELD_MAX): boolean {

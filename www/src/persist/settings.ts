@@ -1,11 +1,12 @@
 /** 설정 영속화 (localStorage). 스키마 v2 + v1 마이그레이션 */
-import { settingsStore, RMS_LEVELS, V1_RMS_LEVELS, V201_RMS_LEVELS, SMOOTH_LEVELS, CFG, type Settings, type SubDiv, type TimeSig } from '../state/index.ts'
+import { settingsStore, RMS_LEVELS, V1_RMS_LEVELS, V201_RMS_LEVELS, SMOOTH_LEVELS, V246_SMOOTH_LEVELS, CFG, type Settings, type SubDiv, type TimeSig } from '../state/index.ts'
 import { t } from '../core/i18n/index.ts'
 
 export const SETTINGS_KEY = 'intonome_settings_v1'
 export const LEGACY_SETTINGS_KEYS = ['gopractice_settings_v1', 'gp_mic_intro', 'tempotune_settings_v1', 'tempotune_legacy_cleared_v1'] // 옛 이름(Go practice · TempoTune) 키 — persist/legacy.ts 가 지운다
 
-type StoredV2 = { v: 2 } & Settings
+/** v3 (2.5.0~): 반응 속도 값이 새 표. v2 (2.0.2~2.4.6)는 같은 모양에 옛 표 — 같은 숫자가 다른 단계라 버전으로 가른다 */
+type StoredV3 = { v: 2 | 3 } & Settings
 interface StoredV1 { cents?: number; rms?: number; smooth?: number; wakelock?: boolean; bpm?: number; timeSig?: number; subDiv?: number | string; refHz?: number; vol?: number; savedAt?: number }
 
 /** 저장된 감도 값 → 현재 단계 값. 숫자가 아니라 단계(인덱스)를 옮긴다. 표는 저장 키로 고른다 — v1 rms 와 v2 rmsMin 은 값 범위가 겹친다 */
@@ -16,6 +17,12 @@ function rmsStep(v: unknown, tables: ReadonlyArray<ReadonlyArray<number>>): numb
     if (i >= 0) return RMS_LEVELS[i]!
   }
   return null
+}
+/** 저장된 반응 속도 값 → 현재 단계 값. 감도와 같은 규칙 — 단계(인덱스)를 옮긴다. 표는 저장 버전으로 고른다(.12·.20 이 두 표에 다 있다) */
+function smoothStep(v: unknown, table: ReadonlyArray<number>): number | null {
+  if (typeof v !== 'number' || !isFinite(v)) return null
+  const i = table.findIndex(x => Math.abs(x - v) < .001)
+  return i >= 0 ? SMOOTH_LEVELS[i]! : null
 }
 /** v2 키(`rmsMin`): 현재 값 또는 v2.0.0~2.0.1 값 */
 const V2_TABLES = [RMS_LEVELS, V201_RMS_LEVELS]
@@ -35,11 +42,12 @@ export function parseStored(raw: string | null): Partial<Settings> {
   // 값 범위도 검증한다 — 손상된 저장값(refHz 1000 등)이 분석기 전체를 틀리게 하지 않게
   const num = (v: unknown, lo: number, hi: number): number | null => typeof v === 'number' && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : null
   const tol = (v: unknown): number | null => (typeof v === 'number' && [5, 10, 15, 20, 25].includes(v)) ? v : null
-  if ((d as StoredV2).v === 2) {
-    const s = d as Partial<StoredV2>
+  const ver = (d as StoredV3).v
+  if (ver === 3 || ver === 2) {
+    const s = d as Partial<StoredV3>
     { const v = tol(s.tolCents); if (v !== null) out.tolCents = v }
       { const v = rmsStep(s.rmsMin, V2_TABLES); if (v !== null) out.rmsMin = v }
-    if (typeof s.smoothing === 'number' && SMOOTH_LEVELS.some(v => Math.abs(v - s.smoothing!) < .001)) out.smoothing = s.smoothing
+    { const v = smoothStep(s.smoothing, ver === 3 ? SMOOTH_LEVELS : V246_SMOOTH_LEVELS); if (v !== null) out.smoothing = v }
     if (typeof s.wakeLock === 'boolean') out.wakeLock = s.wakeLock
     if (typeof s.bpm === 'number' && isFinite(s.bpm)) out.bpm = clampBpm(s.bpm)
     if (isTimeSig(s.timeSig)) out.timeSig = s.timeSig
@@ -81,7 +89,7 @@ let warned = false, persistError: ((m: string) => void) | null = null
 export function onPersistError(fn: (m: string) => void): void { persistError = fn }
 function writeNow(): void {
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
-  const d: StoredV2 = { v: 2, ...settingsStore.get() }
+  const d: StoredV3 = { v: 3, ...settingsStore.get() }
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(d)) } catch { if (!warned) { warned = true; persistError?.(t('set.saveFailed')) } }
 }
 export function startSettingsAutosave(): void {

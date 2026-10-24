@@ -1,13 +1,13 @@
 import { describe, test, expect } from 'vitest'
 import { parseStored } from './settings.ts'
-import { RMS_LEVELS } from '../state/index.ts'
+import { RMS_LEVELS, SMOOTH_LEVELS } from '../state/index.ts'
 
 describe('parseStored', () => {
   test('empty / broken → {}', () => { expect(parseStored(null)).toEqual({}); expect(parseStored('{oops')).toEqual({}); expect(parseStored('"x"')).toEqual({}) })
   // 픽스처는 실제 v1 값이어야 한다
   test('v1 format migrates (TTL ignored)', () => {
     const v1 = { cents: 10, rms: .005, smooth: .05, wakelock: false, aimode: true, bpm: 120, timeSig: 3, subDiv: 'd', refHz: 415, vol: .5, savedAt: 0 }
-    expect(parseStored(JSON.stringify(v1))).toEqual({ tolCents: 10, rmsMin: RMS_LEVELS[2], smoothing: .06, wakeLock: false, bpm: 120, timeSig: 3, subDiv: 'd', refHz: 415, metroVol: .5 })
+    expect(parseStored(JSON.stringify(v1))).toEqual({ tolCents: 10, rmsMin: RMS_LEVELS[2], smoothing: SMOOTH_LEVELS[0], wakeLock: false, bpm: 120, timeSig: 3, subDiv: 'd', refHz: 415, metroVol: .5 })
   })
   // 감도는 숫자가 아니라 단계 인덱스로 옮긴다
   test('v1 (.015/.010/.005) sensitivity maps to the same step', () => {
@@ -28,8 +28,23 @@ describe('parseStored', () => {
     for (const v of RMS_LEVELS) expect(parseStored(JSON.stringify({ v: 2, rmsMin: v })).rmsMin).toBe(v)
   })
   test('v1 unknown rms level ignored', () => expect(parseStored(JSON.stringify({ rms: .5 }))).toEqual({}))
-  test('v2 round trip', () => {
-    const v2 = { v: 2, tolCents: 5, rmsMin: RMS_LEVELS[1], smoothing: .20, wakeLock: true, bpm: 60, timeSig: 6, subDiv: 1, refHz: 442, metroVol: 1 }
+  test('v2 response speed (.06/.12/.20, 2.0.2–2.4.6) maps to the same step (slow/normal/fast), not the same number', () => {
+    expect(parseStored(JSON.stringify({ v: 2, smoothing: .06 })).smoothing).toBe(SMOOTH_LEVELS[0])
+    expect(parseStored(JSON.stringify({ v: 2, smoothing: .12 })).smoothing).toBe(SMOOTH_LEVELS[1])
+    expect(parseStored(JSON.stringify({ v: 2, smoothing: .20 })).smoothing).toBe(SMOOTH_LEVELS[2])
+    expect(parseStored(JSON.stringify({ v: 2, smoothing: .32 }))).toEqual({}) // v2 는 이 값을 쓴 적이 없다
+  })
+  test('v3 response speed passes through; unknown values are ignored', () => {
+    for (const v of SMOOTH_LEVELS) expect(parseStored(JSON.stringify({ v: 3, smoothing: v })).smoothing).toBe(v)
+    expect(parseStored(JSON.stringify({ v: 3, smoothing: .5 }))).toEqual({})
+  })
+  test('v3 round trip', () => {
+    const v3 = { v: 3, tolCents: 5, rmsMin: RMS_LEVELS[1], smoothing: SMOOTH_LEVELS[2], wakeLock: true, bpm: 60, timeSig: 6, subDiv: 1, refHz: 442, metroVol: 1 }
+    const { v, ...rest } = v3
+    expect(parseStored(JSON.stringify(v3))).toEqual(rest)
+  })
+  test('a v2 record still loads everything else unchanged (seeds, old installs)', () => {
+    const v2 = { v: 2, tolCents: 5, rmsMin: RMS_LEVELS[1], wakeLock: true, bpm: 60, timeSig: 6, subDiv: 1, refHz: 442, metroVol: 1 }
     const { v, ...rest } = v2
     expect(parseStored(JSON.stringify(v2))).toEqual(rest)
   })

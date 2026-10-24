@@ -17,8 +17,10 @@ export const RMS_LEVELS = [.010, .005, .002] as const
 export const V1_RMS_LEVELS = [.015, .010, .005] as const
 /** v2.0.0~2.0.1 이 저장했던 값. 사용자가 고른 단계를 유지하도록 인덱스로 옮긴다 */
 export const V201_RMS_LEVELS = [.024, .014, .008] as const
-/** 표시 평활 계수 — 분석 프레임(≈43 Hz) 기준 */
-export const SMOOTH_LEVELS = [.06, .12, .20] as const
+/** 표시 평활 계수(느림 / 보통 / 빠름) — 분석 프레임(≈43 Hz) 기준. +25 ¢ 계단이 바뀐 순간부터 ±3 ¢ 안에 드는 데 450 / 290 / 220 ms (옛 표는 820 / 450 / 290) */
+export const SMOOTH_LEVELS = [.12, .20, .32] as const
+/** v2.0.2~2.4.6 이 저장했던 값. 사용자가 고른 단계를 유지하도록 인덱스로 옮긴다 */
+export const V246_SMOOTH_LEVELS = [.06, .12, .20] as const
 
 export type SubDiv = 1 | 2 | 3 | 4 | 'd' // 4 = 16분음표
 export type TimeSig = 1 | 2 | 3 | 4 | 6 // 1 = 박자표 없음(정박만)

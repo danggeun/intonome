@@ -14,12 +14,12 @@ export interface TrackerParams {
   switchCents: number
   /** 다른 음 후보가 이 프레임 수만큼 연속되면 전환 */
   switchFrames: number
-  /** 유효 프레임이 끊긴 뒤 표시를 유지하는 프레임 수 */
+  /** 유효 프레임이 끊긴 뒤 표시를 유지하는 프레임 수 — 활을 들었다 놓는 틈(≈ 0.3 s)에 음이름이 사라졌다 나오지 않게 */
   releaseFrames: number
 }
 /** cents 는 가장 가까운 음에서의 편차이므로 정의상 이 값을 넘을 수 없다 */
 const HALF_SEMITONE = 50
-export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, confInstant: 0.85, medianLen: 3, switchCents: 65, switchFrames: 2, releaseFrames: 6 }
+export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, confInstant: 0.85, medianLen: 3, switchCents: 65, switchFrames: 2, releaseFrames: 20 }
 
 /** @property held 유효 프레임이 끊겨 직전 값을 그대로 다시 내보낸 횟수 (0 = 방금 측정한 값). 트레이스가 유지 프레임을 구분하는 데 쓴다 */
 export interface TrackOut { hz: number; midi: number; a: number; held: number }

@@ -73,8 +73,8 @@ describe('keepInTrace — how many held frames are allowed', () => {
   test('a short hold like a bow change (≤ TRACE_HELD_MAX) is connected', () => {
     for (let h = 1; h <= TRACE_HELD_MAX; h++) expect(keepInTrace(440, h)).toBe(true)
   })
-  test('the tail after the sound ends (held up to releaseFrames 6) is left empty', () => {
-    for (let h = TRACE_HELD_MAX + 1; h <= 6; h++) expect(keepInTrace(440, h)).toBe(false)
+  test('the tail after the sound ends (held up to releaseFrames 20) is left empty', () => {
+    for (let h = TRACE_HELD_MAX + 1; h <= 20; h++) expect(keepInTrace(440, h)).toBe(false)
   })
-  test('TRACE_HELD_MAX is 2 — 46 ms. Measured staccato coverage went 69 % → 86 % with this value', () => { expect(TRACE_HELD_MAX).toBe(2) })
+  test('TRACE_HELD_MAX is 4 — a bow change leaves one or two frames without a reading; drawing up to four keeps the line whole', () => { expect(TRACE_HELD_MAX).toBe(4) })
 })

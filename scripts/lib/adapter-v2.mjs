@@ -6,7 +6,7 @@ function make(sr, opts = {}) {
   a.setSettings({ rmsMin: .014, smoothing: .14, refHz: 440, tolCents: 15 })
   return {
     name: 'v2', windowSize: 4096,
-    process(buf) { const t0 = performance.now(); const f = a.process(buf); return { hz: f.hz, conf: f.conf, playing: f.playing, ms: performance.now() - t0 } },
+    process(buf) { const t0 = performance.now(); const f = a.process(buf); return { hz: f.hz, conf: f.conf, playing: f.playing, held: f.held, ms: performance.now() - t0 } },
   }
 }
 export const adapters = {

@@ -40,7 +40,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
                          ▼
                   Analysis Worker (analysis.worker)             ≈43 Hz
                     app-tone filter (only while Play A or the drone sounds) → ring buffer → 4096 window → FFT-YIN → spectrum (octave correction: the lowest sounding harmonic series, never a second voice above it)
-                    → tracker → playing detector
+                    → tracker (a change is confirmed over 2 frames; the last note is held ≈ 0.5 s after the sound stops; no frame is ever blanked for being unlike its neighbours) → playing detector
                     a reference other than 440 is normalized before the tracker and restored for display
                          ▼
                   tunerStore.set(...) → ui/tuner renders only the latest value on rAF
@@ -57,7 +57,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
 
 | What | Where | Schema |
 |---|---|---|
-| Settings | `localStorage["intonome_settings_v1"]` | `{v:2, …}`, value ranges validated on read |
+| Settings | `localStorage["intonome_settings_v1"]` | `{v:3, …}`, value ranges validated on read. v2 records (2.0.2–2.4.6) load; their response-speed value is mapped by level, since 2.5.0 changed the table |
 | Recordings | IndexedDB `intonome_rec` v4 | `recordings` (blob) · `meta` (bookmarks, A-B, waveform, speed, extension, peak, keep) · `chunks` (pieces while recording) |
 | Old names | `persist/legacy` | keys and DBs from earlier names (Go practice, TempoTune) are deleted once on start |
 | Retention | `core/recPolicy` | 30-day TTL (can be turned off), notice in the last 7 days, 60-minute cap |

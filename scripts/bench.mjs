@@ -84,7 +84,9 @@ function runFile(adapterFactory, wavPath) {
       // 직전 소리 구간(연주/말소리) 종료 후 grace 안이면 채점 제외 (창에 소리가 남아 있음)
       const prev = exp.segments.find(p => (p.midi != null || p.gliss || p.speech) && f.t >= p.t1 && f.t < p.t1 + W / sr + OFFSET_GRACE)
       if (prev) continue
-      if (!s.speech) falseNote.push(shown ? 1 : 0) // 말소리는 튜너가 음을 표시해도 오류가 아님 (연주감지 F1로만 채점)
+      // 소리가 끝난 뒤 마지막 음을 잠시 그대로 두는 것(held > 0, 트래커 releaseFrames)은 설계다 — 비연주 구간에서 '새로 측정한' 음만 오류로 센다.
+      // 말소리는 튜너가 음을 표시해도 오류가 아님 (연주감지 F1로만 채점)
+      if (!s.speech) falseNote.push(shown && !(f.held > 0) ? 1 : 0)
       nonPlayFrames++; if (f.playing) playFP.push(1)
     }
   }
@@ -114,7 +116,7 @@ function summarize(rows) {
 const names = (typeof args.adapters === 'string' ? args.adapters : 'v1').split(',')
 const files = readdirSync(SIG).filter(n => n.endsWith('.wav')).sort().map(n => join(SIG, n))
 let md = `# 튜너 벤치마크\n\n생성: ${new Date().toISOString().slice(0, 10)} · 신호 ${files.length}개 · hop ${HOP} · 정상상태 판정 온셋+${STEADY_SKIP}s\n\n`
-md += `지표: bias=정상상태 cents 오차 중앙값(부호), p90=|오차| 90퍼센타일, miss=정상상태인데 표시 없음 %(분모=정상상태 프레임 전체), harm=배음 관계 오류 %(×2·÷2·÷3·÷4… 전부. 같은 분모. 이 프레임은 센트 통계에서 제외), false=비연주 구간에 음 표시 %, lock=온셋→올바른 음이름 3프레임 연속 (ms, 중앙값), F1=연주감지, fPlay=비연주 구간을 연주로 본 %, tErr=연주시간 계산 오차 %((FP+FN)/실제), ms=프레임 처리시간 p95\n\n`
+md += `지표: bias=정상상태 cents 오차 중앙값(부호), p90=|오차| 90퍼센타일, miss=정상상태인데 표시 없음 %(분모=정상상태 프레임 전체), harm=배음 관계 오류 %(×2·÷2·÷3·÷4… 전부. 같은 분모. 이 프레임은 센트 통계에서 제외), false=비연주 구간에 새로 측정한 음을 표시한 %(소리가 끝난 뒤 마지막 음을 잠시 유지하는 것은 설계라 제외), lock=온셋→올바른 음이름 3프레임 연속 (ms, 중앙값), F1=연주감지, fPlay=비연주 구간을 연주로 본 %, tErr=연주시간 계산 오차 %((FP+FN)/실제), ms=프레임 처리시간 p95\n\n`
 const all = {}
 for (const name of names) {
   const rows = files.map(p => runFile(ADAPTERS[name], p))

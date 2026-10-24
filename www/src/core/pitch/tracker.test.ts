@@ -6,8 +6,8 @@ describe('tracker', () => {
   test('locks instantly on confident frame, holds through short dropouts, releases after releaseFrames', () => {
     const t = createTracker()
     expect(t.push(440, 0.95, true, A).midi).toBe(69)
-    for (let i = 0; i < 6; i++) expect(t.push(-1, 0, false, A).midi).toBe(69) // 6 misses (≈140 ms) 동안 유지
-    expect(t.push(-1, 0, false, A).midi).toBe(-1) // 7 → release
+    for (let i = 0; i < 20; i++) expect(t.push(-1, 0, false, A).midi).toBe(69) // 20 misses (≈ 430 ms) 동안 유지 — 활을 들었다 놓는 틈
+    expect(t.push(-1, 0, false, A).midi).toBe(-1) // 21 → release
   })
   test('low-confidence needs two frames', () => {
     const t = createTracker()

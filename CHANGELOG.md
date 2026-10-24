@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.5.0] - 2026-10-24
+- The tuner reads like a line, not a flicker. A note bowed again and again ("la~ la~ la~") shows as one continuous note and one unbroken pitch trace. Before, the rough moment of a bow change could blank the note for a few frames and cut the trace there, and a note could disappear between two strokes
+- The stability check that caused it is gone: the tuner no longer hides a reading because the last few were unlike each other. One stray frame is absorbed by the pitch tracker as before; it isn't shown and it doesn't blank the screen
+- After the sound stops, the note stays about half a second before it goes to "--" (was about 0.15 s), so lifting the bow between notes doesn't make the display drop out
+- Tuner response (Settings) is faster at every level: a change of 25 cents settles within 3 cents about 0.45 / 0.29 / 0.22 s after the change (was 0.82 / 0.45 / 0.29 s). Your saved level is kept
+- Settings are stored as version 3; settings saved by 2.0.2–2.4.6 load as before
+- New unit tests: a note bowed six times (G3, D3, A4, A2, E5; 40, 50 and 250 ms between strokes; two kinds of attack; three noise seeds) never blanks, never changes note and leaves one unbroken trace; the note lingers ~0.5 s after the sound ends. 2.4.6 fails 10 of the 38
+- Benchmark: the note held after a sound ends is no longer scored as a false note (it is by design). Against 2.4.6 on the same 42 signals only three numbers move: snr0 miss 2.5 → 1.3 %, staccato lock 100 → 99 ms, and the clicks signal locks two frames later (118 ms) because the benchmark, unlike the app, doesn't mute the clicks, and a click before the onset now lingers into it
+
 ## [2.4.6] - 2026-10-03
 - The tuner reads your own string in a room full of other players. It now always shows the loudest sound it hears and no longer switches to a second note above it, which in a hall meant someone else's note
 - The double-stop line under the note is gone with it. A double stop reads as its lower note, steadily, like a single-note tuner
