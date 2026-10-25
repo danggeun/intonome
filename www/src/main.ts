@@ -6,6 +6,7 @@ import './fonts.css'
 import './style.css'
 import { settingsStore, tunerStore, metroStore, refToneStore, droneStore, CFG } from './state/index.ts'
 import { loadSettings, startSettingsAutosave, onPersistError } from './persist/settings.ts'
+import { isNewInstall, tourPending, markTourDone } from './persist/tour.ts'
 import { openRecDb, onDbError } from './persist/recordingsDb.ts'
 import { clearLegacyStorage } from './persist/legacy.ts'
 import { openMic, closeMic, onMic, A, resumeIfRunning, onEngineFatal, setIdleCheck, onContextState, isPermissionError, isOpening, cancelOpen, untilOpenSettled } from './audio/engine.ts'
@@ -33,6 +34,7 @@ import { mountRecHeader } from './ui/recHeader.ts'
 import { mountRecList } from './ui/recList.ts'
 import { mountEditor, openEditor, closeEditorIfEditing, closeEditor, isEditorOpen, editorDiag } from './ui/editor.ts'
 import { hideLaunch } from './ui/launch.ts'
+import { mountTour, tourActive, endTour } from './ui/tour.ts'
 import { stopMetro } from './audio/metronome.ts'
 import { stopRec } from './audio/recorder.ts'
 import { sessionStore } from './state/index.ts'
@@ -40,6 +42,7 @@ import { registerSW } from 'virtual:pwa-register'
 
 initStatusBar(); fitStandaloneHeight()
 
+const newInstall = isNewInstall() // 처음 안내용 — 아래 clearLegacyStorage 가 남기는 표식을 보기 전에
 clearLegacyStorage()
 
 // 설정 복원은 화면 마운트 전에 — 초기 렌더가 복원값을 쓴다
@@ -50,6 +53,8 @@ mountLang(); mountTheme(); onThemeChange(retheme)
 mountTuner(); mountRefDrum(); mountMetro(); mountRefPanel(); mountDrone(); mountMenu(); mountSettings()
 mountTimer()
 mountRecList(openEditor, closeEditorIfEditing); mountEditor()
+// 처음 안내: 새로 설치한 기기에서만 저절로(이미 쓰던 기기는 업데이트로 받아도 안 뜬다). 끝내거나 그만두면 다시 안 뜬다
+mountTour({ pending: tourPending(newInstall), onDone: markTourDone })
 hideLaunch() // 아이폰 홈 화면 웹앱: 스플래시와 같은 첫 화면을 다 그린 뒤 걷는다
 
 // 마이크 생명주기
@@ -165,6 +170,7 @@ onBackButton(() => {
   if (q('menu-overlay').classList.contains('open')) { hideMenu(); return true }
   if (q('mic-popup-bg').classList.contains('show')) { closeMicPopup(); return true }
   if (dronePopOpen()) { closeDronePop(); return true }
+  if (tourActive()) { endTour(); return true } // 위의 창이 다 닫혀 있을 때 — 처음 안내를 그만둔다
   return false
 })
 // 설치 앱·홈 화면 웹앱은 이미 전체화면이라 행을 숨긴다
@@ -208,7 +214,7 @@ openRecDb().then(restoreRecordings).then(recoverInProgress).then(n => { if (n) t
 
 // Service Worker (웹 PWA 만): 새 버전은 앱이 유휴일 때 적용해 리로드
 if (!isNative() && 'serviceWorker' in navigator) {
-  const idle = () => !tunerStore.get().running && !metroStore.get().playing && !droneOn() && !sessionStore.get().recording && !isEditorOpen()
+  const idle = () => !tunerStore.get().running && !metroStore.get().playing && !droneOn() && !sessionStore.get().recording && !isEditorOpen() && !tourActive()
   const updateSW = registerSW({
     onNeedRefresh() {
       if (idle()) { void updateSW(true); return }

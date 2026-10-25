@@ -19,6 +19,7 @@ Web (PWA) and Android. Works offline; audio never leaves the device.
 - **Play A and drone**: the A in your string's octave, or any of the 12 notes held while you practice. The tuner ignores both and keeps reading you. To see the very same note (or its octave) on the tuner while one sounds, use earphones: through the speaker that note is cut along with the tone.
 - **Recorder and editor**: waveform, A-B loop, bookmarks, 0.5–1.5× speed, save a section as WAV. Recordings are recovered if the app is killed.
 - **Practice timer**: counts only the time you actually played, and shows in the header while it runs.
+- A short guide on a new install lights the tuner, metronome and buttons one at a time, with the hidden gestures tried in place; replay it from Settings.
 - Dark and light themes, dark by default. Starts in Korean on a phone set to Korean and in English otherwise; switch any time in Settings.
 
 ## Run

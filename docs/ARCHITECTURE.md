@@ -6,11 +6,11 @@
 www/src/
   main.ts      Wiring: connects modules, startup sequence, service worker, diagnostics hook window.__tt
   ui/          DOM bindings per card: tuner, refDrum, refPanel (Play A), drone, metro, dial, swipeBack, swipeStep, menu, settings, timer,
-               micPopup, recHeader, recList, editor, toast, theme, lang. mount*() binds the DOM and subscribes to stores
+               micPopup, recHeader, recList, editor, toast, theme, lang, tour (first-run guide). mount*() binds the DOM and subscribes to stores
   audio/       Web Audio adapters: engine (single AudioContext, mic session), analysis (+worker), capture.worklet,
                metronome (+metro.worklet), refTone (Play A and drone), recorder, playback, messages
   state/       Stores per domain (settings / tuner / metro / refTone / drone / session / recList). Source of the types
-  persist/     Settings in localStorage, recordings in IndexedDB
+  persist/     Settings and the first-run guide flag in localStorage, recordings in IndexedDB
   platform/    Web / Capacitor branches (status bar, wake lock, full screen, file saving, back button)
   core/        Pure logic, no browser APIs, all unit-tested:
                pitch/(fft, yinFast, spectrum, tracker, analyzer) · playing/detector · metro/(sequencer, arrival, sweep, dial)
@@ -60,6 +60,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
 |---|---|---|
 | Settings | `localStorage["intonome_settings_v1"]` | `{v:3, …}`, value ranges validated on read. v2 records (2.0.2–2.4.6) load; their response-speed value is mapped by level, since 2.5.0 changed the table |
 | Recordings | IndexedDB `intonome_rec` v4 | `recordings` (blob) · `meta` (bookmarks, A-B, waveform, speed, extension, peak, keep) · `chunks` (pieces while recording) |
+| First-run guide | `localStorage["intonome_tour_v1"]` | `new` = show when the tuner turns on, `done` = seen or closed. Written once on start: `new` only when no settings were saved (a new install), so updates never see it |
 | Old names | `persist/legacy` | keys and DBs from earlier names (Go practice, TempoTune) are deleted once on start |
 | Retention | `core/recPolicy` | 30-day TTL (can be turned off), notice in the last 7 days, 60-minute cap |
 

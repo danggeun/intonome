@@ -730,6 +730,159 @@ await scenario('first launch on a Korean phone: Korean from the first paint; Eng
   assert.equal(await p.evaluate(() => document.documentElement.lang), 'en', '저장된 영어')
 }, { fresh: true, locale: 'ko-KR' })
 
+// 처음 안내 (ui/tour.ts) — 새로 설치한 기기에서만, 튜너가 켜진 뒤 한 번. 해 보는 단계는 해 보면 설명이 바뀌고, 안내 중에 켠 것·바꾼 것은 그 단계를 떠날 때 되돌린다
+const tour = p => p.evaluate(() => { const b = document.getElementById('tour'); return { on: !!b && b.classList.contains('in') && !b.classList.contains('hide'), hidden: !!b && b.classList.contains('hide'), title: b?.querySelector('.tour-title')?.textContent ?? '', body: b?.querySelector('.tour-body')?.textContent ?? '', soft: !!b?.querySelector('.tour-next.soft'), key: localStorage.getItem('intonome_tour_v1') } })
+const tourNext = async p => { await p.click('#tour .tour-next'); await sleep(p, 450) }
+const waitTour = (p, ms = 6000) => waitUntil(p, () => { const b = document.getElementById('tour'); return !!b && b.classList.contains('in') }, ms, 'first-run guide')
+const themeColor = p => p.evaluate(() => document.querySelector('meta[name="theme-color"]').content)
+await scenario('first-run guide: a fresh install walks through every step and nothing it touched is left changed', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitTour(p)
+  let s = await tour(p); assert.equal(s.key, 'new', '끝내기 전에는 다음 실행에 다시 뜬다')
+  assert.notEqual(await themeColor(p), '#181b21', '막이 떠 있는 동안 상태바도 어둡게')
+  // 첫 장: × 를 가리키는 '언제든 그만두기' 말풍선 — 밝힌 곳(음이름·¢)과 말풍선 사이 틈에 떠서 아무것도 가리지 않는다
+  const hint = await p.evaluate(() => { const h = document.querySelector('#tour .tour-skip-hint'), r = h.getBoundingClientRect(), sp = document.querySelector('#tour .tour-spot').getBoundingClientRect(), c = document.querySelector('#tour .tour-card').getBoundingClientRect(); return { text: h.textContent, shown: !h.hidden, top: r.top, bottom: r.bottom, spotBottom: sp.bottom, cardTop: c.top } })
+  assert.equal(hint.text, '언제든 그만두기'); assert.equal(hint.shown, true)
+  assert.ok(hint.top >= hint.spotBottom && hint.bottom <= hint.cardTop, '말풍선이 밝힌 곳을 가리지 않는다: ' + JSON.stringify(hint))
+  // ① 소리를 내면 읽는 법으로 바뀐다(허용 오차 값이 들어간다). "다음"이 진해진다
+  await waitUntil(p, () => !document.querySelector('#tour .tour-next.soft'), 5000, 'note step done')
+  s = await tour(p); assert.equal(s.title, '이렇게 읽으면 돼요'); assert.match(s.body, /±10¢/)
+  await tourNext(p); assert.equal((await tour(p)).title, '음정이 선으로 남아요')
+  // ③ 기준음: 밀어서 바꾸면 설명이 바뀌고, 다음으로 가면 442 로 돌아간다
+  await tourNext(p); s = await tour(p); assert.equal(s.title, '기준음은 밀어서 바꿔요'); assert.equal(s.soft, true)
+  const box = await p.locator('#ref-drum-outer').boundingBox()
+  await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await p.mouse.down(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 56, { steps: 8 }); await p.mouse.up(); await sleep(p, 400)
+  s = await tour(p); assert.equal(s.title, '이렇게 바꾸면 돼요'); assert.match(s.body, /442 Hz/)
+  assert.equal(await p.evaluate(() => document.querySelector('.ref-drum-item.active').textContent), '440 Hz')
+  await tourNext(p); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.querySelector('.ref-drum-item.active').textContent), '442 Hz', '안내에서 바꾼 기준음은 되돌린다')
+  // ④ A 듣기: 켜 보고 넘어가면 꺼진다
+  assert.equal((await tour(p)).title, 'A 듣기')
+  await p.click('#ref-a-btn'); await sleep(p, 200); assert.equal(await p.evaluate(() => document.getElementById('ref-a-btn').classList.contains('on')), true)
+  await tourNext(p); assert.equal(await p.evaluate(() => document.getElementById('ref-a-btn').classList.contains('on')), false, 'A 듣기는 꺼진다')
+  // ⑤ 드론: 창이 뜨는 동안 안내는 숨고, 고르면 다시 보인다. 드론 창의 첫 안내 토스트는 안 뜬다(같은 말). 넘어가면 꺼진다
+  assert.match((await tour(p)).title, /^DRONE/)
+  await p.click('#drone-btn'); await sleep(p, 200); assert.equal((await tour(p)).hidden, true, '드론 창이 떠 있는 동안 숨는다')
+  await p.click('.drone-note-btn[data-pc="9"]'); await sleep(p, 300)
+  assert.equal((await tour(p)).on, true); assert.equal(await p.evaluate(() => document.getElementById('drone-btn').classList.contains('on')), true)
+  assert.equal(await p.evaluate(() => document.getElementById('toast-host').textContent.includes('고른 음이 계속')), false, '드론 첫 안내 토스트는 겹쳐 뜨지 않는다')
+  await tourNext(p); assert.equal(await p.evaluate(() => document.getElementById('drone-btn').classList.contains('on')), false, '드론은 꺼진다')
+  // ⑥ 메트로놈: 위로 밀면 → 아래로 밀어 보라고, 접으면 → 빠르기 바꾸는 법
+  s = await tour(p); assert.equal(s.title, '메트로놈은 위로 밀어 보세요'); assert.equal(s.soft, true)
+  // 펼침 → 메트로놈만 크게(밀어야만 가는 화면) → 내려서 펼침 → 접힘
+  await swipeUp(p); s = await tour(p); assert.equal(s.title, '한 번 더 올려 보세요')
+  assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), false)
+  await swipeUp(p); s = await tour(p); assert.equal(s.title, '이제 아래로 내려 보세요'); assert.equal(s.soft, true)
+  assert.equal(await p.evaluate(() => document.getElementById('metro-card').classList.contains('full')), true)
+  const hb = await p.evaluate(() => { const c = document.querySelector('#tour .tour-card').getBoundingClientRect(), h = document.getElementById('metro-hdr').getBoundingClientRect(), d = document.getElementById('dial').getBoundingClientRect(); return { cardTop: c.top, hdrBottom: h.bottom, dialBottom: d.bottom } })
+  assert.ok(hb.cardTop > hb.dialBottom, '크게 보는 화면에서 말풍선이 헤더·다이얼을 가리지 않는다: ' + JSON.stringify(hb))
+  await swipeDown(p); s = await tour(p); assert.equal(s.title, '한 번 더 내려 보세요')
+  await swipeDown(p); s = await tour(p); assert.equal(s.title, '좋아요'); assert.equal(s.soft, false)
+  assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), true)
+  // 접은 뒤: ♩ 숫자에 밀기 표시. 밀어 보면 '원래 빠르기로 돌아간다' 로 바뀌고, 다음으로 가면 80 으로
+  assert.equal(await p.evaluate(() => document.querySelector('#tour .tour-pulse').className), 'tour-pulse g-drag')
+  const lb = await p.locator('#metro-hdr-label').boundingBox()
+  await p.mouse.move(lb.x + lb.width / 2, lb.y + lb.height / 2); await p.mouse.down(); await p.mouse.move(lb.x + lb.width / 2, lb.y + lb.height / 2 - 60, { steps: 8 }); await p.mouse.up(); await sleep(p, 300)
+  s = await tour(p); assert.equal(s.title, '이렇게 바꾸면 돼요'); assert.match(s.body, /\(80\)/)
+  assert.notEqual(await p.evaluate(() => document.getElementById('metro-hdr-bpm').textContent), '80')
+  // ⑦~⑨ 보여 주기만: 밝힌 버튼을 눌러도 아무것도 시작되지 않는다(녹음이 시작되면 안 된다)
+  await tourNext(p); assert.equal((await tour(p)).title, 'REC')
+  assert.equal(await p.evaluate(() => document.getElementById('metro-hdr-bpm').textContent), '80', '안내에서 바꾼 빠르기는 되돌린다')
+  assert.equal(await p.evaluate(() => document.querySelector('#tour .tour-skip-hint').hidden), true, '× 말풍선은 첫 장에서만')
+  const rb = await p.locator('#rec-hdr-btn').boundingBox(); await p.mouse.click(rb.x + rb.width / 2, rb.y + rb.height / 2); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), false, '안내 중 REC 를 눌러도 녹음되지 않는다')
+  await tourNext(p); assert.equal((await tour(p)).title, '메뉴')
+  await tourNext(p); assert.equal((await tour(p)).title, '설정')
+  await tourNext(p); s = await tour(p); assert.equal(s.title, '준비됐어요')
+  assert.equal(await p.evaluate(() => document.querySelector('#tour .tour-next').textContent), '시작하기')
+  await tourNext(p); s = await tour(p); assert.equal(s.on, false); assert.equal(s.key, 'done')
+  assert.equal(await themeColor(p), '#181b21', '끝나면 상태바 색이 돌아온다')
+  // 안내가 아무 설정도 남기지 않았다 (기준음·빠르기·박자)
+  await sleep(p, 500)
+  const st = await p.evaluate(() => JSON.parse(localStorage.getItem('intonome_settings_v1') || '{}'))
+  assert.ok(st.refHz === undefined || st.refHz === 442, 'refHz ' + st.refHz); assert.ok(st.bpm === undefined || st.bpm === 80, 'bpm ' + st.bpm)
+  // 다음 실행에는 안 뜬다
+  await p.reload(); await sleep(p, 2500); assert.equal((await tour(p)).on, false, '한 번 보면 다시 안 뜬다')
+}, { fresh: true, locale: 'ko-KR' })
+await scenario('first-run guide: × closes it right away and it never comes back; Settings › Show again replays it (English)', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitTour(p)
+  const s = await tour(p); assert.equal(s.title === 'Play any note' || s.title === 'How to read it', true, s.title)
+  assert.equal(await p.evaluate(() => document.querySelector('#tour .tour-skip').getAttribute('aria-label')), 'Close guide')
+  await p.click('#tour .tour-skip'); await sleep(p, 400)
+  assert.deepEqual([(await tour(p)).on, (await tour(p)).key], [false, 'done'])
+  await p.reload(); await sleep(p, 2500); assert.equal((await tour(p)).on, false, '그만둔 뒤에도 다시 안 뜬다')
+  // 설정에서 다시 보기: 설정이 닫히고 첫 장부터
+  await p.click('#settings-hdr-btn'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.getElementById('tour-replay-btn').textContent), 'Show again')
+  await p.click('#tour-replay-btn'); await waitTour(p, 2000)
+  assert.equal(await p.evaluate(() => document.getElementById('settings-page').classList.contains('open')), false)
+  assert.equal(await p.evaluate(() => document.querySelectorAll('#tour .tour-dots i.on').length === 1 && document.querySelector('#tour .tour-dots i').classList.contains('on')), true, '첫 장부터')
+  // Esc 로도 그만둔다
+  await p.keyboard.press('Escape'); await sleep(p, 400); assert.equal((await tour(p)).on, false)
+}, { fresh: true })
+await scenario('first-run guide: a device that already has saved settings (an update) never sees it', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라'); await sleep(p, 1500)
+  assert.equal(await p.evaluate(() => !!document.getElementById('tour')), false, '레이어도 만들지 않는다')
+  assert.equal(await p.evaluate(() => localStorage.getItem('intonome_tour_v1')), 'done')
+})
+await scenario('first-run guide: leaving the metronome step open and playing folds it and stops it; Space does not start it under the guide', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitTour(p)
+  for (let k = 0; k < 5; k++) await tourNext(p)
+  assert.equal((await tour(p)).title, '메트로놈은 위로 밀어 보세요')
+  await p.evaluate(() => document.activeElement?.blur()) // 포커스된 말풍선 버튼의 Space 는 그 버튼의 것 — 화면 쪽 단축키만 본다
+  await p.keyboard.press('Space'); await sleep(p, 300); assert.equal(await p.evaluate(() => document.getElementById('metro-play-hdr-btn').textContent), '▶', 'Space 는 막 아래로 가지 않는다')
+  await sizeTap(p); assert.equal((await tour(p)).title, '한 번 더 올려 보세요', '∧ 버튼으로 펼쳐도 된다')
+  await p.click('#metro-play-btn'); await sleep(p, 300); assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').textContent), '■')
+  await tourNext(p); await settled(p)
+  assert.deepEqual(await p.evaluate(() => ({ collapsed: document.getElementById('metro-body-wrap').classList.contains('collapsed'), play: document.getElementById('metro-play-hdr-btn').textContent })), { collapsed: true, play: '▶' })
+  // 이전으로 돌아가도 다시 처음 상태(위로 밀어 보세요)
+  await p.click('#tour .tour-prev'); await sleep(p, 400); assert.equal((await tour(p)).title, '메트로놈은 위로 밀어 보세요')
+}, { fresh: true, locale: 'ko-KR' })
+await scenario('first-run guide (wide screen): the bubble sits beside the tall metronome; ∧ goes to the full view and back', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitTour(p)
+  for (let k = 0; k < 5; k++) await tourNext(p)
+  assert.equal((await tour(p)).body, '메트로놈만 크게 볼 수 있어요. ∧를 눌러도 돼요')
+  const r = await p.evaluate(() => { const c = document.querySelector('#tour .tour-card').getBoundingClientRect(), m = document.getElementById('metro-card').getBoundingClientRect(); return { cardRight: c.right, metroLeft: m.left, side: document.querySelector('#tour .tour-card').classList.contains('side-l') } })
+  assert.ok(r.side && r.cardRight <= r.metroLeft, '말풍선이 메트로놈을 가리지 않는다: ' + JSON.stringify(r))
+  await sizeTap(p); assert.equal((await tour(p)).title, '이제 아래로 내려 보세요')
+  await sizeTap(p); assert.equal((await tour(p)).title, '좋아요')
+}, { fresh: true, locale: 'ko-KR', viewport: { width: 900, height: 1000 }, isMobile: false })
+
+await scenario('first-run guide: an install that ran before but never saved a setting does not see it either', 'violin_A4.wav', async (p, ctx) => {
+  await ctx.addInitScript(() => { if (!localStorage.getItem('intonome_legacy_cleared_v1')) localStorage.setItem('intonome_legacy_cleared_v1', '1') }) // 앱이 첫 실행마다 남기는 표식만 있고 설정은 없다
+  await p.goto(URL_); await waitNote(p, t => t.note === '라'); await sleep(p, 1500)
+  assert.equal(await p.evaluate(() => !!document.getElementById('tour')), false)
+  assert.equal(await p.evaluate(() => localStorage.getItem('intonome_tour_v1')), 'done')
+}, { fresh: true, locale: 'ko-KR' })
+await scenario('first-run guide: going to the background mid-step puts the step back before settings are saved', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitTour(p)
+  await tourNext(p); await tourNext(p)
+  const box = await p.locator('#ref-drum-outer').boundingBox()
+  await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await p.mouse.down(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 56, { steps: 8 }); await p.mouse.up(); await sleep(p, 100)
+  assert.equal(await p.evaluate(() => document.querySelector('.ref-drum-item.active').textContent), '440 Hz')
+  const vis = v => p.evaluate(v => { Object.defineProperty(document, 'visibilityState', { value: v, configurable: true }); document.dispatchEvent(new Event('visibilitychange')) }, v)
+  await vis('hidden')
+  const saved = await p.evaluate(() => JSON.parse(localStorage.getItem('intonome_settings_v1') || '{}').refHz)
+  assert.ok(saved === undefined || saved === 442, '저장된 기준음은 442: ' + saved)
+  await vis('visible'); await sleep(p, 600)
+  const s = await tour(p); assert.equal(s.title, '기준음은 밀어서 바꿔요', '돌아오면 그 단계를 처음부터'); assert.equal(s.key, 'new')
+}, { fresh: true, locale: 'ko-KR' })
+await scenario('first-run guide: replay from the metronome-only view shows the tuner, and a drone that was on comes back after Play A', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#drone-btn'); await p.click('.drone-note-btn[data-pc="2"]'); await sleep(p, 200)
+  await toFull(p)
+  await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#tour-replay-btn'); await waitTour(p, 2000); await settled(p)
+  assert.equal(await p.evaluate(() => document.getElementById('metro-card').classList.contains('full')), false, '안내 동안은 튜너가 보인다')
+  assert.ok(await p.evaluate(() => parseFloat(document.querySelector('#tour .tour-spot').style.width) > 50), '첫 단계의 구멍이 있다')
+  for (let k = 0; k < 3; k++) await tourNext(p)
+  assert.equal((await tour(p)).title, 'A 듣기')
+  await p.click('#ref-a-btn'); await sleep(p, 200)
+  assert.equal(await p.evaluate(() => document.getElementById('drone-btn').classList.contains('on')), false, 'A 듣기가 드론을 끈다(앱 규칙)')
+  await tourNext(p)
+  assert.equal(await p.evaluate(() => document.getElementById('drone-btn').textContent), '레', '그 단계에서 꺼진 드론은 다시 켠다')
+  await p.keyboard.press('Escape'); await sleep(p, 300); await settled(p)
+  assert.equal(await p.evaluate(() => document.getElementById('metro-card').classList.contains('full')), true, '끝나면 메트로놈만 보는 화면으로 돌아간다')
+})
+
 // 녹음 / 편집
 // 녹음 중 조각이 IDB 에 남아 있으면(앱이 죽었다) 다음 실행에서 항목으로 복구된다
 await scenario('rec: chunks of an unfinished recording are recovered on the next launch', 'violin_A4.wav', async p => {
@@ -1127,9 +1280,11 @@ await scenario('Play A with earphones (the tone never reaches the mic): the same
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#ref-a-btn'); await sleep(p, 700)
   assert.equal(await p.evaluate(() => document.getElementById('ref-a-btn').classList.contains('on')), true, 'A 듣기 on')
-  const seen = []; for (let i = 0; i < 26; i++) { seen.push(await tunerText(p)); await sleep(p, 100) } // 2.6 s = 파일 한 바퀴(비브라토 없이 그은 개방현 2 s + 무음 0.6 s)
+  // 5.2 s = 파일 두 바퀴(비브라토 없이 그은 개방현 2 s + 무음 0.6 s). 이미 울리던 활에 A 를 켜면 그 활은 설계대로 '--' 로 남는다(2.5.4) —
+  // 누른 때가 활의 어디냐에 따라 첫 활이 통째로 빠질 수 있어, 한 바퀴만 보면 타이밍 따라 실패했다. 다음 활부터는 끝까지 읽어야 한다
+  const seen = []; for (let i = 0; i < 52; i++) { seen.push(await tunerText(p)); await sleep(p, 100) }
   const la = seen.filter(t => t.note === '라')
-  assert.ok(la.length >= 15, `라 ${la.length}/26: ${seen.map(t => t.note).join('')}`)
+  assert.ok(la.length >= 25, `라 ${la.length}/52: ${seen.map(t => t.note).join('')}`)
   const near = la.filter(t => Math.abs(parseInt(t.cents, 10)) <= 3) // 파일이 다시 시작할 때의 어택은 평소에도 잠깐 위로 읽힌다
   assert.ok(near.length >= 0.8 * la.length, la.map(t => t.cents).join(' '))
   await p.click('#ref-a-btn')

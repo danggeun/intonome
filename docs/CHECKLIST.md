@@ -10,6 +10,13 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] AudioContext starts suspended (for example after an automatic update reload) → start button, and a tap anywhere resumes
 - [D] Android app: tries the mic on launch; a toast explains how to allow it if denied
 
+## First-run guide
+- [A] New install: once the tuner is on, a guide lights one part at a time (note, trace, A =, Play A, Drone, metronome, REC, menu, Settings, start card). Playing a note, sliding A = and swiping the metronome card (up, up to the metronome-only view, down, down) change the note; × / Esc close it; it never shows again
+- [A] Anything changed or started during a step is put back when the step is left (A =, tempo, Play A, drone, metronome, card size); lit buttons that are only pointed out (REC) do nothing; Space doesn't start the metronome under it
+- [A] An install with saved settings never sees it; Settings › App guide › Show again replays it from the first card
+- [A] Wide screen: the card sits beside the tall metronome; ∧ goes to the full view and back
+- [D] Android: the back button closes the guide; the status bar dims with it and comes back
+
 ## Tuner
 - [A] 440 Hz input with A=442 → A4 (라4), −8 ¢ (WAV injection e2e)
 - [A] Cello C2 (65 Hz) → C2 (도2)

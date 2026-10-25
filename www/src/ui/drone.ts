@@ -24,6 +24,8 @@ function openPop(): void {
   try { if (!localStorage.getItem(HINT_KEY)) { localStorage.setItem(HINT_KEY, '1'); first = true } } catch { /* 저장이 막히면 띄우지 않는다 — 매번 뜨지 않게 */ }
   if (first) toast(t('drone.hint'), 4000)
 }
+/** 처음 안내가 같은 말을 이미 했다 — 창을 처음 열 때의 안내를 띄우지 않는다 */
+export function skipDroneHint(): void { try { localStorage.setItem(HINT_KEY, '1') } catch { /* 한 번 더 뜰 뿐 */ } }
 export function closeDronePop(): void {
   q('drone-pop').classList.remove('open'); q('drone-pop-bg').classList.remove('open'); q('drone-btn').setAttribute('aria-expanded', 'false')
 }

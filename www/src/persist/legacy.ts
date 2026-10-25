@@ -5,7 +5,7 @@
 import { LEGACY_REC_DBS } from './recordingsDb.ts'
 import { LEGACY_SETTINGS_KEYS } from './settings.ts'
 
-const DONE_KEY = 'intonome_legacy_cleared_v1' // 이름이 바뀔 때마다 새 표식 — 늘어난 목록으로 한 번 더 돈다
+export const DONE_KEY = 'intonome_legacy_cleared_v1' // 이름이 바뀔 때마다 새 표식 — 늘어난 목록으로 한 번 더 돈다
 
 export function clearLegacyStorage(): void {
   try { if (localStorage.getItem(DONE_KEY)) return } catch { return } // 저장소 자체를 못 쓰면 할 일도 없다

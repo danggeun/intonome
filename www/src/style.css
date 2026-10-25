@@ -474,3 +474,70 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   #metro-body-wrap{grid-template-rows:1fr!important;}
   #metro-body-clip{opacity:1!important;pointer-events:auto!important;}
 }
+
+/* 처음 안내 (ui/tour.ts) — 막 하나에 밝은 구멍 하나. 메뉴(50)·설정(60) 위, 마이크 안내(90)·토스트(200) 아래. 편집기·드론 창(70)이 뜨면 안내가 숨는다 */
+#tour{position:fixed;inset:0;z-index:80;pointer-events:none;-webkit-user-select:none;user-select:none;opacity:0;visibility:hidden;transition:opacity var(--t-std) var(--ease),visibility 0s var(--t-std);}
+#tour.in{opacity:1;visibility:visible;transition:opacity .3s var(--ease),visibility 0s;}
+#tour.hide{opacity:0;visibility:hidden;transition:none;}
+#tour:not(.in) .tour-block,#tour:not(.in) .tour-card{pointer-events:none;} /* 사라지는 0.2 초 동안에도 앱을 바로 누를 수 있게 */
+#tour:not(.in) .tour-pulse i,#tour.hide .tour-pulse i{animation:none;}
+/* 구멍: 그림자가 곧 어두운 막(막 색 = 다른 창의 --scrim). 가는 테두리로 밝은 곳의 가장자리를 보여 준다 */
+.tour-spot{position:fixed;pointer-events:none;box-shadow:0 0 0 2px rgba(var(--text-rgb),.3),0 0 0 200vmax var(--scrim);}
+.tour-spot.none{box-shadow:0 0 0 200vmax var(--scrim);}
+#tour.moving .tour-spot{transition:left .38s var(--ease),top .38s var(--ease),width .38s var(--ease),height .38s var(--ease),border-radius .38s var(--ease);}
+.tour-block{position:fixed;pointer-events:auto;touch-action:none;}
+/* 해 볼 곳: 탭 = 퍼지는 고리 둘, 밀기 = 위·아래로 가는 손끝 */
+.tour-pulse{position:fixed;width:0;height:0;pointer-events:none;}
+.tour-pulse i{position:absolute;left:0;top:0;border-radius:50%;}
+.tour-pulse.g-tap i{width:44px;height:44px;margin:-22px 0 0 -22px;border:2px solid rgba(var(--text-rgb),.9);opacity:0;animation:tour-ring 1.6s var(--ease) infinite;}
+.tour-pulse.g-tap i+i{animation-delay:.8s;}
+.tour-pulse.g-swipeUp i,.tour-pulse.g-swipeDown i,.tour-pulse.g-drag i{width:20px;height:20px;margin:-10px 0 0 -10px;background:rgba(var(--text-rgb),.8);box-shadow:0 0 0 6px rgba(var(--text-rgb),.2);}
+.tour-pulse.g-swipeUp i+i,.tour-pulse.g-swipeDown i+i,.tour-pulse.g-drag i+i{display:none;}
+.tour-pulse.g-swipeUp i{animation:tour-up 1.6s var(--ease) infinite;}
+.tour-pulse.g-swipeDown i{animation:tour-down 1.6s var(--ease) infinite;}
+.tour-pulse.g-drag i{animation:tour-drag 1.8s ease-in-out infinite;}
+@keyframes tour-ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+@keyframes tour-up{0%{transform:translateY(16px);opacity:0}15%{opacity:1}70%{transform:translateY(-36px);opacity:1}100%{transform:translateY(-44px);opacity:0}}
+@keyframes tour-down{0%{transform:translateY(-16px);opacity:0}15%{opacity:1}70%{transform:translateY(36px);opacity:1}100%{transform:translateY(44px);opacity:0}}
+@keyframes tour-drag{0%,100%{transform:translateY(11px)}50%{transform:translateY(-11px)}}
+/* 말풍선 */
+.tour-card{position:fixed;left:0;top:0;width:min(340px,calc(100vw - 32px));pointer-events:auto;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r-lg);padding:var(--s4) var(--s4) var(--s3) var(--s5);box-shadow:0 12px 32px rgba(var(--shadow-rgb),.35);color:var(--text);}
+#tour.moving .tour-card{transition:left .38s var(--ease),top .38s var(--ease);}
+.tour-caret{position:absolute;top:-7px;width:12px;height:12px;margin-left:-6px;background:var(--surface);border-left:1px solid var(--line-strong);border-top:1px solid var(--line-strong);transform:rotate(45deg);}
+.tour-card:focus{outline:none;} /* 스크린 리더가 읽도록 포커스만 옮긴다 */
+.tour-card.up .tour-caret{top:auto;bottom:-7px;transform:rotate(225deg);}
+.tour-card.side-l .tour-caret{left:auto;right:-7px;margin:-6px 0 0;transform:rotate(135deg);}
+.tour-card.side-r .tour-caret{left:-7px;margin:-6px 0 0;transform:rotate(-45deg);}
+.tour-title{font-size:var(--fs-lg);font-weight:var(--fw-b);line-height:1.35;padding-right:36px;color:var(--text);}
+.tour-body{font-size:var(--fs-base);color:var(--text-2);line-height:1.55;margin-top:var(--s1);word-break:keep-all;}
+.tour-title.swap,.tour-body.swap{animation:tour-in .32s var(--ease);}
+@keyframes tour-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.tour-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);margin-top:var(--s3);}
+.tour-dots{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.tour-dots i{width:6px;height:6px;border-radius:3px;background:var(--line-strong);transition:width var(--t-std) var(--ease),background var(--t-std);}
+.tour-dots i.on{width:16px;background:var(--text);}
+.tour-btns{display:flex;gap:var(--s1);align-items:center;}
+.tour-prev{height:var(--h-seg);padding:0 var(--s3);background:transparent;border:none;color:var(--text-2);font-size:var(--fs-base);font-weight:var(--fw-md);cursor:pointer;}
+.tour-next{height:var(--h-seg);min-width:88px;padding:0 var(--s4);background:var(--surface-2);border:1px solid var(--line-ctl);border-radius:var(--r-md);color:var(--text);font-size:var(--fs-base);font-weight:var(--fw-b);cursor:pointer;transition:background var(--t-std),color var(--t-std),border-color var(--t-std);} /* 앱의 빨강은 '켜짐'·재생 — 안내 버튼은 무채색 */
+.tour-next.soft{background:transparent;border-color:var(--line);color:var(--text-2);font-weight:var(--fw-md);} /* 해 보기 전: 눌러도 넘어가지만, 먼저 해 보라는 뜻 */
+.tour-next.nudge{animation:tour-nudge .45s var(--ease);}
+@keyframes tour-nudge{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+.tour-skip{position:absolute;top:2px;right:2px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-3);cursor:pointer;}
+.tour-skip[hidden],.tour-prev[hidden],.tour-skip-hint[hidden],.tour-icon[hidden]{display:none;}
+/* 첫 장에서만: × 를 가리키는 말풍선 — 말풍선 위, 밝힌 곳과의 틈(tour.ts 가 그만큼 띄운다) */
+.tour-skip-hint{position:absolute;right:6px;bottom:calc(100% + 8px);padding:6px 10px;border-radius:var(--r-sm);background:var(--ink);color:var(--bg);font-size:var(--fs-sm);font-weight:var(--fw-md);line-height:1.3;white-space:nowrap;pointer-events:none;}
+.tour-skip-hint::after{content:'';position:absolute;right:16px;top:100%;border:5px solid transparent;border-top-color:var(--ink);}
+/* 마지막 장: 가운데, 앱 아이콘과 넓은 시작 버튼 */
+.tour-card.end{text-align:center;padding:var(--s6) var(--s5) var(--s5);}
+.tour-icon{display:block;width:64px;height:64px;border-radius:var(--r-lg);margin:0 auto var(--s3);}
+.tour-card.end .tour-title{font-size:var(--fs-xl);padding-right:0;}
+.tour-card.end .tour-foot{margin-top:var(--s5);}
+.tour-card.end .tour-dots{display:none;}
+.tour-card.end .tour-btns{flex:1;}
+.tour-card.end .tour-next{flex:1;height:var(--h-control);}
+@media (prefers-reduced-motion: reduce){
+  #tour,#tour.in{transition:none;}
+  .tour-pulse i{animation:none!important;opacity:.9!important;transform:none!important;}
+  .tour-pulse.g-tap i+i{display:none;}
+  .tour-dots i{transition:none;}
+}
