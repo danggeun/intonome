@@ -214,3 +214,29 @@ describe('the number and the green are calm; the line stays live', () => {
     expect(near!.t - 1.5).toBeLessThan(0.45); expect(exact!.t - 1.5).toBeLessThan(0.75)
   })
 })
+
+describe('scales: a slurred semitone step reads the new note\'s own offset', () => {
+  // 다장조의 미→파·시→도·도→시 반음 슬러. 이전 음이 방 울림·남겨 둔 손가락으로 −6~−10 dB 에서 0.12 s 에 걸쳐 사라진다.
+  // 이전 음에서 이어진 평활·평균이 남으면 새 음 숫자가 0.2 s 뒤에도 이전 음 쪽으로 3~13 ¢ 끌려 있다(8분음표 80 이면 음 끝까지)
+  const sr = 48000, N = 4096, HOP = 1024
+  function slur(m0: number, c0: number, m1: number, c1: number, ring: number) {
+    const t0 = 0.6, n = Math.round((t0 + 0.375) * sr), x = new Float32Array(n)
+    const f = (m: number, c: number) => 440 * Math.pow(2, (m - 69 + c / 100) / 12)
+    let ph = 0, ph0 = 0
+    for (let i = 0; i < n; i++) {
+      const t = i / sr, g = t < t0 ? 0 : Math.min(1, (t - t0) / 0.01)
+      ph += 2 * Math.PI * (f(m0, c0) + (f(m1, c1) - f(m0, c0)) * g) / sr; ph0 += 2 * Math.PI * f(m0, c0) / sr
+      let s = 0, r = 0; for (let h = 1; h <= 10; h++) { s += Math.sin(ph * h + h) / h; r += Math.sin(ph0 * h + 2 * h) / h }
+      x[i] = 0.12 * Math.min(1, t / 0.06) * s + (t >= t0 ? 0.12 * ring * Math.exp(-(t - t0) / 0.12) * r : 0)
+    }
+    const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: 10 })
+    const out: Array<{ t: number; midi: number; read: number }> = []
+    for (let e = N; e <= n; e += HOP) { const fr = a.process(x.subarray(e - N, e)); out.push({ t: e / sr - t0, midi: fr.midi, read: fr.readCents }) }
+    return out
+  }
+  test.each([[64, 14, 65, -11, .5], [71, 8, 72, -2, .5], [76, 0, 77, -15, .5], [84, 2, 83, 5, .3]])('%s %s ¢ → %s %s ¢ (ring %s): from 0.2 s after the change the number is the new note\'s within 2 ¢', (m0, c0, m1, c1, ring) => {
+    const late = slur(m0, c0, m1, c1, ring).filter(f => f.t >= 0.2)
+    expect(late.length).toBeGreaterThan(5)
+    for (const f of late) { expect(f.midi).toBe(m1); expect(Math.abs(f.read - c1), `t=${f.t.toFixed(3)} read=${f.read}`).toBeLessThanOrEqual(2) }
+  })
+})

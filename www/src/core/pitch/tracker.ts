@@ -25,9 +25,10 @@ export interface TrackerParams {
 const HALF_SEMITONE = 50
 export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 3, acquireCents: 20, medianLen: 3, switchCents: 65, switchFrames: 2, clickSwitchFrames: 3, releaseFrames: 20 }
 
-/** @property held 유효 프레임이 끊겨 직전 값을 그대로 다시 내보낸 횟수 (0 = 방금 측정한 값). 트레이스가 유지 프레임을 구분하는 데 쓴다 */
-export interface TrackOut { hz: number; midi: number; a: number; held: number }
-const NONE: TrackOut = { hz: -1, midi: -1, a: NaN, held: 0 }
+/** @property held 유효 프레임이 끊겨 직전 값을 그대로 다시 내보낸 횟수 (0 = 방금 측정한 값). 트레이스가 유지 프레임을 구분하는 데 쓴다
+ * @property settling 음이름이 바뀐 프레임과 그 뒤 medianLen 프레임 — 창과 중앙값에 이전 음이 섞여 있다. 읽는 값(숫자)의 평균에 넣지 않는다 */
+export interface TrackOut { hz: number; midi: number; a: number; held: number; settling: boolean }
+const NONE: TrackOut = { hz: -1, midi: -1, a: NaN, held: 0, settling: false }
 
 export interface Tracker {
   /** @param hz 원시 추정 (-1 없음) @param conf 0..1 @param valid RMS 게이트 등 외부 조건 @param alpha 평활 계수 @param click 메트로놈 클릭과 겹친 프레임 */
@@ -37,7 +38,7 @@ export interface Tracker {
 
 export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
   const candA: number[] = [], candW: number[] = []
-  let midi = -1, dispA = NaN, outside = 0, miss = 0, validRun = 0, errSign = 0, sameSignRun = 0
+  let midi = -1, dispA = NaN, outside = 0, miss = 0, validRun = 0, errSign = 0, sameSignRun = 0, settle = 0
   let last: TrackOut = NONE
 
   function weightedMedian(): number {
@@ -46,8 +47,8 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
     for (const i of idx) { acc += candW[i]!; if (acc >= total / 2) return candA[i]! }
     return candA[idx[idx.length - 1]!]!
   }
-  function reset(): void { candA.length = 0; candW.length = 0; midi = -1; dispA = NaN; outside = 0; miss = 0; validRun = 0; errSign = 0; sameSignRun = 0; last = NONE }
-  const out = (): TrackOut => { last = { hz: 440 * Math.pow(2, dispA / 1200), midi, a: dispA, held: 0 }; return last }
+  function reset(): void { candA.length = 0; candW.length = 0; midi = -1; dispA = NaN; outside = 0; miss = 0; validRun = 0; errSign = 0; sameSignRun = 0; settle = 0; last = NONE }
+  const out = (settling = false): TrackOut => { last = { hz: 440 * Math.pow(2, dispA / 1200), midi, a: dispA, held: 0, settling }; return last }
 
   return {
     reset,
@@ -77,12 +78,21 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
       const dev = med - (midi - 69) * 100
       // 바늘은 중앙값이 지금 음의 띠 안에 있거나(보통) 바늘 가까이 있을 때(라벨이 아직 안 바뀐 슬라이드) 따라간다. 둘 다 아니면 — 멀리 떨어진 다른 음 후보 —
       // 확인(switchFrames)되기 전엔 끌려가지 않는다: 한 옥타브 떨어진 후보로 미끄러지는 동안 낸 적 없는 중간 음이 화면에 뜨기 때문
-      if (Math.abs(dev) <= p.switchCents || err <= p.switchCents) dispA += diff * (alpha + (1 - alpha) * boost)
+      // 음이 바뀐 뒤 중앙값 창이 새 음으로 찰 때까지는 평활하지 않는다 — 평활을 이어 가면 이전 음 쪽 값이 새 음의 바늘·숫자를 0.2~0.4 s 끌어당긴다(반음 슬러·포지션 이동)
+      const settling = settle > 0
+      if (settling && Math.abs(dev) <= p.switchCents) { dispA = med; settle-- }
+      else if (Math.abs(dev) <= p.switchCents || err <= p.switchCents) dispA += diff * (alpha + (1 - alpha) * boost)
+      const was = midi
       if (Math.abs(dev) <= p.switchCents) outside = 0
       else if (++outside >= (click ? p.clickSwitchFrames : p.switchFrames)) { midi = Math.round(med / 100) + 69; dispA = med; outside = 0 }
-      // 표시 일관성: 부스트가 dispA 를 한 프레임에 새 음까지 옮겨도 라벨은 switchFrames 를 기다리므로, ±50 ¢ 를 넘으면 라벨을 즉시 맞춘다
-      if (Math.abs(dispA - (midi - 69) * 100) > HALF_SEMITONE) { midi = Math.round(dispA / 100) + 69; outside = 0 }
-      return out()
+      // 표시 일관성: 부스트가 dispA 를 한 프레임에 새 음까지 옮겨도 라벨은 switchFrames 를 기다리므로, ±50 ¢ 를 넘으면 라벨을 즉시 맞춘다.
+      // 이때 중앙값은 대개 이미 새 음 쪽에 있다 — 그 값에서 시작한다(평활값이면 새 음이 ∓49 ¢ 로 시작한다)
+      if (Math.abs(dispA - (midi - 69) * 100) > HALF_SEMITONE) {
+        midi = Math.round(dispA / 100) + 69; outside = 0
+        if (Math.abs(med - (midi - 69) * 100) <= HALF_SEMITONE) dispA = med
+      }
+      if (midi !== was) settle = p.medianLen
+      return out(settling || midi !== was)
     },
   }
 }

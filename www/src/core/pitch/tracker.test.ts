@@ -94,6 +94,23 @@ describe('tracker', () => {
     expect(back).toBe(0); expect(last).toBeGreaterThan(250) // 뒤로 간 적 없고, 끝에서 목표(320 ¢) 가까이
   })
 
+  test('after a note change the needle reads the new note at once — no smoothing carried over from the old note', () => {
+    // 반음 슬러(미4 +14 → 파4 −11): 평활을 이어 가면 새 음이 −40 ¢ 대에서 0.3 s 에 걸쳐 −11 로 미끄러져 보인다(숫자·초록도 같이)
+    const t = createTracker(), hz = (c: number) => 440 * Math.pow(2, c / 1200)
+    for (let i = 0; i < 10; i++) t.push(hz(-486), 0.95, true, 0.2)
+    const outs = [-461, -436, -411, -411, -411, -411, -411, -411].map(c => t.push(hz(c), 0.95, true, 0.2)) // 창이 두 음에 걸친 두 프레임, 그다음 파4 −11
+    const k = outs.findIndex(o => o.midi === 65)
+    expect(k).toBeGreaterThanOrEqual(0); expect(outs[k]!.settling).toBe(true)
+    for (const o of outs.slice(k + 3)) expect(Math.abs(o.a - -411)).toBeLessThan(0.5)
+  })
+  test('a label change at half a semitone starts from the median, not from ∓50 ¢', () => {
+    const t = createTracker(), hz = (c: number) => 440 * Math.pow(2, c / 1200)
+    for (let i = 0; i < 6; i++) t.push(440, 0.95, true, 0.2)
+    let first = null as null | ReturnType<typeof t.push>
+    for (let i = 0; i < 16 && !first; i++) { const o = t.push(hz(60), 0.95, true, 0.2); if (o.midi === 70) first = o }
+    expect(first).not.toBeNull(); expect(Math.abs(first!.a - 60)).toBeLessThan(0.5) // 라♯4 −40 ¢ 에서 시작 (평활값이면 −49 ¢)
+  })
+
   test('inside metronome click windows a different note needs three frames, outside two', () => {
     const settle = () => { const t = createTracker(); for (let i = 0; i < 6; i++) t.push(440, 0.95, true, A); return t }
     const a = settle(); expect(a.push(659, .95, true, A, true).midi).toBe(69); expect(a.push(659, .95, true, A, true).midi).toBe(69)

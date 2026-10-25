@@ -102,7 +102,7 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
       // 트래커의 음이름 격자는 A=440 기준이라 refHz 로 정규화해 넣는다 (안 하면 |오프셋| > 50 ¢ 에서 이웃 반음으로 라벨링)
       const t = tracker.push(rawHz / refK(), clickRead ? 0 : dispConf, true, s.smoothing, muted)
       const f: Frame = { rawHz, conf: y.conf, rms, harmonics, flatness, hz: -1, midi: -1, cents: 0, readCents: 0, inTune: false, playing, held: t.held }
-      if (t.hz > 0) fill(f, t.hz, t.midi, t.held === 0); else read.reset()
+      if (t.hz > 0) fill(f, t.hz, t.midi, t.held === 0 && !t.settling); else read.reset() // 음이 바뀐 직후 프레임은 숫자의 평균에 넣지 않는다 (이전 음이 섞였다)
       return f
     },
   }
