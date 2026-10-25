@@ -18,7 +18,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Inside the tolerance the note turns green, the card gets `in-tune`, the band is green
 - [A] Sharps show the enharmonic flat
 - [A] Reference drum (410–466 Hz) drag → A= updates, cents recalculated, setting saved
-- [A] Settings: tolerance ±5/10/15/20/25 changes the band width
+- [A] Settings: tolerance ±5/10/15 (default ±10) changes the band width
 - [A] Settings: response slow/normal/fast, mic sensitivity low/normal/high → saved and restored
 - [A] The tuner keeps working while the metronome clicks, at any tempo and subdivision (16ths up to 160 bpm, triplets, 8ths): a held note shows in every frame with the click at 0.3× and 1× the instrument, an A major scale under 16ths at A = 415/442/466 shows every note within 0.2 s, notes on either side of each click pitch read at ±25 cents, and the clicks alone never show as a note (unit tests with the real sequencer and analyzer)
 - [A] Click pitches sit exactly between two notes of the reference pitch, for every reference 410–466 Hz; no note played less than 30 cents off is taken for a click (unit tests)

@@ -2,6 +2,10 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.5.5] - 2026-10-25
+- Tolerance is ±5, ±10 or ±15 cents, and the default is ±10 (was ±15, with ±20 and ±25 as well). At ±15 an open fifth A–E still showed green while beating about 11 times a second; at ±10 it is about 8. Since 2.5.3 the green follows the calm number, so at ±10 vibrato around a note inside the tolerance keeps it on and around a note outside keeps it off, without flicker. ±20 and ±25 turned 40 to 50 % of the ±50-cent scale green. A saved ±20 or ±25 becomes ±10; a saved ±5, ±10 or ±15 stays
+- New unit tests: ±8 and ±12 cents with ±6 cents of vibrato at ±10 (green on and off, no flicker); a saved ±20 or ±25 falls back to the default
+
 ## [2.5.4] - 2026-10-24
 - With earphones, the tuner reads the same note as Play A or the drone. The app cut the tone's pitch and every multiple of it from the microphone even when the tone never reached it, so an A string tuned to Play A, or the tonic and its octave over a drone, showed "--" exactly when in tune. Now it first checks whether its tone reaches the microphone — it knows the tone's exact pitch, so it measures even a trace far below what the tuner would react to — and cuts it only then. Through the speaker nothing changes: every frame is the same as in 2.5.3
 - If earphones are unplugged while the tone sounds, the app recognises its own tone at the microphone (unlike a bowed note, its level and phase don't move at all) and cuts it again within about 0.25 s, at once where the system reports the change of audio device. If the same note is already sounding when the tone starts, that stroke stays as before ("--"); the next one after a pause reads

@@ -41,7 +41,7 @@ export function parseStored(raw: string | null): Partial<Settings> {
   const out: Partial<Settings> = {}
   // 값 범위도 검증한다 — 손상된 저장값(refHz 1000 등)이 분석기 전체를 틀리게 하지 않게
   const num = (v: unknown, lo: number, hi: number): number | null => typeof v === 'number' && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : null
-  const tol = (v: unknown): number | null => (typeof v === 'number' && [5, 10, 15, 20, 25].includes(v)) ? v : null
+  const tol = (v: unknown): number | null => (typeof v === 'number' && [5, 10, 15].includes(v)) ? v : null
   const ver = (d as StoredV3).v
   if (ver === 3 || ver === 2) {
     const s = d as Partial<StoredV3>

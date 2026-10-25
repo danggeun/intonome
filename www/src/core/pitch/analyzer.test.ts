@@ -198,6 +198,10 @@ describe('the number and the green are calm; the line stays live', () => {
     const o = frames(t => 14 + 6 * Math.sin(2 * Math.PI * 5.5 * t), 4)
     expect(changesPerS(o, 'inTune')).toBe(0); expect(o.filter(f => f.t > 0.8).every(f => f.inTune && Math.abs(f.read) <= 15)).toBe(true)
   })
+  test.each([[8], [-8], [12], [-12]])('%s ¢ with ±6 ¢ vibrato at the default ±10: green stays on inside and off outside, never flickers', c => {
+    const o = frames(t => c + 6 * Math.sin(2 * Math.PI * 5.5 * t), 4, 10), late = o.filter(f => f.t > 0.8)
+    expect(changesPerS(o, 'inTune')).toBe(0); expect(late.every(f => f.inTune === Math.abs(c) <= 10 && f.inTune === Math.abs(f.read) <= 10)).toBe(true)
+  })
   test('turning a peg from −30 to 0 ¢ over 2 s: the number follows within 7 ¢ and reads 0 within 0.45 s after stopping', () => {
     const o = frames(t => t < 0.5 ? -30 : t < 2.5 ? -30 + 15 * (t - 0.5) : 0, 4)
     for (const f of o) if (f.t > 0.9 && f.t < 2.5) expect(Math.abs(f.read - (-30 + 15 * (f.t - 0.5)))).toBeLessThanOrEqual(7)

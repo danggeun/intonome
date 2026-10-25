@@ -48,6 +48,10 @@ describe('parseStored', () => {
     const { v, ...rest } = v2
     expect(parseStored(JSON.stringify(v2))).toEqual(rest)
   })
+  test('tolerance: 5/10/15 pass; 20 and 25 from older versions are ignored (the default ±10 applies)', () => {
+    for (const v of [5, 10, 15]) { expect(parseStored(JSON.stringify({ v: 3, tolCents: v })).tolCents).toBe(v); expect(parseStored(JSON.stringify({ cents: v })).tolCents).toBe(v) }
+    for (const v of [20, 25, 12, '10']) { expect(parseStored(JSON.stringify({ v: 3, tolCents: v }))).toEqual({}); expect(parseStored(JSON.stringify({ cents: v }))).toEqual({}) }
+  })
   test('v2 rejects bad timeSig', () => expect(parseStored(JSON.stringify({ v: 2, timeSig: 5 }))).toEqual({}))
   test('theme: only dark/light pass, anything else is ignored (the default applies)', () => {
     expect(parseStored(JSON.stringify({ v: 2, theme: 'light' })).theme).toBe('light')

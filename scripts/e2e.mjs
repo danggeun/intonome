@@ -92,7 +92,7 @@ const waitUntil = async (p, fn, ms = 4000, what = 'condition') => {
 }
 
 // 튜너
-await scenario('tuner: 440 Hz @A=442 → A4 (라4) −8¢ (in tune at ±15)', 'violin_A4.wav', async p => {
+await scenario('tuner: 440 Hz @A=442 → A4 (라4) −8¢ (in tune at the default ±10)', 'violin_A4.wav', async p => {
   await p.goto(URL_); const t = await waitNote(p, t => t.note === '라' && /^-(7|8|9) ¢$/.test(t.cents))
   assert.equal(t.oct, '4'); assert.equal(t.inTune, true)
   await sleep(p, 300); assert.equal((await tunerText(p)).note, '라')
@@ -552,14 +552,14 @@ await scenario('metro: works without mic (permission denied) + spacebar', 'silen
 await scenario('settings: persist across reload (cents, smooth, rms, wakelock, bpm, ts, ref)', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 500)
   await p.click('#settings-hdr-btn')
-  await p.click('#cents-steps .step-btn[data-v="25"]'); await p.click('#smooth-steps .step-btn[data-v="3"]'); await p.click('#rms-steps .step-btn[data-v="1"]')
+  await p.click('#cents-steps .step-btn[data-v="15"]'); await p.click('#smooth-steps .step-btn[data-v="3"]'); await p.click('#rms-steps .step-btn[data-v="1"]')
   await p.click('#wakelock-steps .step-btn[data-v="0"]')
   await p.click('#settings-back-btn'); await sizeTap(p)
   await p.click('.m-adj:nth-child(2)'); await p.click('[data-ts="3"]')
   await sleep(p, 800)
   await p.reload(); await sleep(p, 800)
   const on = sel => p.evaluate(s => document.querySelector(s + ' .step-btn.on').dataset.v, sel)
-  assert.equal(await on('#cents-steps'), '25'); assert.equal(await on('#smooth-steps'), '3'); assert.equal(await on('#rms-steps'), '1')
+  assert.equal(await on('#cents-steps'), '15'); assert.equal(await on('#smooth-steps'), '3'); assert.equal(await on('#rms-steps'), '1')
   assert.equal(await on('#wakelock-steps'), '0')
   assert.equal(await p.evaluate(() => document.getElementById('metro-bpm').textContent), '81')
   assert.equal(await p.evaluate(() => document.querySelector('[data-ts].on').dataset.ts), '3')
@@ -1486,7 +1486,7 @@ await scenario('tuner trace: an in-tune scale stays connected across note change
   await sleep(p, 250)
   const d = await p.evaluate(() => window.__tt.tuner.diag())
   assert.equal(d.skipped, 0, `정확히 짚은 스케일에서는 한 군데도 끊기면 안 된다 (끊김 ${d.skipped})`)
-  // 그리고 가운데 근처에 머물러야 한다 — 초록 띠(±15 ¢)를 넘어 멀리 나가는 픽셀이 거의 없어야
+  // 그리고 가운데 근처에 머물러야 한다 — 초록 띠(기본 ±10 ¢)를 넘어 멀리 나가는 픽셀이 거의 없어야
   const spread = await p.evaluate(() => {
     const c = document.getElementById('tuner-history'), g = c.getContext('2d')
     const d = g.getImageData(0, 0, c.width, c.height).data
