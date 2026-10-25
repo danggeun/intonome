@@ -96,7 +96,10 @@ function drawHistory(inTune: boolean): void {
   let open = false, prevEnd = -1
   for (const [i, j] of segs) {
     if (!open || i !== prevEnd) { if (open) c.stroke(); c.beginPath(); c.moveTo(px(hist[i]!), py(i)); open = true }
-    c.lineTo(px(hist[j]!), py(j)); prevEnd = j
+    // 건너뛴 프레임을 사이에 둔 이음(음이 바뀐 자리)은 위아래로 접하는 S자 곡선 — 앞 음 자리에서 새 음 자리로 펜처럼 넘어간다
+    if (j - i > 1) { const ym = (py(i) + py(j)) / 2; c.bezierCurveTo(px(hist[i]!), ym, px(hist[j]!), ym, px(hist[j]!), py(j)) }
+    else c.lineTo(px(hist[j]!), py(j))
+    prevEnd = j
   }
   if (open) c.stroke()
   c.restore()

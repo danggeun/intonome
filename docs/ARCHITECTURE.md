@@ -43,7 +43,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
                     → tracker (a note is shown only after 3 consecutive frames within 20 cents of each other; a change is confirmed over 2 frames and the needle never moves towards an unconfirmed far candidate; after a change the needle follows the median unsmoothed until the median window holds only the new note; the last note is held ≈ 0.5 s after the sound stops; no frame is ever blanked for being unlike its neighbours) → playing detector
                     a reference other than 440 is normalized before the tracker and restored for display
                          ▼
-                  readout: the cents number and the in-tune green come from a 0.37 s average that changes only when it moves 1.5 cents (core/pitch/readout); frames from a note change until the median window holds only the new note stay out of that average; the trace uses every frame
+                  readout: the cents number and the in-tune green come from a 0.37 s average that changes only when it moves 1.5 cents (core/pitch/readout); frames from a note change until the median window holds only the new note stay out of that average; the trace uses every frame except the window-straddling ones at a change (the last frame of the old note and the first two of the new one, core/trace) and joins the two notes with a short S-curve
                   tunerStore.set(...) → ui/tuner renders only the latest value on rAF
 ```
 

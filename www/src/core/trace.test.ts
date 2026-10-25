@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { joinSegment, buildSegments, TRACE_JOIN_MAX, keepInTrace, TRACE_HELD_MAX } from './trace.ts'
+import { joinSegment, buildSegments, TRACE_JOIN_MAX, keepInTrace, TRACE_HELD_MAX, TRACE_SETTLE } from './trace.ts'
 
 describe('joinSegment', () => {
   test('connects any movement within the same note (glissandos and boost jumps are real movement)', () => {
@@ -25,8 +25,9 @@ describe('joinSegment', () => {
 })
 
 describe('buildSegments', () => {
-  const seg = (c: Array<number | null>, m: Array<number | null>) => buildSegments(c, m).segs
-  const brk = (c: Array<number | null>, m: Array<number | null>) => buildSegments(c, m).breaks
+  // 경계 프레임 규칙만 보는 테스트는 settle 0 — 음이 바뀐 뒤 건너뛰기는 아래 두 테스트가 본다
+  const seg = (c: Array<number | null>, m: Array<number | null>, st = 0) => buildSegments(c, m, TRACE_JOIN_MAX, st).segs
+  const brk = (c: Array<number | null>, m: Array<number | null>, st = 0) => buildSegments(c, m, TRACE_JOIN_MAX, st).breaks
   test('all frames within one note are connected', () => {
     expect(seg([1, 2, 3, 4], [69, 69, 69, 69])).toEqual([[0, 1], [1, 2], [2, 3]])
   })
@@ -57,12 +58,25 @@ describe('buildSegments', () => {
     expect(s.some(([i]) => i === 1)).toBe(false)
     expect(s[0]).toEqual([2, 3])
   })
-  test('drops only one frame per note even in a fast trill (6 frames per note)', () => {
+  test('skips the first TRACE_SETTLE frames of a new note and joins the old note to the settled new one — no tick', () => {
+    // 미4 +8 → 파4 −10 (작은 방): 바뀐 직후 −23 · −16 이 이전 음 쪽으로 튀었다(실제 분석기)
+    const c = [8, 8, 8, 13, -23, -16, -11, -10, -10], m = [64, 64, 64, 64, 65, 65, 65, 65, 65]
+    const s = buildSegments(c, m).segs
+    expect(TRACE_SETTLE).toBe(2)
+    expect(s).toEqual([[0, 1], [1, 2], [2, 6], [6, 7], [7, 8]])
+  })
+  test('a short note in a fast run still keeps its settled frames (16ths ≈ 5 frames per note)', () => {
+    const c: number[] = [], m: number[] = []
+    for (let k = 0; k < 6; k++) for (let i = 0; i < 5; i++) { c.push(k % 2 ? -6 : 4); m.push(60 + 2 * k) }
+    const drawn = new Set(buildSegments(c, m).segs.flat())
+    for (let k = 0; k < 6; k++) expect([0, 1, 2, 3, 4].some(i => drawn.has(5 * k + i)), `note ${k}`).toBe(true)
+  })
+  test('a fast trill (6 frames per note) keeps half of every note and stays one line', () => {
     const c: number[] = [], m: number[] = []
     for (let k = 0; k < 4; k++) for (let i = 0; i < 6; i++) { c.push(i === 5 ? 20 : 2); m.push(k % 2 ? 69 : 71) }
-    const s = seg(c, m)
-    expect(s.length).toBeGreaterThan(15)  // 대부분 이어진다
-    expect(s.length).toBeLessThan(c.length - 1) // 전환마다 1프레임씩 빠진다
+    const s = seg(c, m, TRACE_SETTLE), drawn = new Set(s.flat())
+    for (let k = 1; k < 3; k++) expect([0, 1, 2, 3, 4, 5].filter(i => drawn.has(6 * k + i))).toEqual([2, 3, 4]) // 바뀐 뒤 2 프레임 + 다음 음 직전 1 프레임만 빠진다
+    expect(brk(c, m, TRACE_SETTLE)).toBe(0); expect(s.every(([i], n) => n === 0 || s[n - 1]![1] === i)).toBe(true) // 끊김 없이 한 줄
   })
 })
 

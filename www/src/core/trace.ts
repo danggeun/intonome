@@ -8,6 +8,9 @@ export const TRACE_JOIN_MAX = 40
 /** 유지(held) 프레임 허용 수 — held ≤ 이 값이면 직전 값으로 잇는다. 활 바꿈은 틈·어택으로 한두 프레임 비니 그 둘 + 여유. 소리가 끝난 뒤의 긴 유지는 빈칸 */
 export const TRACE_HELD_MAX = 4
 
+/** 음이 바뀐 뒤 그리지 않는 프레임 수 — 트래커의 중앙값(3 프레임)에 바뀌기 전 프레임이 섞여 있는 처음 두 프레임 */
+export const TRACE_SETTLE = 2
+
 /** 이 프레임을 트레이스에 쌓을 것인가. hz -1(무음)·유지 초과는 빈칸. 바늘·음이름은 이 규칙과 무관 */
 export function keepInTrace(hz: number, held: number, heldMax = TRACE_HELD_MAX): boolean {
   return hz !== -1 && held <= heldMax
@@ -29,7 +32,8 @@ export interface TraceSegments {
   /** 음이 바뀌는데 오차 차이가 커서 잇지 않은 자리 수 (진단·테스트용). 경계 프레임 폐기는 안 센다 */
   breaks: number
 }
-export function buildSegments(cents: ReadonlyArray<number | null>, midi: ReadonlyArray<number | null>, joinMax = TRACE_JOIN_MAX): TraceSegments {
+/** @param settle 음이 바뀐 뒤 그리지 않을 프레임 수 — 창·중앙값에 이전 음이 남은 값(방 울림이면 이전 음 쪽으로 10~20 ¢ 튄다). 앞 음과 새 음은 그대로 잇는다 */
+export function buildSegments(cents: ReadonlyArray<number | null>, midi: ReadonlyArray<number | null>, joinMax = TRACE_JOIN_MAX, settle = TRACE_SETTLE): TraceSegments {
   const n = cents.length
   const boundary = (i: number): boolean => {
     if (i + 1 >= n) return false                       // 버퍼 끝은 경계가 아니다
@@ -38,10 +42,11 @@ export function buildSegments(cents: ReadonlyArray<number | null>, midi: Readonl
     return midi[i] !== midi[i + 1]                     // 음 → 다른 음
   }
   const segs: Array<[number, number]> = []
-  let prev = -1, breaks = 0
+  let prev = -1, breaks = 0, since = Infinity
   for (let i = 0; i < n; i++) {
-    if (cents[i] == null) { prev = -1; continue }
-    if (boundary(i)) continue
+    if (cents[i] == null) { prev = -1; since = Infinity; continue }
+    since = i > 0 && cents[i - 1] != null && midi[i - 1] !== midi[i] ? 0 : since + 1
+    if (boundary(i) || since < settle) continue
     if (prev >= 0) {
       if (joinSegment(cents[prev]!, cents[i]!, midi[prev] ?? null, midi[i] ?? null, joinMax)) segs.push([prev, i])
       else breaks++
