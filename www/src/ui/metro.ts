@@ -109,17 +109,12 @@ function animHeight(el: HTMLElement, from: number, to: number, mb: [string, stri
   el.style.height = to + 'px'; el.style.marginBottom = mb[1]
   animTimers.set(el, setTimeout(() => clearAnim(el), 570))
 }
-let flashTimer: ReturnType<typeof setTimeout> | null = null
 function flashBeat(tick: number): void {
-  const card = q('metro-card'); card.classList.remove('flash-strong', 'lit-weak')
-  // 화면 번쩍임은 접혀서 LED 줄만 보일 때만 — 거기서는 이것이 유일한 원거리 신호
-  if (!isCollapsedNow()) return
-  if (isPhoneLayout()) {
-    const th = q('tuner-hdr'); th.classList.remove('beat-flash', 'beat-flash-weak'); reflow(th)
-    th.classList.add(tick === 0 ? 'beat-flash' : 'beat-flash-weak')
-  }
-  if (tick === 0) { reflow(card); card.classList.add('flash-strong') }
-  else { card.classList.add('lit-weak'); if (flashTimer) clearTimeout(flashTimer); flashTimer = setTimeout(() => card.classList.remove('lit-weak'), 100) }
+  const card = q('metro-card'); card.classList.remove('flash-strong')
+  // 화면 번쩍임은 접혀서 LED 줄만 보일 때, 마디 첫 박에만 — 멀리서 마디의 시작을 보는 신호. 다른 박·세분박은 LED 가 맡는다.
+  // 튜너 쪽(헤더 선)은 칠하지 않는다: 연습 내내 보는 자리라 세분박마다(16분 120 이면 초당 8 번) 빨갛게 깜빡였다
+  if (!isCollapsedNow() || tick !== 0) return
+  reflow(card); card.classList.add('flash-strong')
 }
 
 /** 끌어서 BPM 을 바꾼다(다이얼 · 숫자 ↕). 값이 실제로 바뀔 때만 눈금 진동 */

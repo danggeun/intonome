@@ -306,7 +306,7 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   await p.click('[data-sd="2"]'); await p.click('#metro-play-btn')
   const seen = new Set(), hits = new Set(); let flashed = false
   for (let i = 0; i < 40; i++) {
-    const r = await p.evaluate(() => { const l = Array.from(document.querySelectorAll('#sweep-leds .led')); const c = document.getElementById('metro-card').classList; return { mv: l.findIndex(d => d.classList.contains('mv')), hit: l.findIndex(d => d.classList.contains('hit-beat') || d.classList.contains('hit-acc')), sub: l.findIndex(d => d.classList.contains('hit-sub')), flash: c.contains('flash-strong') || c.contains('lit-weak') } })
+    const r = await p.evaluate(() => { const l = Array.from(document.querySelectorAll('#sweep-leds .led')); const c = document.getElementById('metro-card').classList; return { mv: l.findIndex(d => d.classList.contains('mv')), hit: l.findIndex(d => d.classList.contains('hit-beat') || d.classList.contains('hit-acc')), sub: l.findIndex(d => d.classList.contains('hit-sub')), flash: c.contains('flash-strong') } })
     if (r.mv >= 0) seen.add(r.mv); if (r.hit >= 0) hits.add(r.hit); if (r.sub >= 0) hits.add('s' + r.sub); if (r.flash) flashed = true
     await sleep(p, 40)
   }
@@ -342,15 +342,27 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   assert.deepEqual(await p.evaluate(() => [document.getElementById('metro-card').classList.contains('full'), document.getElementById('metro-body-wrap').classList.contains('collapsed')]), [false, false], '전용의 ∨ 는 한 단계 — 펼침까지')
   await sizeTap(p) // 펼침의 ∨ → 접힘
   // 화면을 칠하는 박 표시는 접혔을 때만
-  const flashesWhile = async () => { let f = false; for (let i = 0; i < 30; i++) { if (await p.evaluate(() => { const c = document.getElementById('metro-card').classList; return c.contains('flash-strong') || c.contains('lit-weak') })) { f = true; break } await sleep(p, 40) } return f }
+  // 3.3 s(80 bpm 4/4 한 마디 = 3 s) 동안 카드 번쩍임이 몇 번 시작됐는지, 튜너 헤더 선이 한 번이라도 바뀌었는지
+  const flashesWhile = () => p.evaluate(() => new Promise(res => {
+    const card = document.getElementById('metro-card'), hdr = document.getElementById('tuner-hdr'), line0 = getComputedStyle(hdr).borderBottomColor
+    let starts = 0, was = card.classList.contains('flash-strong'), hdrMoved = false; const t0 = performance.now()
+    const id = setInterval(() => {
+      const on = card.classList.contains('flash-strong'); if (on && !was) starts++; was = on
+      if (getComputedStyle(hdr).borderBottomColor !== line0) hdrMoved = true
+      if (performance.now() - t0 > 3300) { clearInterval(id); res({ starts, hdrMoved }) }
+    }, 15)
+  }))
   // 접힌 채 재생 — 접혀 있으면 본체 버튼이 안 보이므로 Space 로. 방금 누른 버튼에 포커스가 남아 있으면
   // Space 가 그 버튼의 것이 되므로(C1 규칙) 먼저 포커스를 뗀다
   await p.evaluate(() => document.activeElement && document.activeElement.blur())
   await p.keyboard.press('Space'); await sleep(p, 400)
   assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').textContent), '■', 'Space 로 재생 시작')
-  assert.equal(await flashesWhile(), true, '접혔을 때는 카드가 박마다 칠해진다 — 띠 하나뿐이라 이게 원거리 신호다')
+  let fl = await flashesWhile()
+  assert.ok(fl.starts >= 1 && fl.starts <= 2, `접혔을 때는 마디 첫 박에만 카드를 칠한다 — 띠 하나뿐이라 이게 원거리 신호다 (3.3 s 에 ${fl.starts} 번, 박마다면 4~5 번)`)
+  assert.equal(fl.hdrMoved, false, '튜너 헤더 선은 박에 따라 바뀌지 않는다 — 연습 내내 보는 자리')
   await sizeTap(p) // 펼침
-  assert.equal(await flashesWhile(), false, '펼치면 LED 줄이 박을 말하므로 화면은 칠하지 않는다')
+  fl = await flashesWhile()
+  assert.equal(fl.starts, 0, '펼치면 LED 줄이 박을 말하므로 화면은 칠하지 않는다')
   await p.click('#metro-play-btn')
 })
 await scenario('metro: full-mode dial — BPM follows the ring, stops at the ends, terms and ticks', 'silence_lowfloor.wav', async p => {
@@ -913,6 +925,8 @@ await scenario('rec: start/stop → list item, persists reload, rename persists,
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#rec-hdr-btn'); await sleep(p, 1500)
   assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true)
+  // 녹음 중 버튼은 가만히, 점만 천천히(2 s) — 녹음 내내 1 초마다 깜빡이던 버튼은 눈을 끌어간다
+  assert.deepEqual(await p.evaluate(() => [getComputedStyle(document.getElementById('rec-hdr-btn')).animationName, getComputedStyle(document.getElementById('rec-hdr-dot')).animationDuration]), ['none', '2s'])
   assert.equal(await p.evaluate(() => document.getElementById('hdr-rec-time').classList.contains('show')), true)
   await p.click('#rec-hdr-btn'); await sleep(p, 800)
   const names = () => p.evaluate(() => Array.from(document.querySelectorAll('#rec-list .rec-item-name')).map(e => e.textContent))
@@ -1651,7 +1665,7 @@ await scenario('tuner trace: an in-tune scale stays connected across note change
       const i = (y * c.width + x) * 4
       const r = d[i], g2 = d[i + 1], b = d[i + 2]
       const white = r > 120 && g2 > 120 && b > 120
-      const green = g2 > 110 && g2 > r * 2.2 && g2 > b * 1.4 // in-tune 트레이스 (초록 띠 13,75,36 은 제외된다)
+      const green = g2 > 110 && g2 > r * 2.2 && g2 > b * 1.4 // in-tune 트레이스 (어두운 초록 띠는 제외된다)
       if (white || green) { all++; if (Math.abs(x - cx) / (c.width / 2) > 0.6) far++ } // 0.6 = ±30 ¢
     }
     return { far, all }

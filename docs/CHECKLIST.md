@@ -23,7 +23,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Silence → "--", empty history
 - [A] Outdoor ambience with nothing played (distant talk, birds, clicks, a passing car, wind; three noise seeds) → "--" in every frame and no playing time; a note starting over it shows within 250 ms (unit tests with the real analyzer)
 - [A] Talk nearby puts fewer notes on the screen: from silence a note needs 7 steady frames (≈ 0.2 s), so a lone spoken vowel of 60–100 ms (steady or gliding, low and high voice) shows nothing while a 0.3 s one does; vibrato ±25 cents from the very first frame still acquires on the seventh; one dropped frame is skipped, two restart the count; bowed strokes on G3 / D3 / A4 / A2 / E5 show within 0.25 s of the first stroke (unit tests)
-- [A] Inside the tolerance the note turns green, the card gets `in-tune`, the band is green
+- [A] Inside the tolerance the note turns green and the card gets `in-tune`; the tolerance band is a pale green zone at all times, so green that stands out means in tune
+- [A] The Hz readout says the same pitch as the cents number and changes only with it: vibrato ±15 cents at 4.5 / 5.5 / 6.5 Hz never changes it more often than the number, at 5.5 Hz not at all (unit tests)
 - [A] Sharps show the enharmonic flat
 - [A] Reference drum (410–466 Hz) drag → A= updates, cents recalculated, setting saved
 - [A] Settings: tolerance ±5/10/15 (default ±10) changes the band width
@@ -44,7 +45,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Header beat dots are one size in collapsed and expanded, playing or stopped
 - [A] BPM −/+, drag (2 px per BPM), clamped to 40–200
 - [A] Time signatures none/2/4/3/4/4/4/6/8, subdivisions; 6/8 disables subdivisions
-- [A] Collapsed and playing: the card and tuner header flash on beats
+- [A] Collapsed and playing: the card flashes on the first beat of each bar only (other beats and subdivisions are on the LED row); the tuner header never flashes; expanded and full: no flash
 - [A] Playing never changes the size; the size button goes collapsed ⇄ expanded, and from full one step down to expanded. Full is reached by dragging the card up (on a wide screen, where nothing collapses, the button goes expanded ⇄ full)
 - [A] Dragging the card follows the finger: up grows a step, down shrinks a step; a short drag springs back. With reduced motion a 40 px push moves one step, up or down
 - [A] Volume slider (card and full mode stay in sync) → saved and restored
@@ -70,7 +71,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] On a phone speaker: the drone sounds like Play A, the tuner shows nothing while only it or Play A sounds and reads you over it, and the screen stays on; leaving the app stops it
 
 ## Recording
-- [A] Start/stop from the header REC (the menu only lists recordings); while recording the elapsed time replaces REC inside the button and the button keeps its size
+- [A] Start/stop from the header REC (the menu only lists recordings); while recording the elapsed time replaces REC inside the button and the button keeps its size; the button stays still and only its dot pulses slowly (2 s)
 - [A] Without the mic, REC turns it on and then records
 - [A] New recording at the top of the list, named `YYYYMMDD_HHMM`, with its length
 - [A] Newest one open, the rest behind "Show N older recordings"

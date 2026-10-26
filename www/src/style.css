@@ -68,8 +68,7 @@ html.i18n-pending body{visibility:hidden;} /* 영어로 저장돼 있으면 한�
    lvh 만 화면 전체 높이. 배치는 실행 시점의 meta 로 정해져 테마를 바꿔도 그대로라 테마가 아니라 실제 inset 으로 가른다 — .sb-under 는 platform/fitStandaloneHeight */
 @supports (height:100lvh){@media (display-mode:standalone){html.sb-under,html.sb-under body{height:100lvh;}}}
 button{font-family:inherit;color:inherit;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-@keyframes recpulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes metroflash{0%{background:rgba(var(--accent-rgb),.28);box-shadow:inset 0 0 0 2px var(--accent)}60%{background:rgba(var(--accent-rgb),.1);box-shadow:inset 0 0 0 2px var(--accent)}100%{background:var(--surface);box-shadow:none}}
 
 /* 컴팩트 글자 버튼 (36 px) — 누르는 영역은 ::after 로 44 px */
@@ -120,9 +119,9 @@ button{font-family:inherit;color:inherit;}
 #hdr-rec-time{display:none;font-family:'DM Mono',monospace;font-size:var(--fs-sm);font-weight:500;letter-spacing:0;}
 #hdr-rec-time.show{display:inline;}
 #rec-hdr-btn.rec-on #rec-hdr-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;} /* 녹음 중엔 시간이 그 자리에. 화면 읽기에는 'REC 00:04' */
-#rec-hdr-btn.rec-on{gap:4px;border-color:var(--accent);color:var(--accent);animation:recpulse 1s infinite;} /* gap 4: ● 00:00 이 64 안에 */
+#rec-hdr-btn.rec-on{gap:4px;border-color:var(--accent);color:var(--accent);} /* gap 4: ● 00:00 이 64 안에. 버튼은 가만히 — 흐르는 시간이 '녹음 중' 을 말한다 */
 #rec-hdr-dot{width:7px;height:7px;border-radius:50%;background:var(--text-2);transition:background var(--t-std);flex-shrink:0;}
-#rec-hdr-btn.rec-on #rec-hdr-dot{background:var(--accent);animation:pulse 1s infinite;}
+#rec-hdr-btn.rec-on #rec-hdr-dot{background:var(--accent);animation:pulse 2s ease-in-out infinite;} /* 점만 천천히 숨쉬듯 — 녹음 내내 1 초마다 깜빡이면 눈이 끌려간다 */
 /* 44 px 터치 영역은 두고 글리프만 화면 모서리에 맞춘다 */
 #menu-btn{position:relative;width:44px;height:44px;margin-left:-12px;background:transparent;border:none;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;}
 #settings-hdr-btn{position:relative;width:44px;height:44px;margin-right:-12px;background:transparent;border:none;color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;}
@@ -134,11 +133,7 @@ button{font-family:inherit;color:inherit;}
 /* 튜너 — 검정 무대. 색은 '맞음' 에만 */
 #tuner-card{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--tuner-bg);border:1px solid var(--tuner-line);border-radius:var(--r-lg);overflow:hidden;transition:box-shadow var(--t-std);} /* 헤어라인: 무대가 bg 위에서 한 단 낮게 읽히도록 윤곽을 남긴다 */
 #tuner-card.in-tune{box-shadow:0 0 0 1.5px rgba(var(--ok-rgb),.6);} /* 맞음: 카드 둘레 가는 테만 — 멀리서 보이는 신호는 초록 음이름이 맡는다 */
-#tuner-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--tuner-line);transition:border-color .06s;}
-@keyframes tunerbeat{0%{border-color:var(--accent)}50%{border-color:var(--accent)}100%{border-color:var(--tuner-line)}}
-@keyframes tunerbeatweak{0%{border-color:rgba(var(--accent-rgb),.6)}100%{border-color:var(--tuner-line)}}
-#tuner-hdr.beat-flash{animation:tunerbeat .5s ease-out forwards;}
-#tuner-hdr.beat-flash-weak{animation:tunerbeatweak .18s ease-out forwards;}
+#tuner-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--tuner-line);}
 #tuner-label{font-size:var(--fs-sm);color:var(--tuner-ink);font-weight:var(--fw-b);letter-spacing:var(--ls-caps-wide);display:flex;align-items:center;}
 /* 오디오 상태 점 — 켜짐 = 무채색, 주의 = 앰버 펄스, 꺼짐 = 숨김 */
 #tuner-hdr-right{display:flex;align-items:center;gap:10px;}
@@ -183,7 +178,6 @@ button{font-family:inherit;color:inherit;}
 /* 메트로놈 — 카드 하나, 헤어라인 하나. 강박은 면과 안쪽 링으로 */
 #metro-card{background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--line);overflow:hidden;transition:box-shadow .06s,background .1s;}
 #metro-card.flash-strong{animation:metroflash .22s ease-out forwards;}
-#metro-card.lit-weak{box-shadow:inset 0 0 0 1.5px rgba(var(--accent-rgb),.45);}
 #metro-hdr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;padding:8px 12px 8px 16px;border-bottom:1px solid var(--line);gap:10px;min-height:52px;}
 #metro-hdr-label{position:relative;display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:var(--fs-xl);color:var(--text);font-weight:var(--fw-md);white-space:nowrap;cursor:ns-resize;touch-action:none;user-select:none;padding:8px 10px 8px 0;margin:-8px 0;}
 #metro-hdr-label .note-glyph{width:8.1px;height:20px;vertical-align:0;}
@@ -543,4 +537,5 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   .tour-pulse i{animation:none!important;opacity:.9!important;transform:none!important;}
   .tour-pulse.g-tap i+i{display:none;}
   .tour-dots i{transition:none;}
+  #rec-hdr-btn.rec-on #rec-hdr-dot{animation:none;}
 }

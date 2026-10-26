@@ -3,7 +3,7 @@
  * tunerStore 를 구독해 그린다. 오디오 모듈을 직접 읽지 않는다.
  */
 import { octaveOf, noteLabel } from '../core/note.ts'
-import { createHzReadout } from '../core/hzReadout.ts'
+import { calmHz, fmtHz } from '../core/hzReadout.ts'
 import { histLenFor } from '../core/hist.ts'
 import { buildSegments, keepInTrace } from '../core/trace.ts'
 import { CFG, settingsStore, tunerStore } from '../state/index.ts'
@@ -11,7 +11,9 @@ import { q } from './dom.ts'
 import { t, getLang, type TKey } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
 
-const hzReadout = createHzReadout() // Hz 표시의 평활·갱신 주기
+/** 지금 화면의 Hz 글자 — 같은 글자는 다시 쓰지 않는다 */
+let hzText = ''
+const setHz = (s: string): void => { if (s !== hzText) { hzText = s; q('tuner-hz').textContent = s } }
 
 let tapHandler: (() => void) | null = null
 let tapSub: TKey | null = null
@@ -77,7 +79,8 @@ function drawHistory(inTune: boolean): void {
   if (inTune) { c.fillStyle = `rgba(${okRgb},.07)`; c.fillRect(0, 0, W, H) }
   const ppc = (W / 2) / 50, tol = settingsStore.get().tolCents, N = hist.length, rH = H / N
   lastSkipped = 0
-  c.fillStyle = `rgba(${okRgb},.38)`; c.fillRect(W / 2 - tol * ppc, 0, tol * 2 * ppc, H) // 띠는 '영역' — 트레이스보다 뒤로
+  // 띠는 '영역' — 트레이스보다 뒤로. 옅게: 늘 깔린 진한 초록(화면의 10 %)은 '초록 = 맞음' 을 묻는다. 맞았다는 신호는 음이름·테·바탕이 맡는다
+  c.fillStyle = `rgba(${okRgb},.16)`; c.fillRect(W / 2 - tol * ppc, 0, tol * 2 * ppc, H)
   c.strokeStyle = `rgba(${inkRgb},.38)`; c.lineWidth = 1
   c.beginPath(); c.moveTo(W / 2, 0); c.lineTo(W / 2, H); c.stroke()
   // ♭ / ♯ 방향 표시 — 최신 값이 맨 아래라 아래쪽에
@@ -113,11 +116,11 @@ function renderEmpty(): void {
   nEl.textContent = '--'; nEl.className = 'empty'
   if (off && micOpener) showOffStart()
   q('tuner-oct').textContent = ''; q('tuner-cents').textContent = ''; q('tuner-enharmonic').textContent = ''; q('tuner-acc').textContent = ''
-  hzReadout.reset(); q('tuner-hz').textContent = ''
+  setHz('')
   q('tuner-card').classList.remove('in-tune')
 }
 /** readCents = 사람이 읽는 숫자(차분한 값), inTune 도 그 숫자로 정해진다 */
-function renderNote(midi: number, readCents: number, inTune: boolean, hz: number): void {
+function renderNote(midi: number, readCents: number, inTune: boolean, hz: number, cents: number): void {
   const { name, secondary } = noteLabel(midi, settingsStore.get().noteNames, getLang())
   const base = name.replace('♯', ''), acc = name.includes('♯') ? '♯' : ''
   const nEl = q('tuner-note'); nEl.textContent = base; nEl.className = inTune ? 'tune' : ''
@@ -126,7 +129,7 @@ function renderNote(midi: number, readCents: number, inTune: boolean, hz: number
   q('tuner-enharmonic').textContent = secondary
   q('tuner-card').classList.toggle('in-tune', inTune)
   q('tuner-cents').textContent = (readCents > 0 ? '+' : '') + readCents + ' ¢'
-  const t = hzReadout.push(hz, midi, performance.now()); if (t !== null) q('tuner-hz').textContent = t
+  setHz(fmtHz(calmHz(hz, cents, readCents))) // Hz 도 숫자와 같은 값 — 숫자가 바뀔 때만 같이 바뀐다
 }
 
 /** 시작 버튼. 카드 어디를 눌러도 onTap. sub 는 버튼 아래 한 줄 안내(없으면 비움). onTap 이 true 면 거둔다 */
@@ -161,7 +164,7 @@ export function mountTuner(): void {
     raf = null; if (!dirty) return; dirty = false
     const s = tunerStore.get()
     if (s.hz === -1) { renderEmpty(); drawHistory(false); return }
-    renderNote(s.midi, s.readCents, s.inTune, s.hz); drawHistory(s.inTune) // 숫자는 읽는 값, 선은 매 프레임 cents
+    renderNote(s.midi, s.readCents, s.inTune, s.hz, s.cents); drawHistory(s.inTune) // 숫자는 읽는 값, 선은 매 프레임 cents
   }
   tunerStore.select(s => s.sampleRate, sr => resizeHist(sr), { immediate: true })
   // 캔버스 크기가 바뀌면 마이크 프레임이 없어도 다시 그린다 — 안 그리면 옛 크기의 비트맵이 늘어나 ♭♯ 가 길쭉해진다(시작 버튼 화면)
