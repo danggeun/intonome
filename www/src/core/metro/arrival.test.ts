@@ -78,7 +78,7 @@ describe('self-calibrating metronome click arrival (same flow as the app)', () =
   const { buf, marks } = renderMetro(8)
   test.each([[0.08], [0.12], [0.20]])('입력 지연 오차 +%s s: 보정 없으면 정박마다 음이 뜨고, 보정하면 수렴 뒤 0 이다', (err) => {
     const sig = room(buf, 0.1, 0.03 + err) // 앱은 outLat 0.03 만 안다
-    // 보정의 효과는 2.5.1 의 시작 조건(3 프레임)에서 본다 — 2.5.7 의 7 프레임은 클릭 한 번(≈ 0.1 s)을 그것만으로도 띄우지 않는다
+    // 보정의 효과는 2.5.1 의 시작 조건(3 프레임)에서 본다 — 2.5.7 의 6 프레임은 클릭 한 번(≈ 0.1 s)을 그것만으로도 띄우지 않는다
     const OLD = { acquireFrames: 3, acquireCents: 20, acquireGap: 0 }
     const without = pipeline(sig, marks, 0.03, false, OLD), withCal = pipeline(sig, marks, 0.03, true, OLD)
     if (err >= 0.12) expect(shownAfter(without, 3)).toBeGreaterThan(0) // 재현: 클릭 음(라6)이 뜬다 (+0.08 s 는 트래커의 3 프레임 확인만으로도 안 뜬다)

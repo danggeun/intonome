@@ -7,7 +7,8 @@ export interface TrackerParams {
   /** 후보로 인정할 최소 신뢰도 */
   confMin: number
   /** 무음에서 음을 새로 띄우는 데 필요한 연속 유효 프레임 수 — 말소리 모음·새소리·딸깍은 그보다 짧거나 그동안 음높이가 미끄러진다.
-   * 7 프레임 = 첫 음이 소리 시작 뒤 약 0.2 s 에 뜬다(48 kHz 기준 창 85 ms + 6 × 21 ms). 이어 켜는 동안의 음 바뀜과는 무관 */
+   * 6 프레임 = 첫 음이 소리 시작 뒤 약 0.17 s 에 뜬다(48 kHz 기준 창 85 ms + 5 × 21 ms). 이어 켜는 동안의 음 바뀜과는 무관.
+   * 7 은 쉬었다가 스피카토로 시작하는 음계(음마다 유효 4~5 프레임, 음이 바뀌면 처음부터)를 끝까지 못 띄웠다 — 6 은 둘째 음에서 띄운다 */
   acquireFrames: number
   /** 그 프레임들의 원시 추정이 중앙값에서 이만큼(cents) 안에 모여야 새로 띄운다 — 미끄러지는 피치·튀는 값은 음이 아니다. 처음부터 넓게(±30 ¢) 떠는 비브라토도 들어온다 */
   acquireCents: number
@@ -26,7 +27,7 @@ export interface TrackerParams {
 }
 /** cents 는 가장 가까운 음에서의 편차이므로 정의상 이 값을 넘을 수 없다 */
 const HALF_SEMITONE = 50
-export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 7, acquireCents: 40, acquireGap: 1, medianLen: 3, switchCents: 65, switchFrames: 2, clickSwitchFrames: 3, releaseFrames: 20 }
+export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 6, acquireCents: 40, acquireGap: 1, medianLen: 3, switchCents: 65, switchFrames: 2, clickSwitchFrames: 3, releaseFrames: 20 }
 
 /** @property held 유효 프레임이 끊겨 직전 값을 그대로 다시 내보낸 횟수 (0 = 방금 측정한 값). 트레이스가 유지 프레임을 구분하는 데 쓴다
  * @property settling 음이름이 바뀐 프레임과 그 뒤 medianLen 프레임 — 창과 중앙값에 이전 음이 섞여 있다. 읽는 값(숫자)의 평균에 넣지 않는다 */

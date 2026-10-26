@@ -5,9 +5,9 @@ const A = 0.14
 /** 무음에서 음을 띄운다(acquireFrames 프레임). 다른 동작을 보는 테스트의 준비 단계 */
 const acquire = (t: Tracker, hz = 440, a = A): Tracker => { for (let i = 0; i < DEFAULT_TRACKER.acquireFrames; i++) t.push(hz, 0.95, true, a); return t }
 describe('tracker', () => {
-  test('acquires after seven consistent frames (≈ 0.15 s), holds through short dropouts, releases after releaseFrames', () => {
+  test('acquires after six consistent frames (≈ 0.13 s), holds through short dropouts, releases after releaseFrames', () => {
     const t = createTracker()
-    for (let i = 0; i < 6; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1) // 말소리 모음 하나(0.1 s 남짓)로는 안 띄운다
+    for (let i = 0; i < 5; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1) // 말소리 모음 하나(0.1 s 남짓)로는 안 띄운다
     expect(t.push(440, 0.95, true, A).midi).toBe(69)
     for (let i = 0; i < 20; i++) expect(t.push(-1, 0, false, A).midi).toBe(69) // 20 misses (≈ 430 ms) 동안 유지 — 활을 들었다 놓는 틈
     expect(t.push(-1, 0, false, A).midi).toBe(-1) // 21 → release
@@ -17,24 +17,24 @@ describe('tracker', () => {
     for (const hz of [440, 523, 392, 659, 440, 466]) expect(t.push(hz, 0.95, true, A).midi).toBe(-1) // 프레임마다 다른 음
     for (const hz of [440, 440]) expect(t.push(hz, 0.95, true, A).midi).toBe(-1) // 두 프레임만 같은 음
     expect(t.push(-1, 0, false, A).midi).toBe(-1)
-    // 미끄러져 올라오는 피치(프레임당 30 ¢)는 멈출 때까지 안 띄운다 — 일곱 프레임이 모두 ±40 ¢ 안에 모여야 한다
+    // 미끄러져 올라오는 피치(프레임당 30 ¢)는 멈출 때까지 안 띄운다 — 여섯 프레임이 모두 ±40 ¢ 안에 모여야 한다
     const t2 = createTracker(); const up = (c: number) => 440 * Math.pow(2, c / 1200)
     for (const c of [-150, -120, -90, -60, -30]) expect(t2.push(up(c), 0.95, true, A).midi).toBe(-1)
-    for (let k = 1; k <= 5; k++) expect(t2.push(up(0), 0.95, true, A).midi, `0 ¢ frame ${k}: −60 or lower is still in the window`).toBe(-1)
-    expect(t2.push(up(0), 0.95, true, A).midi).toBe(69) // 창 = −30 과 0 ¢ 여섯
+    for (let k = 1; k <= 4; k++) expect(t2.push(up(0), 0.95, true, A).midi, `0 ¢ frame ${k}: −60 or lower is still in the window`).toBe(-1)
+    expect(t2.push(up(0), 0.95, true, A).midi).toBe(69) // 창 = −30 과 0 ¢ 다섯
   })
-  test('a vowel-length steady tone (six frames ≈ 0.13 s) shows nothing; one dropped frame is skipped, two restart the count', () => {
+  test('a vowel-length steady tone (five frames ≈ 0.1 s) shows nothing; one dropped frame is skipped, two restart the count', () => {
     const t = createTracker()
-    for (let i = 0; i < 6; i++) expect(t.push(220, 0.95, true, A).midi).toBe(-1)
+    for (let i = 0; i < 5; i++) expect(t.push(220, 0.95, true, A).midi).toBe(-1)
     expect(t.push(-1, 0, false, A).midi).toBe(-1); expect(t.push(220, 0.95, true, A).midi).toBe(57) // 시끄러운 곳의 한 프레임 빠짐은 건너뛴다
     const u = createTracker()
-    for (let i = 0; i < 6; i++) u.push(220, 0.95, true, A)
+    for (let i = 0; i < 5; i++) u.push(220, 0.95, true, A)
     u.push(-1, 0, false, A); u.push(-1, 0, false, A); expect(u.push(220, 0.95, true, A).midi).toBe(-1) // 두 프레임 끊기면 처음부터
   })
-  test('vibrato ±25 ¢ from the very first frame still acquires on the seventh', () => {
+  test('vibrato ±25 ¢ from the very first frame still acquires on the sixth', () => {
     const t = createTracker(), vib = (k: number) => 440 * Math.pow(2, 25 * Math.sin(2 * Math.PI * 5.5 * k * 1024 / 48000) / 1200)
-    for (let k = 0; k < 6; k++) expect(t.push(vib(k), 0.95, true, A).midi).toBe(-1)
-    expect(t.push(vib(6), 0.95, true, A).midi).toBe(69)
+    for (let k = 0; k < 5; k++) expect(t.push(vib(k), 0.95, true, A).midi).toBe(-1)
+    expect(t.push(vib(5), 0.95, true, A).midi).toBe(69)
   })
   test('hysteresis: a momentary ±60¢ jump keeps the note name (the smoothed value is still within half a semitone)', () => {
     const t = acquire(createTracker())

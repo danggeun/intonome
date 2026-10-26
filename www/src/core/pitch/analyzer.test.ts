@@ -140,9 +140,52 @@ describe('one note, bowed again and again, reads as one unbroken line', () => {
   })
 })
 
+describe('short detached notes straight after a rest (spiccato, staccato) show from the first or second note', () => {
+  // 쉬었다가 스피카토로 음계를 시작하면 음마다 유효 프레임이 4~5 개뿐이고 다음 음은 음높이가 달라 처음부터 다시 센다 —
+  // 시작 조건이 7 프레임이면 16분음표 100~125 bpm 음계가 끝까지 안 떴다(합성 15 장면 중 3). 6 프레임은 둘째 음에서 띄운다
+  const sr = 48000, N = 4096, HOP = 1024
+  /** 음계 8 음: 활이 닿은 soundS 동안 소리, 떼면 현 울림이 ringDb 에서 ringS 로 사라지며 gapS 뒤 다음 음. 앞 0.6 s 무음(배경 −55 dBFS) */
+  function spiccato(soundS: number, gapS: number, ringDb: number, ringS: number): Float32Array {
+    const midis = [69, 71, 73, 74, 76, 78, 80, 81], per = Math.round((soundS + gapS) * sr), lead = Math.round(0.6 * sr)
+    const x = new Float32Array(lead + per * midis.length + Math.round(0.3 * sr)); let seed = 11
+    for (let i = 0; i < x.length; i++) { seed = (seed * 1664525 + 1013904223) >>> 0; x[i] = (seed / 2 ** 32 - 0.5) * 0.004 }
+    midis.forEach((m, k) => {
+      const hz = 442 * 2 ** ((m - 69) / 12), s0 = lead + k * per, g0 = Math.round(soundS * sr); let ph = 0
+      for (let i = 0; i < per; i++) {
+        const t = i / sr; ph += 2 * Math.PI * hz / sr; let v = 0; for (let h = 1; h <= 12; h++) v += Math.sin(ph * h + h * 0.7) / h ** 1.1
+        const env = i < g0 ? Math.min(1, t / 0.015, (soundS - t) / 0.01) : 10 ** (ringDb / 20) * Math.exp(-((i - g0) / sr) / ringS)
+        x[s0 + i] = x[s0 + i]! + 0.15 * v * Math.max(0, env)
+      }
+    })
+    return x
+  }
+  function firstNote(x: Float32Array, soundS: number, gapS: number, tracker?: Partial<TrackerParams>): number {
+    const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200, tracker }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
+    for (let end = N; end <= x.length; end += HOP) if (a.process(x.subarray(end - N, end)).hz > 0) return Math.floor((end / sr - 0.6) / (soundS + gapS)) + 1
+    return 99
+  }
+  test.each([
+    ['16ths at 100 bpm, stopped notes (little ring)', 0.1, 0.05, -18, 0.15],
+    ['16ths at 125 bpm, open-ish strings (ring)', 0.08, 0.04, -10, 0.3],
+    ['8ths at 150 bpm with gaps', 0.1, 0.1, -40, 0.05],
+  ])('%s: a note is on the screen by the second note (seven frames show these late or never)', (_, sound, gap, ringDb, ringS) => {
+    const x = spiccato(sound, gap, ringDb, ringS)
+    expect(firstNote(x, sound, gap)).toBeLessThanOrEqual(2)
+    expect(firstNote(x, sound, gap, { acquireFrames: 3, acquireCents: 20, acquireGap: 0 })).toBe(1) // 2.5.6: 첫 음부터
+  })
+  test('the fastest stopped spiccato (16ths at 125 bpm, little ring) still shows inside the passage', () => {
+    expect(firstNote(spiccato(0.08, 0.04, -18, 0.15), 0.08, 0.04)).toBeLessThanOrEqual(6) // 여섯째 음(0.7 s)까지는 뜬다 — 7 프레임이면 끝까지 안 뜬다
+  })
+  test('with seven frames the fast scales show late or not at all — the reason the rule is six', () => {
+    expect(firstNote(spiccato(0.1, 0.05, -18, 0.15), 0.1, 0.05, { acquireFrames: 7 })).toBeGreaterThan(2)
+    expect(firstNote(spiccato(0.08, 0.04, -10, 0.3), 0.08, 0.04, { acquireFrames: 7 })).toBeGreaterThan(2)
+    expect(firstNote(spiccato(0.08, 0.04, -18, 0.15), 0.08, 0.04, { acquireFrames: 7 })).toBeGreaterThan(8)
+  })
+})
+
 describe('nothing is played — the tuner shows nothing', () => {
   // 피드백(2026-10-24): 바깥에서 그냥 켜 두면 주변 소리에 음이 틱틱 떴다. 말소리 음절·새소리·딸깍은 짧거나 피치가 미끄러진다 —
-  // 같은 음으로 여러 프레임 이어질 때만 새로 띄운다 (2.5.1 은 3 프레임, 2.5.7 은 7 프레임)
+  // 같은 음으로 여러 프레임 이어질 때만 새로 띄운다 (2.5.1 은 3 프레임, 2.5.7 은 6 프레임)
   const sr = 48000, N = 4096, HOP = 1024
   /** 야외 20 s: 분홍+갈색 배경 −45/−40 dBFS, 사건(멀리서 말소리 음절·새·딸깍·차·바람) 최대 −24 dBFS, 시드 고정 */
   function ambient(seedIn: number, sec = 20): Float32Array {
@@ -174,7 +217,7 @@ describe('nothing is played — the tuner shows nothing', () => {
     const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
     let first = -1
     for (let end = N; end <= x.length; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0 && first < 0) { first = end / sr - 3; expect(f.midi).toBe(55) } }
-    expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.25) // 2.5.7: 무음에서 새로 띄우려면 7 프레임 — 말소리 모음이 틱틱 뜨지 않게(2.5.1 은 3 프레임, 0.15 s)
+    expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.25) // 2.5.7: 무음에서 새로 띄우려면 6 프레임 — 말소리 모음이 틱틱 뜨지 않게(2.5.1 은 3 프레임, 0.15 s)
   })
   /** 조용한 방에서 가까이 말한 모음 하나: 0.5 s 무음 → 모음(f0, 프레임당 glide st/s 로 미끄러짐, 포먼트 700/1200 Hz) → 무음 */
   function vowel(dur: number, f0: number, glide: number): Float32Array {
@@ -193,7 +236,7 @@ describe('nothing is played — the tuner shows nothing', () => {
     let shown = 0; for (let end = N; end <= x.length; end += HOP) if (a.process(x.subarray(end - N, end)).hz > 0) shown++
     return shown
   }
-  test.each([[0.06, 0], [0.1, 0], [0.06, 4], [0.1, -4]])('a lone spoken vowel of %s s (gliding %s st/s) after silence shows nothing', (dur, glide) => {
+  test.each([[0.06, 0], [0.08, 0], [0.06, 4], [0.08, -4]])('a lone spoken vowel of %s s (gliding %s st/s) after silence shows nothing', (dur, glide) => {
     for (const f0 of [120, 210]) {
       expect(shownFrames(vowel(dur, f0, glide), { acquireFrames: 3, acquireCents: 20, acquireGap: 0 }), `2.5.6 rule, f0 ${f0}`).toBeGreaterThan(0) // 재현: 예전 조건에선 떴다
       expect(shownFrames(vowel(dur, f0, glide)), `f0 ${f0}`).toBe(0)
