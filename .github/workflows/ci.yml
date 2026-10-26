@@ -36,9 +36,9 @@ jobs:
       - uses: actions/upload-artifact@v6
         with: { name: dist-capacitor, path: dist, retention-days: 7 }
 
-  e2e:
-    # 102 개 시나리오를 한 러너에서 돌리면 25 분을 넘긴다(느린 러너) — 3 묶음으로 나눠 병렬로
-    name: e2e (fake mic WAV) ${{ matrix.shard }}
+  e2e-shard:
+    # 105 개 시나리오를 한 러너에서 돌리면 25 분을 넘긴다(느린 러너) — 3 묶음으로 나눠 병렬로
+    name: e2e shard ${{ matrix.shard }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: build
@@ -63,6 +63,16 @@ jobs:
         run: npx playwright install chromium
       - run: npx playwright install-deps chromium
       - run: node scripts/e2e.mjs --dist dist --shard ${{ matrix.shard }}
+
+  e2e:
+    # 세 묶음을 하나의 결과로 — 이 이름이 2.5.7 까지의 e2e 잡 이름이라 브랜치 보호의 required check 가 그대로 맞는다
+    name: e2e (fake mic WAV)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs: e2e-shard
+    if: always()
+    steps:
+      - run: test "${{ needs.e2e-shard.result }}" = success
 
   screenshots:
     # 기준선(test-assets/screens/baseline)은 개발 환경에서 찍은 것이라 글꼴이 다른 CI 에서는 늘 '다르다' 고 나온다 —
