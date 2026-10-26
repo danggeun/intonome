@@ -39,10 +39,15 @@ export function createDetector(p: DetectorParams = DEFAULT_DETECTOR): Detector {
       const harmOk = f.harmonics >= p.harmonicsMin || (f.harmonics >= 1 && f.conf >= 0.9)
       let q = f.rmsOk && f.conf >= p.confMin && harmOk && f.flatness <= p.flatnessMax
       if (q && f.cents !== undefined && !Number.isNaN(f.cents)) {
+        // 한 프레임에 300 ¢ 넘게 뛰면 억양이 아니라 시작 과도음·옥타브 오독·새 음이다 — 드리프트 기억을 새로 시작한다.
+        // 안 그러면 음 시작의 엉뚱한 한두 프레임(배음·클릭 섞임)이 24 프레임 동안 기울기를 지배해 '연주 중' 이 0.5 s 늦게 켜졌다
+        if (ys.length && Math.abs(f.cents - ys[ys.length - 1]!) > 300) ys.length = 0
         ys.push(f.cents); if (ys.length > 24) ys.shift()
         if (!on && Math.abs(drift()) > p.driftMaxCents) { q = false; run = 0 } // 억양처럼 흐르는 피치는 시작 조건에서 제외 (ON 이후엔 포르타멘토 허용)
       } else ys.length = 0
-      run = q ? run + 1 : Math.max(0, run - p.missPenalty)
+      // 누적은 attackFrames 에서 멈춘다 — 상한이 없으면 긴 연주 뒤 hold 가 끝나도 run 이 남아 바로 다시 ON 이 되어(11 프레임 ON · 1 프레임 OFF 반복)
+      // 활을 내려놓은 뒤에도 연주 길이의 절반만큼 '소리 낸 시간' 이 늘었다
+      run = q ? Math.min(p.attackFrames, run + 1) : Math.max(0, run - p.missPenalty)
       if (!on && run >= p.attackFrames) { on = true; holdLeft = p.holdFrames }
       else if (on) { if (q) holdLeft = p.holdFrames; else if (--holdLeft <= 0) on = false }
       return on

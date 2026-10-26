@@ -72,7 +72,8 @@ let lastInTune = false
 function drawHistory(inTune: boolean): void {
   const canvas = q<HTMLCanvasElement>('tuner-history'); if (!canvas.offsetWidth) return
   const W = canvas.offsetWidth, H = Math.max(80, canvas.offsetHeight || 100), dpr = devicePixelRatio || 1
-  if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); canvas.style.width = W + 'px'; canvas.style.height = H + 'px' }
+  // 비트맵만 맞춘다. style.width 를 박으면 CSS width:100% 를 이겨 폭이 첫 그리기에 고정됐다(폴더블·분할 화면·회전 뒤 오른쪽이 잘림)
+  if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); canvas.style.height = H + 'px' }
   lastInTune = inTune
   const c = canvas.getContext('2d')!; c.save(); c.scale(dpr, dpr)
   c.fillStyle = stageBg; c.fillRect(0, 0, W, H)
@@ -114,10 +115,18 @@ function renderEmpty(): void {
   // 마이크가 꺼져 있으면 빈 상태 카피, 켜져 있거나 스스로 다시 여는 중(micReopening)이면 '--'
   const s = tunerStore.get(), off = !s.micReady && !s.micReopening && !tapHandler
   nEl.textContent = '--'; nEl.className = 'empty'
+  announce('')
   if (off && micOpener) showOffStart()
   q('tuner-oct').textContent = ''; q('tuner-cents').textContent = ''; q('tuner-enharmonic').textContent = ''; q('tuner-acc').textContent = ''
   setHz('')
   q('tuner-card').classList.remove('in-tune')
+}
+/** 스크린리더에는 1 초에 한 번, 음이름이나 센트가 바뀌었을 때만 — 매 프레임 읽으면 말이 끊이지 않는다 */
+let srText = '', srAt = 0
+function announce(text: string): void {
+  const now = performance.now()
+  if (text === srText || (text && now - srAt < 1000)) return // 비우는 건 바로
+  srText = text; srAt = now; q('tuner-sr').textContent = text
 }
 /** readCents = 사람이 읽는 숫자(차분한 값), inTune 도 그 숫자로 정해진다 */
 function renderNote(midi: number, readCents: number, inTune: boolean, hz: number, cents: number): void {
@@ -130,6 +139,7 @@ function renderNote(midi: number, readCents: number, inTune: boolean, hz: number
   q('tuner-card').classList.toggle('in-tune', inTune)
   q('tuner-cents').textContent = (readCents > 0 ? '+' : '') + readCents + ' ¢'
   setHz(fmtHz(calmHz(hz, cents, readCents))) // Hz 도 숫자와 같은 값 — 숫자가 바뀔 때만 같이 바뀐다
+  announce(`${name}${octaveOf(midi)} ${readCents > 0 ? '+' : ''}${readCents}${inTune ? ' ' + t('tuner.srInTune') : ''}`)
 }
 
 /** 시작 버튼. 카드 어디를 눌러도 onTap. sub 는 버튼 아래 한 줄 안내(없으면 비움). onTap 이 true 면 거둔다 */
@@ -155,6 +165,7 @@ export function mountTuner(): void {
   readTokens()
   // 언어가 바뀌면: 빈 상태 문구·시작 버튼 부제. 음이 떠 있으면 다음 프레임이 새 이름으로 그린다
   onLangChange(() => {
+    announce('') // 옛 언어의 읽기 글이 남지 않게
     if (q('tuner-note').classList.contains('empty')) renderEmpty()
     if (tapSub) q('tuner-start-sub').textContent = t(tapSub)
   })

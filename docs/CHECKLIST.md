@@ -28,6 +28,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Sharps show the enharmonic flat
 - [A] Reference drum (410–466 Hz) drag → A= updates, cents recalculated, setting saved
 - [A] Settings: tolerance ±5/10/15 (default ±10) changes the band width
+- [A] Recording: a quiet stretch longer than the 15-minute idle limit doesn't close the mic or end the recording (e2e); past 60 minutes the session continues in a new file `_2`; recordings deleted after 30 days are announced on launch; Keep is offered on every recording while auto-delete is on (e2e)
 - [A] Settings: response slow/normal/fast, mic sensitivity low/normal/high → saved and restored
 - [A] The tuner keeps working while the metronome clicks, at any tempo and subdivision (16ths up to 160 bpm, triplets, 8ths): a held note shows in every frame with the click at 0.3× and 1× the instrument, an A major scale under 16ths at A = 415/442/466 shows every note within 0.2 s, notes on either side of each click pitch read at ±25 cents, and the clicks alone never show as a note (unit tests with the real sequencer and analyzer)
 - [A] Click pitches sit exactly between two notes of the reference pitch, for every reference 410–466 Hz; no note played less than 30 cents off is taken for a click (unit tests)
@@ -44,7 +45,10 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Play/stop from the card button, the header button (whenever collapsed: ▶ when stopped, ■ when playing) and the space bar
 - [A] Header beat dots are one size in collapsed and expanded, playing or stopped
 - [A] BPM −/+, drag (2 px per BPM), clamped to 40–200
-- [A] Time signatures none/2/4/3/4/4/4/6/8, subdivisions; 6/8 disables subdivisions
+- [A] Time signatures none/2/4/3/4/4/4/6/8, subdivisions; 6/8 disables subdivisions, counts the tempo in dotted quarters (♩. glyph in the header, a bar = two beats of three eighths) (unit tests + e2e)
+- [A] Volume slider: square taper — half is −12 dB, a tenth −40 dB, 0 is silent (unit test)
+- [A] Cello C2 (65 Hz), double bass B0 (30.9 Hz, 5-string), C1 (extension) and a loose E string (38.9 Hz) read their own note steadily within 0.3 s (unit tests)
+- [A] Turning the A = drum while a note sounds relabels it on the very next frame; dragging 440 → 443 never moves the Hz readout (unit tests)
 - [A] Collapsed and playing: the card flashes on the first beat of each bar only (other beats and subdivisions are on the LED row); the tuner header never flashes; expanded and full: no flash
 - [A] Playing never changes the size; the size button goes collapsed ⇄ expanded, and from full one step down to expanded. Full is reached by dragging the card up (on a wide screen, where nothing collapses, the button goes expanded ⇄ full)
 - [A] Dragging the card follows the finger: up grows a step, down shrinks a step; a short drag springs back. With reduced motion a 40 px push moves one step, up or down
@@ -131,7 +135,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 
 ## Settings / other
 - [A] Keep screen on on/off (Wake Lock)
-- [A] Playing detection: speech and noise don't count; sustained string tones count after about 0.3 s
+- [A] Playing detection: noise doesn't count; sustained string tones count after about 0.14 s (six frames) even when the first frames read wild (a click, a harmonic); a long stretch of playing followed by silence turns off within 0.25 s (unit tests). Talk nearby mostly counts as sound — the label says sound, not playing
+- [A] Practice time with the metronome on: counts while the note sounds and stops when it stops, at 16ths 80–100, triplets 100 and 8ths 150 bpm; clicks alone never count (unit tests). Playback from the list doesn't count
 - [A] Note names 도레미 / C D E in Korean (the other system shown small); always C D E in English
 - [A] Recordings kept 30 days / forever; version shown at the bottom of Settings
 - [A] Landscape on small phones (height ≤ 500 px) shows a notice

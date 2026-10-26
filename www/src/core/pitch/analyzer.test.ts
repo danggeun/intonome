@@ -12,6 +12,27 @@ function settle(refHz: number, playedHz: number) {
   let f = an.process(tone(playedHz)); for (let i = 0; i < 12; i++) f = an.process(tone(playedHz)); return f
 }
 
+describe('double bass below E1 — 5-string B0, C extension, a loose E string', () => {
+  // 2.5.7 까지 hzMin 40: 38.9 Hz(60 ¢ 낮은 E1)는 YIN 탐색 끝의 포물선이 범위 밖으로 외삽돼 도♯1·도1 이 매 프레임 튀었고, B0·C1 은 아무것도 안 떴다
+  const bass = (hz: number, sec = 1.5, fundDb = -12): Float32Array => { // 베이스는 기본음이 약하고 배음이 많다
+    const x = new Float32Array(Math.round(sec * sr)); let ph = 0
+    for (let i = 0; i < x.length; i++) { ph += 2 * Math.PI * hz / sr; let s = 0; for (let h = 1; h <= 24; h++) s += (h === 1 ? 10 ** (fundDb / 20) : 1 / h ** 0.9) * Math.sin(ph * h + h * 0.4); x[i] = 0.08 * s * Math.min(1, i / (0.1 * sr)) }
+    return x
+  }
+  const read = (hz: number, refHz = 440) => {
+    const a = createAnalyzer({ sampleRate: sr, windowSize: N }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz, tolCents: 10 })
+    const x = bass(hz), midis: number[] = [], cents: number[] = []; let first = -1
+    for (let end = N; end <= x.length; end += 1024) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0) { if (first < 0) first = end / sr; midis.push(f.midi); cents.push(f.cents) } }
+    return { first, midis, cents }
+  }
+  test.each([['B0 (5-string)', 30.87, 23], ['C1 (extension)', 32.70, 24], ['E♭1 (loose E string, −100 ¢)', 38.89, 27], ['E1 −60 ¢ (reads E♭1 +40)', 41.2 * 2 ** (-60 / 1200), 27]])('%s reads its own note, steadily, within 0.3 s', (_, hz, midi) => {
+    const r = read(hz)
+    expect(r.first).toBeGreaterThan(0); expect(r.first).toBeLessThan(0.3)
+    expect(r.midis.filter(m => m === midi).length / r.midis.length, `note ${midi} in every frame (${new Set(r.midis).size} different notes seen)`).toBeGreaterThan(0.98)
+    const late = r.cents.slice(10); expect(Math.max(...late) - Math.min(...late), 'the number does not jump around').toBeLessThan(8)
+  })
+})
+
 describe('analyzer: reference pitch (refHz) correction', () => {
   // 리뷰에서 잡은 결함: 트래커 격자가 A=440 이라 |오프셋| > 50 ¢ (바로크 415, 466) 에서 이웃 반음으로 라벨링됐다
   test.each([[442, 442], [440, 440], [432, 432], [425, 425], [415, 415], [466, 466], [410, 410]])('refHz=%i 에서 그 주파수는 라4 0 ¢', (ref, hz) => {
@@ -29,6 +50,32 @@ describe('analyzer: reference pitch (refHz) correction', () => {
   })
   test('cello C2 (65.4 Hz) is C2 regardless of refHz', () => {
     for (const ref of [415, 442, 466]) { const f = settle(ref, 65.41 * ref / 440); expect(f.midi).toBe(36) }
+  })
+})
+
+describe('turning the A = drum while a note sounds', () => {
+  // 2.5.7 까지: 트래커 상태가 440 정규화 공간에 있고 refK 만 즉시 바뀌어, 440 Hz 를 켠 채 442 로 돌리면 그 프레임에 "라4 0 ¢ 442.0 Hz" 가 뜨고
+  // 숫자·초록·Hz 가 0.3~0.9 s 에 걸쳐 제자리로 미끄러졌다
+  const sr48 = 48000, N48 = 4096, HOP = 1024
+  const held = (hz: number, sec: number): Float32Array => { const x = new Float32Array(Math.round(sec * sr48)); let ph = 0; for (let i = 0; i < x.length; i++) { ph += 2 * Math.PI * hz / sr48; let s = 0; for (let h = 1; h <= 10; h++) s += Math.sin(ph * h + h) / h; x[i] = 0.1 * s * Math.min(1, i / (0.05 * sr48)) } return x }
+  test.each([[440, 442, 69, -8], [440, 415, 70, 2], [440, 466, 68, 1], [442, 440, 69, 8]])('%i Hz held, A = → %i: the very next frame reads %s at %i ¢ with the Hz unchanged', (hz, ref, midi, cents) => {
+    const a = createAnalyzer({ sampleRate: sr48, windowSize: N48 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: 10 })
+    const x = held(hz, 2); let end = N48
+    for (; end / sr48 < 1; end += HOP) a.process(x.subarray(end - N48, end))
+    a.setSettings({ refHz: ref })
+    const f = a.process(x.subarray(end - N48, end))
+    expect(f.midi).toBe(midi); expect(Math.abs(f.readCents - cents)).toBeLessThanOrEqual(1); expect(Math.abs(f.hz - hz)).toBeLessThan(1)
+    expect(f.inTune).toBe(Math.abs(cents) <= 10)
+  })
+  test('dragging the drum 440 → 443 in 1 Hz steps every 100 ms: the Hz readout never follows the drum', () => {
+    const a = createAnalyzer({ sampleRate: sr48, windowSize: N48 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: 10 })
+    const x = held(440, 3); let end = N48, ref = 440, k = 0
+    for (; end + HOP <= x.length; end += HOP) {
+      if (end / sr48 > 1 && ref < 443 && ++k % 5 === 0) { ref++; a.setSettings({ refHz: ref }) }
+      const f = a.process(x.subarray(end - N48, end))
+      if (end / sr48 > 0.5) { expect(Math.abs(f.hz - 440), `t=${(end / sr48).toFixed(2)} ref ${ref}`).toBeLessThan(1); expect(f.midi).toBe(69) }
+    }
+    expect(ref).toBe(443)
   })
 })
 

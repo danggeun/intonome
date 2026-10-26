@@ -11,7 +11,7 @@ import { attachVDrag } from './swipeStep.ts'
 import { t } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
 import { beatDurS, isBeatStart, sweepX, ledIndex, hitIndex } from '../core/metro/sweep.ts'
-import { q, qsa, on, reflow } from './dom.ts'
+import { q, qsa, on, reflow, setOn } from './dom.ts'
 import { toast } from './toast.ts'
 import { dragTick } from './dragTick.ts'
 import { overlayOpen } from './menu.ts'
@@ -111,9 +111,11 @@ function animHeight(el: HTMLElement, from: number, to: number, mb: [string, stri
 }
 function flashBeat(tick: number): void {
   const card = q('metro-card'); card.classList.remove('flash-strong')
-  // 화면 번쩍임은 접혀서 LED 줄만 보일 때, 마디 첫 박에만 — 멀리서 마디의 시작을 보는 신호. 다른 박·세분박은 LED 가 맡는다.
-  // 튜너 쪽(헤더 선)은 칠하지 않는다: 연습 내내 보는 자리라 세분박마다(16분 120 이면 초당 8 번) 빨갛게 깜빡였다
-  if (!isCollapsedNow() || tick !== 0) return
+  // 화면 번쩍임은 접혀서 LED 줄만 보일 때, 마디 첫 박(accent)에만 — 멀리서 마디의 시작을 보는 신호. 다른 박·세분박은 LED 가 맡는다.
+  // '없음' 박자는 마디가 없어 첫 박도 없다(tick 이 늘 0 이라 2.5.7 은 매 박 번쩍였다). 튜너 쪽(헤더 선)은 칠하지 않는다
+  if (!isCollapsedNow()) return
+  const s = settingsStore.get()
+  if (tickKind({ timeSig: s.timeSig, subDiv: s.subDiv }, tick) !== 'accent') return
   reflow(card); card.classList.add('flash-strong')
 }
 
@@ -156,8 +158,16 @@ export function mountMetro(): void {
   const drag = { start: dragStart, move: dragMove, end: dragEnd, ignore }
   attachVDrag(q('metro-hdr'), drag)
   attachVDrag(q('metro-body'), drag)
-  qsa('.m-adj, .m-adj-pad').forEach(b => on(b, 'click', () => adjBPM(b.textContent === '−' ? -1 : 1)))
-  qsa<HTMLElement>('[data-step]').forEach(b => on(b, 'click', () => adjBPM(+b.dataset.step!))) // 전용 모드의 −5·+5
+  // −/+ 는 누르고 있으면 반복한다(0.4 s 뒤부터 12 회/초) — 80 → 132 가 52 번 탭이었다. 반복한 뒤의 click 은 무시한다
+  const repeatable = (b: HTMLElement, step: () => number): void => {
+    let timer: ReturnType<typeof setTimeout> | null = null, repeated = false
+    const stop = (): void => { if (timer) clearTimeout(timer); timer = null }
+    on(b, 'pointerdown', (e: PointerEvent) => { if (e.button !== 0) return; repeated = false; stop(); const tick = (): void => { repeated = true; adjBPM(step()); timer = setTimeout(tick, 80) }; timer = setTimeout(tick, 400) })
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) on(b, ev, stop)
+    on(b, 'click', () => { if (repeated) { repeated = false; return } adjBPM(step()) })
+  }
+  qsa<HTMLElement>('.m-adj, .m-adj-pad').forEach(b => repeatable(b, () => b.textContent === '−' ? -1 : 1))
+  qsa<HTMLElement>('[data-step]').forEach(b => repeatable(b, () => +b.dataset.step!)) // 전용 모드의 −5·+5
   const volMain = q<HTMLInputElement>('metro-vol'), volPad = q<HTMLInputElement>('metro-vol-pad-input')
   on(volMain, 'input', () => { setMetroVol(+volMain.value); volPad.value = volMain.value })
   on(volPad, 'input', () => { setMetroVol(+volPad.value); volMain.value = volPad.value })
@@ -166,7 +176,8 @@ export function mountMetro(): void {
   on(document, 'keydown', (e: KeyboardEvent) => {
     const t = e.target as HTMLElement
     // 포커스된 버튼의 Space 는 그 버튼의 것. repeat 는 누르고 있을 때 재생/정지 반복 방지
-    if (e.code !== 'Space' || e.repeat || t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON') return
+    // 음량 슬라이더(range)에 포커스가 남아 있어도 Space 는 재생/정지 — 슬라이더는 Space 로 하는 일이 없다
+    if (e.code !== 'Space' || e.repeat || (t.tagName === 'INPUT' && (t as HTMLInputElement).type !== 'range') || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON') return
     // 메뉴·설정·팝업·편집기가 떠 있으면 Space 는 메트로놈의 것이 아니다
     if (overlayOpen() || isEditorOpen()) return
     e.preventDefault(); const r = toggleMetro(); if (!r.ok) toast(r.error)
@@ -178,14 +189,14 @@ export function mountMetro(): void {
   settingsStore.select(s => s.metroVol, v => { volMain.value = String(v); volPad.value = String(v) }, { immediate: true })
   settingsStore.select(s => s.timeSig, ts => {
     sweepResetDir() // 마디가 다시 시작되므로 스윕도 왼쪽부터
-    qsa('[data-ts]').forEach(b => b.classList.toggle('on', +b.dataset.ts! === ts))
+    qsa('[data-ts]').forEach(b => setOn(b, +b.dataset.ts! === ts))
     const is68 = ts === 6; const sd = q('sd-grid')
     sd.style.opacity = is68 ? '.3' : '1'; sd.style.pointerEvents = is68 ? 'none' : 'auto'
     qsa<HTMLButtonElement>('[data-sd]').forEach(b => { b.disabled = is68 }) // pointer-events 만으로는 키보드(Tab+Enter)가 뚫린다
-    q('sd-grid').classList.toggle('compound', is68) // 6/8: 세분 1 을 8분음표로 표시
+    q('sd-grid').classList.toggle('compound', is68); q('metro-card').classList.toggle('compound', is68) // 6/8: 세분 1 을 8분음표로, 헤더의 박 글리프를 ♩. 로
     buildBeatVis()
   }, { immediate: true })
-  settingsStore.select(s => s.subDiv, sd => { sweepResetDir(); qsa('[data-sd]').forEach(b => b.classList.toggle('on', b.dataset.sd === String(sd))); buildBeatVis() }, { immediate: true })
+  settingsStore.select(s => s.subDiv, sd => { sweepResetDir(); qsa('[data-sd]').forEach(b => setOn(b, b.dataset.sd === String(sd))); buildBeatVis() }, { immediate: true })
 
   metroStore.select(s => s.playing, playing => {
     q('metro-play-btn').textContent = q('metro-play-hdr-btn').textContent = playing ? '■' : '▶'
@@ -207,6 +218,17 @@ export function mountMetro(): void {
   // 초기: 본체는 펼친 채 그려지고, 폰이면 250 ms 후 접힘 애니메이션
   if (isPhoneLayout()) setTimeout(() => { syncLayout(); syncSizeBtn() }, 250) // 접히면서 헤더 재생 버튼도 나온다
   syncSizeBtn(); onLangChange(syncSizeBtn)
+  // 토스트는 메트로놈 카드 위에 띄운다 — 카드 아래쪽(화면 바닥)에 두면 접힌 헤더의 ▶·LED 줄을 덮고, 탭하는 토스트(새 버전 적용)가 ▶ 탭을 가로챘다.
+  // 폰 배치에서만: 넓은 배치는 카드가 옆 열이고, 메트로놈만 크게 보는 화면은 카드가 화면 전부라 기본 자리(바닥)
+  const anchorToast = (): void => {
+    const { full } = metroStore.get(), root = document.documentElement.style
+    if (!isPhoneLayout() || full) { root.removeProperty('--toast-bottom'); return }
+    const top = q('metro-card').getBoundingClientRect().top
+    root.setProperty('--toast-bottom', `${Math.max(16, Math.round(window.innerHeight - top + 8))}px`)
+  }
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(anchorToast).observe(q('metro-card'))
+  on(window, 'resize', anchorToast); metroStore.select(s => s.full, anchorToast); metroStore.select(s => s.collapsed, anchorToast)
+  setTimeout(anchorToast, 900) // 접힘 애니메이션(0.55 s)이 끝난 뒤의 자리
 }
 
 // ── 카드 끌기: 손가락을 따라 카드 높이가 바뀌고, 놓으면 다음 단계로 넘어가거나 제자리로 돌아간다 (폰 세로 배치) ──

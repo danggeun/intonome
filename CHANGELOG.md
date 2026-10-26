@@ -2,6 +2,60 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.5.8] - 2026-10-27
+A pass over everything a review of 2.5.7 turned up — things that worked wrongly, things that were awkward, and small polish — without changing how the tuner reads or the metronome sounds.
+
+Practice time
+- The practice timer's "sounding" time no longer keeps growing after you stop. After two minutes of playing it went on counting for about a minute more (the detector's attack counter had no ceiling, so once the hold ran out it switched straight back on). It now stops within a quarter second of silence
+- It also works with the metronome on at fast subdivisions. Every analysis window overlapped a click's muted span from 16ths at 73 bpm, triplets at 98 or 8ths at 146, and the detector was skipped for all of them, so the time froze at whatever state it was in when you pressed play (0 or 100 %). Only frames that actually read the click's pitch are skipped now
+- A wild frame or two at the start of a note (a harmonic, a click mixed in) no longer delays the count by half a second
+- Playback from the recordings list no longer counts as sounding, and an audio interruption (a phone call) no longer counts the interrupted stretch
+
+Recording
+- A recording longer than 60 minutes continues in a new file (named `_2`, `_3` …) instead of stopping. The 60-minute limit protects memory, and the chunks were already saved every 10 seconds; a lesson no longer loses its second half. The header time keeps running
+- Recording keeps the microphone open through a quiet stretch. The 15-minute idle timer measured only pitched sound, so a teacher talking for 15 minutes ended the recording
+- Recordings deleted after 30 days are announced on launch ("Deleted n recordings older than 30 days"); before, they just disappeared. Keep is offered on every recording while auto-delete is on, not only in the last 7 days
+- A recording recovered after a crash now has its waveform and its level, so it plays back at the right gain (the fixed ×2.5 fallback distorted normal-level recordings up to 25 % THD). The level is stored with each chunk as it is written
+- A crash right after saving no longer brings the same recording back a second time as `_recovered`; the leftover chunks are cleared
+- Undo of a delete, then delete again while the undo was still saving, no longer leaves a ghost row that returned on the next launch
+- Two recordings in the same minute get distinct names (`_2`); the new recording is in the list the moment "Recording saved" shows, not after the file is written (1–3 s for a long one)
+- On the Android app, a recording of 10 minutes or less is shared as WAV, so it opens on an iPhone too (webm doesn't); longer ones are shared as they are. The button says Save / Share, since that is what happens in the app; a long file shows "Preparing the file…" while it is written, and a second tap no longer destroys the first
+- A recording that can't be saved (no space, private mode) says so for 10 seconds and asks you to download it, instead of 2.5 s
+- The editor: on a recording over 10 minutes the A-B save button is dimmed from the start (it used to say so only after A and B were set); ▶ no longer jumps to A when looping is off; the screen stays on while a recording plays; if the screen does go off, looping still returns at B (the check now also runs on the audio's own timeupdate)
+- A browser without MediaRecorder gets a message instead of a silent failure; the browser tab version asks for persistent storage so the recordings survive a full disk
+
+Metronome
+- 6/8 is counted in dotted quarters, as it is written: the tempo number is ♩. per minute, the header glyph shows ♩. in 6/8, and a bar is two beats of three eighths. It used to be the plain quarter, so ♩. = 60 needed 90 and ♩. = 134 couldn't be set
+- The volume slider is a square taper: half is −12 dB, a tenth −40 dB, 0 is silent. It was linear in amplitude, so the top half spanned only 6 dB and halving it barely changed anything. Saved settings are unchanged — the mapping is applied when the click is rendered
+- − and + repeat while held (after 0.4 s, 12 steps a second); 80 → 132 was 52 taps
+- In the metronome-only view, dragging the number in the middle of the dial changes the tempo like the ↕ drag on the card (the gesture the guide teaches); it used to be read as a rotation around the centre, where 10 px meant 16 bpm and crossing the centre jumped to an end value
+- With no time signature ("none") the folded card no longer flashes on every beat: there is no bar, so there is no first beat. 2.5.7's "first beat only" saw every tick as tick 0 there
+- The Android back button in the metronome-only view returns to the tuner instead of sending the app to the background (and stopping the metronome)
+- The Drone picker opens at full width in the metronome-only view; it was positioned by the hidden tuner card and came out 0 px wide
+- Going to the background stops Play A too (it kept sounding when the mic was off or a recording was on), and on return a toast says the sound was stopped. The click-arrival calibration starts fresh on every start and pattern change
+- Space still starts and stops the metronome after the volume slider has been touched
+
+Tuner
+- The double bass reads below E1: the 5-string B0 (30.9 Hz), the C extension's C1 and a loose E string. The search stopped at 40 Hz and the last point's parabola extrapolated past it, so 38.9 Hz read as C♯1 / C1 jumping every frame, and B0 and C1 showed nothing. The range is now 29 Hz to 4.2 kHz; the benchmark is unchanged
+- Turning the A = drum while a note sounds relabels it at once. The tracker's state is in a 440-normalised space and only the display factor changed, so the Hz readout followed the drum (440 → 442 showed "442.0 Hz") and the number and the green took 0.3–0.9 s to come right
+- The pitch trace follows the width of the card again after a fold, a split screen, a rotation or a window resize; its width was fixed at the first drawing
+- The reason the tuner stopped after 15 quiet minutes stays under the Start button ("Quiet for 15 minutes, so the mic was turned off"); the toast alone was gone in 2.5 s
+- A permission refusal in the English UI is recognised as one (the check matched Korean words only), so it shows the blocked-mic popup instead of a toast plus popup. Tapping Start after a refusal shows the popup whatever the Permissions API says, which on Android after two refusals used to leave Start doing nothing. The popup's wording fits a home-screen web app (no address bar), and a failed Retry now says so
+
+Screen and copy
+- Tablets and desktop (two columns, and the metronome-only view): the time signature and subdivision buttons are 52 px tall again; a vertical flex container had squashed them to 24 px
+- Toasts sit above the metronome card instead of over its folded header, so the update toast (tap = reload) and undo toasts no longer cover the ▶ button and the LED row; they also clear the home indicator
+- A new version is not applied while Settings, the menu or a popup is open, or while the practice timer is running (it isn't saved across a reload)
+- The landscape notice is in English on the English UI; the Android app's start-up background matches the dark theme (it was the light grey of 2.4.0)
+- An existing install without a saved language keeps the phone's language after the update instead of switching to English
+- Chosen values announce "pressed" to screen readers; toasts are a live region; the tuner reads the note and cents to a screen reader once a second when they change; menu, Settings, the mic popup and the editor take the focus and make the screen behind them inert; Esc closes the menu and Settings; the A = drum and the dial work with the keyboard (arrows, PageUp/Down, Home/End); the editor's download control is a button
+- Larger touch areas: Play A, the folded ▶, the whole recording card (not only its title line), sliders, the editor's position handle
+- Contrast: the running timer button, the editor's A/B and zoom toggles meet 4.5:1 on their surface; the "drag" hint under the tempo is a text colour, not a decoration colour
+- Copy: no more "분석 워커", "AudioWorklet" or "memory" in messages; no "reload" instructions in the app (it says to close and reopen); one spacing and one undo wording throughout; the Settings descriptions say when to choose what (tolerance, response, sensitivity, keep); English "Playing" → "Sounding", "Recording" → "Recording started"
+- The Screen Wake Lock "not supported" notice shows once per install, not on every launch
+- CI: GitHub Actions on the Node 24 runtime and a pinned Ubuntu 24.04 runner (no more deprecation annotations); e2e runs in three shards (the full suite exceeded the 25-minute job limit); screenshots are uploaded as an artifact instead of failing on font differences
+- Tests: 22 new unit tests (timer after long playing, timer under a fast metronome, onset with wild frames, double bass B0/C1/E♭1, drum turned while a note sounds, 6/8 and the volume taper, …) and 1 new e2e (recording survives the idle limit); the 6/8, keep and 15-minute scenarios are updated
+
 ## [2.5.7] - 2026-10-26
 - Talk in the room puts fewer notes on the screen. Left on while people talk, the tuner kept ticking short notes onto the trace. From silence, a note now needs six consecutive frames within 40 cents of their median (was three within 20 cents, 2.5.1); one dropped frame in between is skipped, so a note in a noisy room isn't held back. A lone vowel of up to 80 ms no longer shows (2.5.6 showed even 60 ms); a held or sung vowel is a note and still does. On 60 s of synthetic conversation in a room (six voices at three levels, two intonation models): trace pieces 69 → 48 and 58 → 37 a minute, time with a note name on the screen 42 → 30 and 37 → 25 s a minute. Outdoor ambience stays at 0. Seven frames cut more (41 and 29 pieces) but a scale of short detached notes begun straight after a rest — spiccato 16ths at 100–125 bpm, where each note gives only four or five frames and the next note starts the count again — then showed late or not at all; with six it shows from the second note
 - The first note after silence shows about 0.17 s after the sound starts (was about 0.1 s). On 35 synthetic string onsets — vibrato from the first moment up to ±40 cents, scratchy and slow bow starts, low strings, pizzicato, short notes — the median went 109 → 173 ms, the slowest 152 → 259 ms, and every one still showed; a pizzicato shows whatever its ring. Benchmark: lock 118 → 188 ms; at 0 dB SNR 211 → 304 ms (without skipping a dropped frame it would be 652). Once a note is on the screen nothing changes: note changes, scales (lock 124 → 126 ms), the trace, the hold after the sound stops and the accuracy are the same; false and harmonic errors stay 0

@@ -5,7 +5,7 @@
 import { droneStore, settingsStore } from '../state/index.ts'
 import { startDrone, stopDrone } from '../audio/refTone.ts'
 import { KR, EN } from '../core/note.ts'
-import { q, qsa, on } from './dom.ts'
+import { q, qsa, on, setOn } from './dom.ts'
 import { getLang, t } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
 import { toast } from './toast.ts'
@@ -17,7 +17,9 @@ const noteName = (pc: number): string => ((getLang() === 'en' || settingsStore.g
 export const dronePopOpen = (): boolean => q('drone-pop').classList.contains('open')
 
 function openPop(): void {
-  const hdr = q('hdr').getBoundingClientRect(), card = q('tuner-card').getBoundingClientRect(), pop = q('drone-pop')
+  // 폭은 튜너 카드에 맞춘다. 메트로놈만 크게 보는 화면에서는 카드가 display:none 이라 rect 가 0 → 본문(#main-body)에 맞춘다 (2.5.7 까지 폭 0 으로 열렸다)
+  const hdr = q('hdr').getBoundingClientRect(); let card = q('tuner-card').getBoundingClientRect(); if (!card.width) card = q('main-body').getBoundingClientRect()
+  const pop = q('drone-pop')
   pop.style.top = `${hdr.bottom + 4}px`; pop.style.left = `${card.left}px`; pop.style.right = `${window.innerWidth - card.right}px`
   pop.classList.add('open'); q('drone-pop-bg').classList.add('open'); q('drone-btn').setAttribute('aria-expanded', 'true')
   let first = false
@@ -32,7 +34,7 @@ export function closeDronePop(): void {
 
 function render(): void {
   const pc = droneStore.get().pitchClass, btn = q('drone-btn')
-  btn.classList.toggle('on', pc !== null)
+  setOn(btn, pc !== null)
   btn.textContent = pc === null ? t('hdr.drone') : noteName(pc)
   btn.setAttribute('aria-label', pc === null ? t('drone.pick') : t('drone.stop', { note: noteName(pc) }))
   qsa<HTMLElement>('.drone-note-btn').forEach(b => { b.textContent = noteName(+b.dataset.pc!) })

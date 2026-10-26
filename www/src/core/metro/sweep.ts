@@ -10,8 +10,8 @@ type P = Pick<Pattern, 'bpm' | 'timeSig' | 'subDiv'>
 /** 큰 박의 개수. 6/8 은 8분음표 6개지만 큰 박은 둘(점4분음표 × 2) */
 export const beatCount = (p: Pick<Pattern, 'timeSig'>): number => p.timeSig === 6 ? 2 : p.timeSig
 
-/** 한 박(막대가 한쪽 끝에서 반대 끝까지 가는 시간) — 초 */
-export const beatDurS = (p: P): number => (60 / p.bpm) * (p.timeSig === 6 ? 1.5 : 1)
+/** 한 박(막대가 한쪽 끝에서 반대 끝까지 가는 시간) — 초. bpm 은 늘 박 단위(6/8 은 ♩.) */
+export const beatDurS = (p: P): number => 60 / p.bpm
 
 /** 큰 박 하나 안의 틱 수 */
 export const ticksPerBeat = (p: Pick<Pattern, 'timeSig' | 'subDiv'>): number => totalTicks(p) / beatCount(p)

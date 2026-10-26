@@ -8,10 +8,10 @@ describe('Seiko-style beat display', () => {
     expect(beatCount({ timeSig: 6 })).toBe(2)
     expect(beatCount({ timeSig: 1 })).toBe(1)
   })
-  test('beat length — a 6/8 main beat is a dotted quarter (1.5×)', () => {
+  test('beat length — the tempo number is always the beat, in 6/8 the dotted quarter', () => {
     expect(beatDurS({ bpm: 60, timeSig: 4, subDiv: 1 })).toBeCloseTo(1)
     expect(beatDurS({ bpm: 120, timeSig: 3, subDiv: 2 })).toBeCloseTo(0.5)
-    expect(beatDurS({ bpm: 60, timeSig: 6, subDiv: 1 })).toBeCloseTo(1.5)
+    expect(beatDurS({ bpm: 60, timeSig: 6, subDiv: 1 })).toBeCloseTo(1) // ♩. = 60 → 한 박 1 s, 8분음표 3 개
   })
   test('ticks per beat and beat numbers match the sequencer grid', () => {
     expect(ticksPerBeat({ timeSig: 4, subDiv: 3 })).toBe(3)

@@ -1,5 +1,6 @@
 /** 연습/연주 타이머 (메뉴 + 헤더 가운데 칸). 무활동 자동 종료는 main 의 inactivity watch 가 담당 */
 import { sessionStore, tunerStore } from '../state/index.ts'
+import { playbackActive } from '../audio/playback.ts'
 import { fmt, playedRatio } from '../core/format.ts'
 import { q, qs, on } from './dom.ts'
 import { toast } from './toast.ts'
@@ -29,7 +30,8 @@ function startTimer(): void {
     const now = Date.now(); acc += (now - last) / 1000; last = now
     const whole = Math.round(acc); if (whole <= 0) return // round: 틱이 몇 ms 이르게 와도 1초를 잃지 않는다
     acc -= whole
-    sessionStore.set({ elapsedSec: s.elapsedSec + whole, detectedSec: s.detectedSec + (tunerStore.get().playing ? whole : 0) })
+    // 녹음을 틀어 놓은 동안은 세지 않는다 — 메뉴의 미니 플레이어는 마이크를 놓지 않아 스피커로 나온 연주를 튜너가 그대로 읽었다
+    sessionStore.set({ elapsedSec: s.elapsedSec + whole, detectedSec: s.detectedSec + (tunerStore.get().playing && !playbackActive() ? whole : 0) })
   }, 1000)
 }
 export function mountTimer(): void {

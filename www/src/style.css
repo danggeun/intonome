@@ -12,6 +12,7 @@
   --ink:#fff; /* 가장 센 글자·표식 (카드 라벨, 다이얼 바늘) */
   /* 액센트 — 빨강 하나, 두 값: 어두운 면 위의 글자·테두리와 흰 글자를 얹는 면 */
   --accent:#f15f54;--accent-rgb:241,95,84;--accent-soft:rgba(241,95,84,.13); /* 글자·테두리(작은 면적) — surface 위 4.59:1 */
+  --accent-soft-on:linear-gradient(rgba(241,95,84,.08),rgba(241,95,84,.08)) #181b21; /* 면(surface) 위 켜짐 토글의 바탕 — 더 어둡게 깔아 빨간 글자가 4.5:1 */
   --accent-fill:#cc473e;--on-accent:#fff; /* 솔리드 버튼(큰 면적) — 흰 글자 4.63:1 */
   /* 고른 값(설정 단계 버튼·박자 칸) — 무채색. 빨강은 울리는 중·녹음 중·켜짐에만 쓴다 */
   --sel:rgba(var(--text-rgb),.14);
@@ -52,6 +53,7 @@
   --text:#1b1f25;--text-2:#49515b;--text-3:#59616c;--deco:#98a0aa;--text-rgb:27,31,37;
   --ink:#111418;
   --accent:#bf3227;--accent-rgb:191,50,39;--accent-soft:rgba(191,50,39,.10);
+  --accent-soft-on:linear-gradient(rgba(191,50,39,.08),rgba(191,50,39,.08)) #ffffff;
   --ok:#16a34a;--ok-rgb:22,163,74;--ok-text:#15803d;--warn:#d97706;--mark:#d97706;--mark-rgb:217,119,6;--mark-text:#b45309;
   --tune-glow:0 0 18px rgba(22,163,74,.35);
   --sel:rgba(var(--text-rgb),.14);
@@ -106,6 +108,8 @@ button{font-family:inherit;color:inherit;}
 /* DRONE — 꺼짐 'DRONE', 켜짐 빨간 음이름. 폭을 고정해 글자가 바뀌어도 흔들리지 않는다 */
 #drone-btn,#rec-hdr-btn{height:var(--h-hdr);padding:0 6.5px 0 7.5px;min-width:64px;justify-content:center;font-size:var(--fs-xs);letter-spacing:.04em;} /* 헤더 양쪽의 두 네모: 같은 크기(30×64). 폭은 DRONE 에 여유 조금, 녹음 시간(● 00:00)도 들어간다. 글자 뒤 자간과 점 때문에 잉크가 왼쪽으로 0.5 px 쏠려 여백을 0.5 px 옮긴다 */
 #drone-btn::after,#rec-hdr-btn::after{inset:-7px -2px;} /* 보이는 네모는 30, 누르는 범위는 44 */
+#ref-a-btn::after{inset:-8px -2px;} /* A 듣기 칩은 28 — 누르는 범위 44 */
+#metro-play-hdr-btn{position:relative;} #metro-play-hdr-btn::after{content:'';position:absolute;inset:-4px 0;} /* 접힘 ▶ 36 → 44 (가장 자주 누르는 버튼) */
 #drone-btn[aria-expanded="true"]{z-index:71;} /* 창이 열린 동안 배경(69)보다 위: 다시 누르면 배경이 아니라 버튼이 받아 창을 닫는다 */
 #drone-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-size:var(--fs-md);letter-spacing:0;}
 #hdr-timer{flex:1;min-width:0;display:flex;align-items:center;gap:5px;margin:0 8px 0 0;padding:0;height:44px;background:transparent;border:none;cursor:pointer;} /* 누르는 범위는 헤더 높이 44 */
@@ -130,6 +134,7 @@ button{font-family:inherit;color:inherit;}
 /* 메인 */
 #main-body{display:flex;flex-direction:column;gap:var(--gap);width:100%;max-width:400px;flex:1;min-height:0;}
 
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
 /* 튜너 — 검정 무대. 색은 '맞음' 에만 */
 #tuner-card{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--tuner-bg);border:1px solid var(--tuner-line);border-radius:var(--r-lg);overflow:hidden;transition:box-shadow var(--t-std);} /* 헤어라인: 무대가 bg 위에서 한 단 낮게 읽히도록 윤곽을 남긴다 */
 #tuner-card.in-tune{box-shadow:0 0 0 1.5px rgba(var(--ok-rgb),.6);} /* 맞음: 카드 둘레 가는 테만 — 멀리서 보이는 신호는 초록 음이름이 맡는다 */
@@ -141,7 +146,9 @@ button{font-family:inherit;color:inherit;}
 #ref-a-btn{height:var(--h-chip);padding:0 9px;border-color:var(--tuner-ctl);color:var(--tuner-text-2);font-size:var(--fs-xs);font-weight:var(--fw-md);}
 #ref-a-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);} /* 울리는 중 — 앱 공통 '켜짐' 빨강 */
 /* 드럼 히트 영역: 행 전체(라벨 포함)를 잡고 상하 12 px 여유 — 보이는 크기는 그대로 */
-#ref-row{display:flex;align-items:center;gap:8px;padding:12px 8px;margin:-12px -8px;cursor:ns-resize;touch-action:none;user-select:none;}
+#ref-row{display:flex;align-items:center;gap:8px;padding:12px 8px;margin:-12px -8px;cursor:ns-resize;touch-action:none;user-select:none;border-radius:var(--r-sm);}
+#ref-row:focus-visible,#dial:focus-visible{outline:2px solid var(--text-2);outline-offset:2px;}
+#menu-panel:focus,#settings-inner:focus,#mic-popup:focus,#ed-inner:focus{outline:none;} /* 열릴 때 코드로 옮긴 포커스 — 링은 그리지 않는다 */
 #ref-lbl{font-size:var(--fs-xs);color:var(--tuner-text-1);letter-spacing:var(--ls-caps);} /* 흰색은 음이름·바늘·TUNER 만 */
 #ref-drum-outer{position:relative;width:78px;height:28px;overflow:hidden;border-radius:var(--r-sm);background:var(--tuner-well);cursor:ns-resize;user-select:none;touch-action:none;border:1px solid var(--tuner-line);}
 #ref-drum-outer::before,#ref-drum-outer::after{content:'';position:absolute;left:0;right:0;height:8px;z-index:2;pointer-events:none;}
@@ -181,6 +188,8 @@ button{font-family:inherit;color:inherit;}
 #metro-hdr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;padding:8px 12px 8px 16px;border-bottom:1px solid var(--line);gap:10px;min-height:52px;}
 #metro-hdr-label{position:relative;display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:var(--fs-xl);color:var(--text);font-weight:var(--fw-md);white-space:nowrap;cursor:ns-resize;touch-action:none;user-select:none;padding:8px 10px 8px 0;margin:-8px 0;}
 #metro-hdr-label .note-glyph{width:8.1px;height:20px;vertical-align:0;}
+/* 6/8: 박 단위가 점4분음표라 글리프도 ♩. — 숫자가 무엇을 세는지 보이게 */
+#metro-hdr-label .note-glyph.g-dq{width:11.8px;display:none;} #metro-card.compound #metro-hdr-label .g-q{display:none;} #metro-card.compound #metro-hdr-label .g-dq{display:block;}
 #metro-hdr-bpm{display:inline-block;width:3ch;} /* 늘 세 자리 폭(DM Mono 는 숫자 폭이 같다, BPM 은 최대 200) — 80 → 120 으로 바뀌어도 옆 LED 줄이 움직이지 않는다 */
 #metro-hdr-title{display:none;font-size:var(--fs-sm);color:var(--ink);font-weight:var(--fw-b);letter-spacing:var(--ls-caps-wide);align-items:center;} /* #tuner-label 과 같은 글씨 */
 #metro-card.full #metro-hdr-label{display:none;} #metro-card.full #metro-hdr-title{display:flex;}
@@ -283,7 +292,7 @@ button{font-family:inherit;color:inherit;}
 #metro-bpm-row{display:flex;align-items:center;gap:10px;}
 #metro-bpm-wrap{display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;touch-action:none;}
 #metro-bpm{font-family:'DM Mono',monospace;font-size:min(var(--fs-d2),14vw);font-weight:var(--fw-md);line-height:1;min-width:90px;text-align:center;color:var(--text);}
-#metro-bpm-hint{display:inline-flex;align-items:center;gap:3px;font-size:var(--fs-xs);color:var(--deco);margin-top:3px;}
+#metro-bpm-hint{display:inline-flex;align-items:center;gap:3px;font-size:var(--fs-xs);color:var(--text-3);margin-top:3px;} /* 안내 글자 — 장식 색(2.7:1)이 아니라 읽히는 색 */
 .drag-glyph{width:.72em;height:1em;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;} /* 글자 ↕ 는 아이폰에서 이모지처럼 그려져 그림으로 */
 #metro-adj-col{display:flex;flex-direction:column;gap:8px;flex:1;}
 #metro-btn-row{display:flex;gap:8px;}
@@ -292,7 +301,7 @@ button{font-family:inherit;color:inherit;}
 #metro-vol-row{display:flex;align-items:center;gap:8px;}
 .m-vol-lbl{font-size:var(--fs-sm);color:var(--text-2);font-weight:var(--fw-md);white-space:nowrap;}
 /* 슬라이더 — 트랙은 얇게, 히트는 두껍게 */
-input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:28px;background:transparent;outline:none;cursor:pointer;}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:44px;margin:-8px 0;background:transparent;outline:none;cursor:pointer;} /* 누르는 높이 44, 차지하는 높이는 28 그대로 */
 input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--line);border-radius:2px;}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-9px;border-radius:50%;background:var(--text);border:2px solid var(--surface);cursor:pointer;}
 input[type=range]::-moz-range-track{height:4px;background:var(--line);border-radius:2px;}
@@ -314,7 +323,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 /* 풀스크린 메뉴 — 닫혔을 때 visibility:hidden 으로 Tab 순서·스크린리더에서 뺀다(inert 는 WebView 94 미만 미지원). 전환은 페이드 뒤로 미룬다 */
 #menu-overlay{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:50;opacity:0;pointer-events:none;visibility:hidden;transition:opacity var(--t-std),visibility 0s var(--t-std);overflow-y:auto;}
 #menu-overlay.open{opacity:1;pointer-events:all;visibility:visible;transition:opacity var(--t-std),visibility 0s;}
-#menu-panel{min-height:100%;display:flex;flex-direction:column;padding:var(--page-top) var(--s5) var(--s6);gap:var(--s6);max-width:480px;margin:0 auto;}
+#menu-panel{min-height:100%;display:flex;flex-direction:column;padding:var(--page-top) var(--s5) calc(var(--s6) + env(safe-area-inset-bottom,0px));gap:var(--s6);max-width:480px;margin:0 auto;}
 .menu-top{display:flex;justify-content:space-between;align-items:center;padding:0 0 var(--s2);}
 .menu-title-txt{font-size:var(--fs-xl);font-weight:var(--fw-b);color:var(--text);}
 .menu-close-btn,.settings-close{width:44px;height:44px;margin-right:-12px;background:transparent;border:none;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;}
@@ -325,10 +334,10 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .timer-lbl{font-size:var(--fs-sm);color:var(--text-2);letter-spacing:.02em;font-weight:var(--fw-md);margin-bottom:4px;}
 .timer-val{font-family:'DM Mono',monospace;font-size:var(--fs-2xl);color:var(--text);font-weight:var(--fw-md);}
 .menu-btn-sm{height:var(--h-control);background:var(--surface);border:1px solid var(--line-ctl);border-radius:var(--r-md);color:var(--text);font-size:var(--fs-btn);font-weight:var(--fw-md);cursor:pointer;text-align:center;width:100%;}
-.menu-btn-sm.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+.menu-btn-sm.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft-on);} /* 켜짐 면은 바탕색 위 옅은 빨강 — 글자 대비 4.5:1 */
 #rec-list{display:flex;flex-direction:column;gap:8px;}
 #rec-empty{font-size:var(--fs-md);color:var(--text-3);padding:2px 0 0 2px;}
-.rec-item{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s3) var(--s4);}
+.rec-item{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s3) var(--s4);cursor:pointer;}
 .rec-item-head{display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer;gap:10px;}
 .rec-item-head > div{min-width:0;} /* 긴 이름이 카드를 넓히지 않게 (flex 기본 min-width:auto 해제) */
 .rec-item-name{font-family:'DM Mono',monospace;font-size:var(--fs-md);color:var(--text);font-weight:var(--fw-md);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -354,7 +363,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #settings-version{font-family:'DM Mono',monospace;font-size:var(--fs-xs);color:var(--text-3);text-align:center;padding-top:var(--s2);}
 #settings-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:60;opacity:0;pointer-events:none;visibility:hidden;transition:opacity var(--t-std),visibility 0s var(--t-std);overflow-y:auto;}
 #settings-page.open{opacity:1;pointer-events:all;visibility:visible;transition:opacity var(--t-std),visibility 0s;}
-#settings-inner{min-height:100%;display:flex;flex-direction:column;padding:var(--page-top) var(--s5) var(--s6);gap:var(--s3);max-width:480px;margin:0 auto;}
+#settings-inner{min-height:100%;display:flex;flex-direction:column;padding:var(--page-top) var(--s5) calc(var(--s6) + env(safe-area-inset-bottom,0px));gap:var(--s3);max-width:480px;margin:0 auto;}
 .settings-top{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-bottom:var(--s2);} /* 메뉴와 같은 배치 */
 .settings-title{font-size:var(--fs-xl);font-weight:var(--fw-b);color:var(--text);}
 .setting-row{display:flex;flex-direction:column;gap:var(--s3);padding:var(--s4);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);}
@@ -368,7 +377,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #cents-steps .step-btn,#notenames-steps .step-btn[data-v="1"]{font-family:'DM Mono',monospace;} /* 모노는 숫자·음이름에만 */
 
 /* 토스트 — 떠 있는 면 (배경에 묻히지 않게) */
-#toast-host{position:fixed;bottom:var(--s6);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:200;pointer-events:none;max-width:calc(100vw - 32px);}
+#toast-host{position:fixed;bottom:var(--toast-bottom,calc(var(--s6) + env(safe-area-inset-bottom,0px)));left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:200;pointer-events:none;max-width:calc(100vw - 32px);}
 .toast{background:var(--surface-2);color:var(--text);border:1px solid var(--line-strong);border-radius:var(--r-md);padding:11px 18px;font-size:var(--fs-md);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .22s,transform .22s;white-space:normal;word-break:keep-all;text-align:center;box-shadow:0 6px 24px rgba(var(--shadow-rgb),.5);}
 .toast.show{opacity:1;transform:translateY(0);}
 .toast.show.actionable{pointer-events:auto;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
@@ -393,7 +402,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #ed-dur::before{content:'/ ';}
 #ed-zoom-btn{color:var(--text);}
 #ed-zoom-btn.dim{opacity:.4;}
-#ed-zoom-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+#ed-zoom-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft-on);}
 #ed-cur{font-family:'DM Mono',monospace;font-size:var(--fs-xl);color:var(--text);font-weight:var(--fw-md);letter-spacing:.02em;}
 #ed-dur{font-family:'DM Mono',monospace;font-size:var(--fs-md);color:var(--text-2);}
 #ed-track{position:relative;height:56px;cursor:pointer;margin-bottom:4px;touch-action:none;} /* 스크럽 조작면 — 드래그가 세로 스크롤로 새지 않게 */
@@ -408,7 +417,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .bm-tick{position:absolute;top:50%;width:2px;height:22px;background:var(--mark);border-radius:1px;transform:translate(-50%,-50%);z-index:2;pointer-events:none;}
 #ed-pos-handle{position:absolute;top:0;bottom:0;left:0%;width:2px;background:var(--text);transform:translateX(-50%);z-index:5;cursor:ew-resize;touch-action:none;}
 #ed-pos-handle::after{content:'';position:absolute;left:50%;bottom:-7px;width:14px;height:14px;border-radius:50%;background:var(--text);transform:translateX(-50%);box-shadow:0 1px 4px rgba(var(--shadow-rgb),.25);}
-#ed-pos-hit{position:absolute;inset:-16px;}
+#ed-pos-hit{position:absolute;inset:-16px -22px;} /* 손잡이 2 px → 누르는 폭 46 */
 #ed-ab-times{display:none;justify-content:space-between;margin-top:var(--s3);}
 /* 시각은 검정, A/B 글자만 빨강 */
 #ed-a-time,#ed-b-time{font-family:'DM Mono',monospace;font-size:var(--fs-sm);color:var(--text);font-weight:var(--fw-md);cursor:pointer;padding:8px 2px;margin:-8px 0;}
@@ -428,7 +437,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .ed-ab-btn{height:var(--h-tall);padding:0 8px;background:var(--surface);border:1px solid var(--line-ctl);border-radius:var(--r-md);color:var(--text-2);font-family:inherit;font-size:var(--fs-base);font-weight:var(--fw-md);cursor:pointer;text-align:center;line-height:1.4;transition:border-color .1s,color .1s;}
 .ed-ab-btn b{font-family:'DM Mono',monospace;font-weight:var(--fw-md);}
 .ed-ab-btn i{font-style:normal;} /* 번역되는 '반복' 글자 — 기울이지 않는다 */
-.ed-ab-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+.ed-ab-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft-on);}
 .ed-ab-btn.dim,#ed-play-btn.dim{opacity:.4;}
 #ed-export-btn.dim{color:var(--text-3);}
 .ed-ab-btn span{font-size:var(--fs-xs);font-weight:var(--fw);display:block;}
@@ -446,7 +455,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #ed-export-btn{font-weight:var(--fw-b);} /* 편집기의 주행동 */
 #ed-dl-btn,#ed-export-btn{cursor:pointer;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;}
 
-@media (orientation: landscape) and (max-height: 500px){body::after{content:'화면을 세로로 돌려주세요';position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);font-size:15px;color:var(--text-2);z-index:999;pointer-events:all;}}
+@media (orientation: landscape) and (max-height: 500px){html[lang="en"] body::after{content:'Please rotate to portrait';} body::after{content:'화면을 세로로 돌려주세요';position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);font-size:15px;color:var(--text-2);z-index:999;pointer-events:all;}}
 @media (min-width: 700px){
   #hdr,#main-body{max-width:680px;}
   #main-body{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);flex:1;min-height:0;width:100%;}

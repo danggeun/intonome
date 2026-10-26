@@ -83,7 +83,7 @@ self.onmessage = (e: MessageEvent<WorkerIn>) => {
   switch (m.type) {
     case 'init':
       sr = m.sampleRate
-      analyzer = createAnalyzer({ sampleRate: sr, windowSize: WINDOW, hzMin: 40, hzMax: 4200 })
+      analyzer = createAnalyzer({ sampleRate: sr, windowSize: WINDOW, hzMin: 29, hzMax: 4200 })
       analyzer.setSettings(m.settings)
       ringPos = 0; filled = 0; dropBefore = -1; minOffset = Infinity; mutes.length = 0; arrival.reset()
       tone = null; probe = null; toneHoldUntil = -1; toneOffAt = Infinity
@@ -93,6 +93,7 @@ self.onmessage = (e: MessageEvent<WorkerIn>) => {
     case 'settings': analyzer?.setSettings(m.settings); break
     case 'reset': analyzer?.reset(); filled = 0; dropBefore = m.afterT; minOffset = Infinity; break
     case 'mute': mutes.push({ from: m.from, until: m.until }); if (mutes.length > 64) mutes.shift(); arrival.expect(m.at); break
+    case 'metroPattern': arrival.reset(); break // 시작·패턴 변경 — 옛 패턴의 후보가 새 보정에 섞이지 않게(2.5.7 까지는 init 에만 reset)
     case 'tone':
       if (m.hz === null) { if (tone) toneOffAt = m.at + TONE_TAIL_S; break }
       if (!tone || Math.abs(tone.hz - m.hz) > 1e-6) { tone = createToneFilter(sr, m.hz); probe = createToneProbe(sr, m.hz, WINDOW); toneHoldUntil = m.at + TONE_SETTLE_S }

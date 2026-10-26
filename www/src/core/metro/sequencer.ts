@@ -23,16 +23,18 @@ export function tickKind(p: Pick<Pattern, 'subDiv' | 'timeSig'>, tick: number): 
   const isBeat = p.subDiv === 'd' ? tick % 2 === 0 : tick % p.subDiv === 0
   return isBeat ? 'beat' : 'sub'
 }
-/** 틱 tick 에서 다음 틱까지의 길이 (초) */
+/** 틱 tick 에서 다음 틱까지의 길이 (초). bpm 은 박자표의 박 단위 — 6/8 은 점4분음표(♩.)가 박이라 8분음표 틱은 그 1/3 (2.5.7 까지는 4분음표 기준 1/2 라 악보의 ♩.=60 을 치려면 90 을 넣어야 했다) */
 export function tickIntervalS(p: Pick<Pattern, 'bpm' | 'timeSig' | 'subDiv'>, tick: number): number {
   const b = 60 / p.bpm
-  if (p.timeSig === 6) return b / 2
+  if (p.timeSig === 6) return b / 3
   if (p.subDiv === 'd') return tick % 2 === 0 ? b * 3 / 4 : b / 4
   return b / p.subDiv
 }
 
 /** 클릭 피크 (슬라이더 최대). 위계 0 / −4.4 / −10.5 dB */
 const VOL = { accent: 1.0, beat: .60, sub: .30 } as const
+/** 슬라이더 값(0~1, 저장값) → 진폭. 제곱 테이퍼: 가운데가 −12 dB, 0.1 이 −40 dB, 0 은 무음 — 진폭 그대로 쓰면 위 절반이 6 dB 뿐이라 절반으로 내려도 거의 안 줄었다 */
+export const volumeGain = (v: number): number => Math.max(0, Math.min(1, v)) ** 2
 /** 감쇠 바닥(피크 대비 2 %) → τ = 50 / ln(50) ≈ 12.8 ms, 세기와 무관 */
 const CLICK_FLOOR = 0.02
 /** 꼬리를 0 으로 매끄럽게 — 2 % 에서 뚝 끊으면 작은 '툭' 소리가 된다 */
@@ -88,7 +90,7 @@ export function createSequencer(sampleRate: number, initial: Pattern): Sequencer
           const kind = tickKind(p, tick)
           const startSample = Math.round(nextClickSample)
           events.push({ tick, sample: startSample, kind })
-          const vol = VOL[kind] * p.volume
+          const vol = VOL[kind] * volumeGain(p.volume)
           // phase 0.25 = 삼각파 영점에서 시작 (0 이면 +1 스텝 트랜지언트). vol≈0 은 렌더 생략 (0·∞ = NaN 방지)
           if (!p.muted && vol > 0.001) active.push({ startSample, phase: 0.25, freq: clickHz(CLICK_BASE_HZ[kind], p.refHz), vol, seed: (startSample * 2654435761) >>> 0, prev: 0 })
           lastClickSample = nextClickSample; lastTick = tick

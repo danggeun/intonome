@@ -10,6 +10,8 @@ export function qs<T extends Element = HTMLElement>(sel: string, root: ParentNod
   return el
 }
 export function qsa<T extends Element = HTMLElement>(sel: string, root: ParentNode = document): T[] { return Array.from(root.querySelectorAll<T>(sel)) }
+/** 켜짐/선택 표시: 클래스와 aria-pressed 를 같이 — 스크린리더가 "한국어, 버튼" 이 아니라 "눌림" 까지 읽게 */
+export function setOn(el: Element, on: boolean): void { el.classList.toggle('on', on); el.setAttribute('aria-pressed', on ? 'true' : 'false') }
 export function on<K extends keyof HTMLElementEventMap>(el: HTMLElement | Window | Document, type: K | string, fn: (e: any) => void, opts?: AddEventListenerOptions): void { el.addEventListener(type, fn as EventListener, opts) }
 
 /** 강제 리플로우 (CSS 트랜지션의 시작값을 확정할 때) */

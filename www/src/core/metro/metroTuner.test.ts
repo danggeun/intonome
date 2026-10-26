@@ -18,11 +18,11 @@ function run(o: { bpm: number; subDiv: SubDiv; clickGain: number; ref: number; n
       let s = 0; for (let h = 1; h <= 12; h++) s += Math.sin(ph * h + h) / h; v = 0.12 * s * Math.min(1, u / 0.03) * Math.min(1, (note.to - t) / 0.02) }
     x[i] = v + clk[i]! * o.clickGain + (seed / 2 ** 32 - .5) * 0.002 }
   const an = createAnalyzer({ sampleRate: SR, windowSize: WIN, hzMin: 40, hzMax: 4200 }); an.setSettings({ rmsMin: .005, smoothing: .2, refHz: o.ref, tolCents: 15 })
-  const frames: Array<{ t: number; midi: number }> = []
+  const frames: Array<{ t: number; midi: number; playing: boolean }> = []
   for (let end = WIN; end <= n; end += HOP) {
     const t = end / SR, t0 = t - WIN / SR
     const muted = marks.some(at => at <= t && t0 < at + CLICK_DUR_S + 0.06 && t > at - 0.01)
-    const f = an.process(x.subarray(end - WIN, end), muted); frames.push({ t, midi: f.hz > 0 ? f.midi : -1 })
+    const f = an.process(x.subarray(end - WIN, end), muted); frames.push({ t, midi: f.hz > 0 ? f.midi : -1, playing: f.playing })
   }
   return frames
 }
@@ -35,8 +35,16 @@ describe('the tuner keeps reading with the metronome on, at any tempo and subdiv
     expect(fr.filter(f => f.midi === 69).length / fr.length).toBeGreaterThan(0.99)
     expect(fr.filter(f => f.midi >= 0 && f.midi !== 69).length).toBe(0)
   }, 20000)
+  // 2.5.7 까지: 클릭 구간과 겹친 창은 감지기를 건너뛰어, 빠른 세분에서는 모든 창이 겹쳐 '연주 중' 이 켜기 전 값으로 얼어붙었다
+  test.each([[80, 4], [100, 4], [100, 3], [150, 2]] as Array<[number, SubDiv]>)('practice time under %i bpm, subdivision %s: counts while the note sounds and stops when it stops', (bpm, subDiv) => {
+    const fr = run({ bpm, subDiv, clickGain: 0.5, ref: 440, notes: [{ hz: 440, from: 1, to: 4 }], sec: 6 })
+    const on = (a: number, b: number) => { const w = fr.filter(f => f.t >= a && f.t < b); return w.filter(f => f.playing).length / w.length }
+    expect(on(0, 0.9), 'clicks alone before the note').toBe(0)
+    expect(on(1.5, 4), 'while the note sounds').toBeGreaterThan(0.95)
+    expect(on(4.6, 6), 'after the note stops (hold ≈ 0.25 s)').toBe(0)
+  }, 20000)
   test.each([[100, 4], [120, 2]] as Array<[number, SubDiv]>)('clicks alone (%i bpm, %s), even loud: never shown as a note', (bpm, subDiv) => {
-    for (const gain of [1, 3]) expect(run({ bpm, subDiv, clickGain: gain, ref: 440, notes: [], sec: 4 }).filter(f => f.midi >= 0).length).toBe(0)
+    for (const gain of [1, 3]) { const fr = run({ bpm, subDiv, clickGain: gain, ref: 440, notes: [], sec: 4 }); expect(fr.filter(f => f.midi >= 0).length).toBe(0); expect(fr.filter(f => f.playing).length, 'clicks alone never count as playing').toBe(0) }
   }, 20000)
   test.each([[415], [442], [466]])('an A major scale under 16ths at 100 bpm, A = %i: every note shows within 0.2 s and stays', ref => {
     const notes = [0, 2, 4, 5, 7, 9, 11, 12].map((s, k) => ({ hz: ref * Math.pow(2, s / 12), from: 0.3 + k * 0.5, to: 0.3 + (k + 1) * 0.5 }))

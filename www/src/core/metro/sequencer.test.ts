@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { createSequencer, totalTicks, tickIntervalS, tickKind, CLICK_DUR_S } from './sequencer.ts'
+import { createSequencer, totalTicks, tickIntervalS, tickKind, volumeGain, CLICK_DUR_S } from './sequencer.ts'
 import { softClip } from '../softclip.ts'
 
 const sr = 48000
@@ -13,7 +13,7 @@ describe('sequencer', () => {
     expect(totalTicks({ timeSig: 4, subDiv: 1 })).toBe(4); expect(totalTicks({ timeSig: 3, subDiv: 'd' })).toBe(6); expect(totalTicks({ timeSig: 6, subDiv: 1 })).toBe(6)
     expect(tickIntervalS({ bpm: 120, timeSig: 4, subDiv: 2 }, 0)).toBeCloseTo(0.25)
     expect(tickIntervalS({ bpm: 120, timeSig: 4, subDiv: 'd' }, 0)).toBeCloseTo(0.375); expect(tickIntervalS({ bpm: 120, timeSig: 4, subDiv: 'd' }, 1)).toBeCloseTo(0.125)
-    expect(tickIntervalS({ bpm: 120, timeSig: 6, subDiv: 1 }, 0)).toBeCloseTo(0.25)
+    expect(tickIntervalS({ bpm: 120, timeSig: 6, subDiv: 1 }, 0)).toBeCloseTo(60 / 120 / 3) // 6/8: bpm 은 ♩. — 8분음표 셋이 한 박
     expect(tickKind({ subDiv: 3, timeSig: 4 }, 0)).toBe('accent'); expect(tickKind({ subDiv: 3, timeSig: 4 }, 3)).toBe('beat'); expect(tickKind({ subDiv: 3, timeSig: 4 }, 4)).toBe('sub')
   })
   test('120 bpm 4/4: clicks exactly 0.5 s apart to the sample, zero drift over 60 s', () => {
@@ -41,6 +41,12 @@ describe('sequencer', () => {
     seq.setPattern({ bpm: 240 }) // 새 간격 0.25 s → 0.25 s 는 이미 지남
     const b = run(seq, 0.3, 128, Math.ceil(1.2 * sr / 128) * 128).events
     expect(b[0]!.sample).toBeGreaterThanOrEqual(Math.ceil(1.2 * sr / 128) * 128); expect(b[0]!.sample).toBeLessThan(1.25 * sr)
+  })
+  test('volume slider: square taper — half is −12 dB, a tenth −40 dB, 0 silent, 1 unchanged', () => {
+    const peak = (v: number) => oneClick(v, 1).peak
+    const db = (v: number) => 20 * Math.log10(peak(v) / peak(1))
+    expect(db(0.5)).toBeCloseTo(-12, 0); expect(db(0.25)).toBeCloseTo(-24, 0); expect(db(0.1)).toBeCloseTo(-40, 0)
+    expect(peak(0)).toBe(0); expect(volumeGain(1)).toBe(1); expect(volumeGain(0.05)).toBeLessThan(0.003) // 맨 아래 칸은 사실상 무음
   })
   test('volume 0: no NaN, silence', () => {
     const seq = createSequencer(sr, { bpm: 120, timeSig: 4, subDiv: 1, volume: 0, muted: false, refHz: 440 }); seq.start()
@@ -102,10 +108,6 @@ describe('sequencer', () => {
     expect(20 * Math.log10(0.60 / 1.0)).toBeCloseTo(-4.4, 1)
     expect(20 * Math.log10(0.30 / 1.0)).toBeCloseTo(-10.5, 1)
     expect(a.peak).toBeGreaterThan(0.9)
-  })
-  test('the slider scales the peak linearly — 0.5 is half', () => {
-    const full = oneClick(1.0, 1), half = oneClick(0.5, 1)
-    expect(half.peak / full.peak).toBeCloseTo(0.5, 1)
   })
   test('rendering is deterministic — same input, same samples (benchmark reproducibility)', () => {
     const a = oneClick(1.0, 1).buf, b = oneClick(1.0, 1).buf

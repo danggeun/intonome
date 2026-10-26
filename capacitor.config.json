@@ -2,7 +2,7 @@
   "appId": "com.intonome.app",
   "appName": "Intonome",
   "webDir": "dist",
-  "backgroundColor": "#eef0f3",
+  "backgroundColor": "#181b21",
   "server": {
     "androidScheme": "https"
   },

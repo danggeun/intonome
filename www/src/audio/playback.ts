@@ -36,16 +36,20 @@ export function attachGain(audio: HTMLAudioElement, peak: number | undefined): n
 
 /** 재생 시작 직전: 컨텍스트 재개 + 활성 표시. WebAudio 를 타는 요소는 컨텍스트가 suspended 면 무음이다 */
 export function beforePlay(audio: HTMLAudioElement): void {
-  active.add(audio)
+  active.add(audio); notify()
   if (!routed.has(audio)) return
   const ac = getContext()
   if (ac.state !== 'running') void ac.resume().catch(() => {})
 }
-export function afterStop(audio: HTMLAudioElement): void { active.delete(audio) }
+export function afterStop(audio: HTMLAudioElement): void { active.delete(audio); notify() }
+/** 재생이 시작되거나 멈출 때 — wake lock(편집기에서 반복 듣는 동안 화면이 꺼지지 않게)·연습 타이머(재생음을 연주로 세지 않게) */
+const listeners: Array<() => void> = []
+export function onPlaybackChange(fn: () => void): void { listeners.push(fn) }
+function notify(): void { for (const f of listeners) f() }
 
 /** 요소를 버릴 때 노드도 끊는다 — WebView 의 동시 미디어 상한을 물고 있지 않게 */
 export function detachGain(audio: HTMLAudioElement): void {
-  active.delete(audio)
+  active.delete(audio); notify()
   const c = chains.get(audio); if (!c) return
   try { c.src.disconnect(); c.gain.disconnect(); c.shaper.disconnect() } catch { /* 이미 끊김 */ }
   chains.delete(audio); routed.delete(audio)

@@ -1,12 +1,12 @@
 /** 설정 페이지의 단계 버튼 ↔ settingsStore */
 import { settingsStore, RMS_LEVELS, SMOOTH_LEVELS } from '../state/index.ts'
-import { q, qsa, on } from './dom.ts'
+import { q, qsa, on, setOn } from './dom.ts'
 import { canVibrate } from '../platform/index.ts'
 
 function bindSteps(groupId: string, onPick: (v: number) => void): void {
   qsa<HTMLElement>(`#${groupId} .step-btn`).forEach(b => on(b, 'click', () => onPick(+b.dataset.v!)))
 }
-function markSteps(groupId: string, v: number): void { qsa<HTMLElement>(`#${groupId} .step-btn`).forEach(b => b.classList.toggle('on', +b.dataset.v! === v)) }
+function markSteps(groupId: string, v: number): void { qsa<HTMLElement>(`#${groupId} .step-btn`).forEach(b => setOn(b, +b.dataset.v! === v)) }
 const levelIndex = (levels: readonly number[], v: number) => levels.findIndex(x => Math.abs(x - v) < .001) + 1
 
 export function mountSettings(): void {

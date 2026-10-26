@@ -87,7 +87,9 @@ export function loadSettings(): void {
   let raw: string | null = null
   try { raw = localStorage.getItem(SETTINGS_KEY) } catch { /* 사파리 프라이빗 등 */ }
   // 저장이 없으면(첫 실행) 언어만 폰을 따르고 나머지는 기본값(다크 · state/index.ts). 영어는 음이름이 늘 C D E, 한국어는 도레미가 기본. 한 번이라도 저장됐으면 그 값
-  settingsStore.set(raw === null ? { lang: firstRunLang(navigator.languages, navigator.language) } : parseStored(raw))
+  // lang 이 없는 저장값(언어 설정이 생기기 전 버전의 설치, 또는 깨진 저장값)도 폰 언어로 — 비워 두면 스토어 기본 'en' 이 되어 한국어 사용자가 업데이트 뒤 영어 화면을 봤다
+  const parsed = raw === null ? {} : parseStored(raw)
+  settingsStore.set({ lang: firstRunLang(navigator.languages, navigator.language), ...parsed })
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null

@@ -17,7 +17,7 @@
 <meta property="og:image" content="https://danggeun.github.io/intonome/icons/icon-512.png">
 <meta name="theme-color" content="#181b21">
 <!-- 저장된 테마·언어를 첫 그리기 전에 적용한다. 기본은 영어 · 다크(html 에 박혀 있음, 한국어 원문은 i18n-pending 으로 가렸다가 ui/lang.ts 가 영어로 바꾼 뒤 푼다). 한국어 · 라이트를 저장했으면, 저장이 없을 때는 폰의 첫 번째 언어가 한국어면(persist/settings.ts firstRunLang 과 같은 규칙) 여기서 바꾼다 -->
-<script>try{var r=null;try{r=localStorage.getItem('intonome_settings_v1')}catch(e){}var s=JSON.parse(r||'{}'),d=document.documentElement,n=navigator.languages&&navigator.languages[0]||navigator.language||'';if(s.lang==='ko'||(r===null&&/^ko(-|$)/i.test(n))){d.lang='ko';d.classList.remove('i18n-pending')}if(s.theme==='light'){d.dataset.theme='light';document.querySelector('meta[name="theme-color"]').content='#eef0f3';document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content='default'}}catch(e){}</script>
+<script>try{var r=null;try{r=localStorage.getItem('intonome_settings_v1')}catch(e){}var s=JSON.parse(r||'{}'),d=document.documentElement,n=navigator.languages&&navigator.languages[0]||navigator.language||'';if(s.lang==='ko'||(s.lang!=='en'&&/^ko(-|$)/i.test(n))){d.lang='ko';d.classList.remove('i18n-pending')}if(s.theme==='light'){d.dataset.theme='light';document.querySelector('meta[name="theme-color"]').content='#eef0f3';document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content='default'}}catch(e){}</script>
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png"> <!-- 아이폰 홈 화면 60pt × 3 — 192 를 주면 다시 줄여 흐려진다 -->
 <!-- 아이폰 홈 화면 웹앱 스플래시: 화면 크기·배율이 딱 맞는 그림만 쓴다. 앱 기본이 다크라 다크 한 벌. scripts/gen-splash.mjs 가 만들고 splash.test.mjs 가 맞춰 본다 -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1320x2868-dark.png">
@@ -44,7 +44,7 @@
 <!-- launch:end -->
 
 <div id="mic-popup-bg">
-  <div id="mic-popup">
+  <div id="mic-popup" role="dialog" aria-modal="true" aria-labelledby="mic-popup-title">
     <div id="mic-popup-title">마이크를 켜 주세요</div>
     <div id="mic-popup-desc">음을 들으려면<br>마이크가 필요해요</div>
     <button id="mic-popup-btn">마이크 켜기</button>
@@ -77,7 +77,7 @@
         <span id="tuner-label">TUNER</span>
         <div id="tuner-hdr-right">
           <button id="ref-a-btn" class="compact-btn" aria-label="기준음 A 듣기" data-t="tuner.playA" data-t-aria="tuner.playAAria">A 듣기</button>
-          <div id="ref-row">
+          <div id="ref-row" role="slider" tabindex="0" aria-label="기준음 A" data-t-aria="tuner.refAria" aria-valuemin="410" aria-valuemax="466" aria-valuenow="442" aria-valuetext="442 Hz">
             <span id="ref-lbl">A =</span>
             <div id="ref-drum-outer"><div id="ref-drum-sel"></div><div id="ref-drum-inner"></div></div>
           </div>
@@ -95,6 +95,8 @@
             <div id="tuner-start"><button id="tuner-start-btn" data-t="common.start">시작</button><div id="tuner-start-sub"></div></div>
           </div>
           <div id="tuner-left" aria-hidden="true"><span id="tuner-hz"></span></div>
+          <!-- 스크린리더용 읽기: 음이름·센트가 바뀔 때만, 1 초에 한 번 (ui/tuner) -->
+          <div id="tuner-sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
           <div id="tuner-right">
             <div id="tuner-enharmonic"></div>
             <span id="tuner-cents"></span>
@@ -107,7 +109,7 @@
     <!-- 메트로놈 -->
     <div id="metro-card">
       <div id="metro-hdr" style="position:relative;">
-        <span id="metro-hdr-label"><svg class="note-glyph" viewBox="0 0 14.2 34.9" aria-hidden="true"><path d="M5.08 33.7C8.64 33.7 13 30.42 13 27.02C13 24.98 11.4 23.7 9.12 23.7C4.72 23.7 1.2 26.94 1.2 30.38C1.2 32.46 2.92 33.7 5.08 33.7Z"/><rect x="11.4" y="1.2" width="1.6" height="25.82"/></svg><span id="metro-hdr-bpm">80</span></span>
+        <span id="metro-hdr-label"><svg class="note-glyph g-q" viewBox="0 0 14.2 34.9" aria-hidden="true"><path d="M5.08 33.7C8.64 33.7 13 30.42 13 27.02C13 24.98 11.4 23.7 9.12 23.7C4.72 23.7 1.2 26.94 1.2 30.38C1.2 32.46 2.92 33.7 5.08 33.7Z"/><rect x="11.4" y="1.2" width="1.6" height="25.82"/></svg><svg class="note-glyph g-dq" viewBox="0 0 20.6 34.9" aria-hidden="true"><path d="M5.08 33.7C8.64 33.7 13 30.42 13 27.02C13 24.98 11.4 23.7 9.12 23.7C4.72 23.7 1.2 26.94 1.2 30.38C1.2 32.46 2.92 33.7 5.08 33.7Z"/><rect x="11.4" y="1.2" width="1.6" height="25.82"/><circle cx="17.6" cy="28.7" r="1.9"/></svg><span id="metro-hdr-bpm">80</span></span>
         <!-- 펼침2(전용)에서는 다이얼 가운데가 이미 BPM 이라 ♩80 대신 카드 이름 -->
         <span id="metro-hdr-title">METRONOME</span>
         <div id="beat-vis"></div>
@@ -124,7 +126,7 @@
         <!-- 세이코식 LED 줄 — 전용 모드용 큰 줄. 헤더의 #beat-vis 와 같은 방식, 칸만 많다 -->
         <div id="sweep" aria-hidden="true"><div id="sweep-leds"></div></div>
         <!-- 전용 모드 다이얼 — 링을 돌려 BPM. 그림은 ui/dial.ts 가 채운다 -->
-        <div id="dial" role="slider" aria-label="BPM 다이얼" data-t-aria="metro.dial" aria-valuemin="40" aria-valuemax="200" aria-valuenow="80">
+        <div id="dial" role="slider" tabindex="0" aria-label="BPM 다이얼" data-t-aria="metro.dial" aria-valuemin="40" aria-valuemax="200" aria-valuenow="80">
           <svg id="dial-svg" aria-hidden="true"></svg>
           <div id="dial-center"><div id="dial-bpm">80</div><div id="dial-name">Andante</div></div>
         </div>
@@ -376,7 +378,7 @@
   </div>
 </div>
 
-<div id="toast-host"></div>
+<div id="toast-host" role="status" aria-live="polite"></div>
 
 <script type="module" src="/src/main.ts"></script>
 
@@ -447,7 +449,7 @@
       </div>
     </div>
     <div id="ed-actions">
-      <a id="ed-dl-btn" data-t="common.download">다운로드</a>
+      <button id="ed-dl-btn" data-t="common.download">다운로드</button>
       <button id="ed-export-btn" data-t="ed.saveAB">A-B 저장</button>
     </div>
   </div>

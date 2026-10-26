@@ -95,18 +95,23 @@ export function setDialBpm(bpm: number): void {
 let onChange: ((bpm: number) => void) | null = null
 export function onDialChange(fn: (bpm: number) => void): void { onChange = fn }
 
+/** 가운데 숫자(링 반지름의 이 비율 안쪽)에서 시작한 끌기는 회전이 아니라 ↕ — 펼침 카드·처음 안내에서 배운 제스처 그대로.
+ * 중심 가까이에서 회전으로 계산하면 10 px 가 16 BPM, 중심을 지나면 끝값으로 튀었다 */
+const INNER = 0.55
 function attachRotate(host: HTMLElement): void {
-  let active = false, lastA = 0, acc = 0, base = 0
-  const center = () => { const r = host.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } }
+  let active = false, lastA = 0, acc = 0, base = 0, vertical = false, startY = 0
+  const center = () => { const r = host.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, ring: r.width / 2 * (R_RING / C) } }
   on(host, 'pointerdown', (e: PointerEvent) => {
     active = true; acc = 0; base = +q('dial-bpm').textContent!
     const c = center(); lastA = pointToAngle(e.clientX - c.x, e.clientY - c.y)
+    vertical = Math.hypot(e.clientX - c.x, e.clientY - c.y) < c.ring * INNER; startY = e.clientY
     host.setPointerCapture(e.pointerId); e.preventDefault()
   })
   on(host, 'pointermove', (e: PointerEvent) => {
     if (!active) return
-    const c = center(), a = pointToAngle(e.clientX - c.x, e.clientY - c.y)
     const { bpmMin: min, bpmMax: max } = CFG.metro, dpb = degPerBpm(min, max)
+    if (vertical) { const next = Math.max(min, Math.min(max, base + Math.round((startY - e.clientY) / CFG.metro.swipePxPerBpm))); if (onChange && next !== +q('dial-bpm').textContent!) onChange(next); return }
+    const c = center(), a = pointToAngle(e.clientX - c.x, e.clientY - c.y)
     acc += angleDelta(lastA, a); lastA = a
     acc = Math.max((min - base) * dpb, Math.min((max - base) * dpb, acc)) // 끝에서 멈춘다 — 넘겨 돌린 만큼을 되감을 필요가 없다
     const next = Math.round(base + acc / dpb)
@@ -114,4 +119,11 @@ function attachRotate(host: HTMLElement): void {
   })
   const end = () => { active = false }
   on(host, 'pointerup', end); on(host, 'pointercancel', end)
+  // 키보드: ↑/→ +1, ↓/← −1, PageUp/Down ±5, Home/End 끝값
+  on(host, 'keydown', (e: KeyboardEvent) => {
+    const { bpmMin: min, bpmMax: max } = CFG.metro, cur = +q('dial-bpm').textContent!
+    const step = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? -1 : e.key === 'PageUp' ? 5 : e.key === 'PageDown' ? -5 : e.key === 'Home' ? min - cur : e.key === 'End' ? max - cur : 0
+    if (!step) return
+    e.preventDefault(); const next = Math.max(min, Math.min(max, cur + step)); if (onChange && next !== cur) onChange(next)
+  })
 }

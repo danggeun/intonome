@@ -38,6 +38,10 @@ export interface Tracker {
   /** @param hz 원시 추정 (-1 없음) @param conf 0..1 @param valid RMS 게이트 등 외부 조건 @param alpha 평활 계수 @param click 메트로놈 클릭과 겹친 프레임 */
   push(hz: number, conf: number, valid: boolean, alpha: number, click?: boolean): TrackOut
   reset(): void
+  /** 기준음(A=)이 바뀌었다: 정규화 공간의 모든 값을 deltaCents 만큼 옮기고 음이름을 바로 다시 붙인다 — 평활로 0.3~0.9 s 에 걸쳐 따라가지 않게 */
+  rebase(deltaCents: number): void
+  /** 지금 표시 중인 값(마지막 출력). 음이 없으면 hz −1. 상태를 바꾸지 않는다 */
+  current(): TrackOut
 }
 
 export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
@@ -58,6 +62,17 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
 
   return {
     reset,
+    current: () => (midi === -1 ? NONE : last),
+    rebase(delta) {
+      if (!delta) return
+      for (let i = 0; i < candA.length; i++) candA[i] = candA[i]! + delta
+      for (let i = 0; i < acqA.length; i++) acqA[i] = acqA[i]! + delta
+      if (midi === -1 || Number.isNaN(dispA)) return
+      dispA += delta
+      const was = midi; midi = Math.round(dispA / 100) + 69; outside = 0 // 라벨은 옮긴 값에서 바로 — 평활 창을 기다리지 않는다
+      if (last.hz > 0) last = { ...last, hz: 440 * Math.pow(2, dispA / 1200), midi, a: dispA }
+      if (midi !== was) settle = 0 // 음이름이 바뀌어도 창의 값은 전부 새 기준으로 옮겨져 있어 '섞인' 프레임이 없다
+    },
     push(hz, conf, valid, alpha, click = false) {
       const ok = valid && hz > 0 && conf >= p.confMin
       if (!ok) {

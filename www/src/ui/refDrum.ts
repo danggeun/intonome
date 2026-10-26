@@ -33,7 +33,14 @@ export function mountRefDrum(): void {
   on(window, 'touchmove', (e: TouchEvent) => { if (drag) dragY(clampY(startDrumY + (e.touches[0]!.clientY - startY))) }, { passive: true })
   on(window, 'touchend', () => { if (drag) { drag = false; snap() } }); on(window, 'touchcancel', () => { if (drag) { drag = false; snap() } })
 
+  // 키보드·스위치: ↑/↓ 1 Hz, PageUp/PageDown 5 Hz, Home/End 끝값 — 끌 수 없는 사용자도 기준음을 바꿀 수 있게
+  on(outer, 'keydown', (e: KeyboardEvent) => {
+    const cur = settingsStore.get().refHz
+    const step = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? -1 : e.key === 'PageUp' ? 5 : e.key === 'PageDown' ? -5 : e.key === 'Home' ? MIN - cur : e.key === 'End' ? MAX - cur : 0
+    if (!step) return
+    e.preventDefault(); settingsStore.set({ refHz: Math.max(MIN, Math.min(MAX, cur + step)) })
+  })
   // 외부(설정 복원)에서 refHz 가 바뀌면 드럼 위치 반영. 드래그 중에는 건드리지 않는다.
-  settingsStore.select(s => s.refHz, hz => { if (!drag && yToHz(y) !== hz) setY(hzToY(hz), false) }, { immediate: true })
+  settingsStore.select(s => s.refHz, hz => { if (!drag && yToHz(y) !== hz) setY(hzToY(hz), false); outer.setAttribute('aria-valuenow', String(hz)); outer.setAttribute('aria-valuetext', `${hz} Hz`) }, { immediate: true })
   setTimeout(() => setY(hzToY(settingsStore.get().refHz)), 30) // 레이아웃 확정 후 재적용
 }

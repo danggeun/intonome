@@ -4,7 +4,7 @@
  */
 import { metroStore, sessionStore, settingsStore, CFG, type SubDiv, type TimeSig } from '../state/index.ts'
 import { totalTicks as _totalTicks, type Pattern } from '../core/metro/sequencer.ts'
-import { getContext, micOpen, muteAnalysis, audioSupported, suspendIfIdle, output, outputLatency } from './engine.ts'
+import { getContext, micOpen, muteAnalysis, resetArrival, audioSupported, suspendIfIdle, output, outputLatency } from './engine.ts'
 import { t } from '../core/i18n/index.ts'
 import metroWorkletUrl from './metro.worklet.ts?worker&url'
 
@@ -47,6 +47,7 @@ export type StartResult = { ok: true } | { ok: false; error: string }
 export function startMetro(): StartResult {
   if (!audioSupported()) return { ok: false, error: t('audio.cantStart') }
   metroStore.set({ playing: true })
+  resetArrival()
   ensureNode().then(n => { if (metroStore.get().playing) { n.port.postMessage({ type: 'pattern', pattern: pattern() }); n.port.postMessage({ type: 'start' }) } })
     .catch(() => { metroStore.set({ playing: false }); toastFn?.(t('audio.cantStart')) })
   return { ok: true }
@@ -56,7 +57,7 @@ export function toggleMetro(): StartResult { return metroStore.get().playing ? (
 let toastFn: ((m: string) => void) | null = null
 export function onMetroError(fn: (m: string) => void): void { toastFn = fn }
 
-function pushPattern(): void { node?.port.postMessage({ type: 'pattern', pattern: pattern() }) }
+function pushPattern(): void { node?.port.postMessage({ type: 'pattern', pattern: pattern() }); if (metroStore.get().playing) resetArrival() }
 function restartBar(): void { if (metroStore.get().playing && node) { node.port.postMessage({ type: 'pattern', pattern: pattern() }); node.port.postMessage({ type: 'resetBar' }) } } // 다음 예약 클릭을 1박으로 (더블클릭 없음)
 
 export function setBPM(v: number): void { settingsStore.set({ bpm: Math.max(CFG.metro.bpmMin, Math.min(CFG.metro.bpmMax, v)) }) } // 다음 틱부터 반영

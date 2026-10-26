@@ -70,8 +70,11 @@ export function createYinFast(windowSize: number, opts: { threshold?: number; hz
           if (n >= 2 && Math.abs(r - n) <= 0.03 * n) { cands.push(tau); if (1 - c[tau]! > top) top = 1 - c[tau]! }
         }
         for (const tau of cands) if (1 - c[tau]! >= SUB_CLARITY * top) { t = tau; break } }
+      // 탐색 끝에서 아직 내리막이면 진짜 골짜기는 범위 밖(hzMin 아래)이다 — 2.5.7 까지는 그 자리의 포물선이 밖으로 외삽돼
+      // 범위 밖 주파수를 높은 신뢰도로 냈다(느슨한 베이스 E 현 38 Hz → 도♯1·도1 이 매 프레임 튐)
+      if (t >= tauMax - 1 && c[t + 1]! < c[t]!) return NONE
       const b = (t > 0 && t < W - 1) ? t + (c[t + 1]! - c[t - 1]!) / (2 * (2 * c[t]! - c[t - 1]! - c[t + 1]!)) : t
-      if (b <= 0 || !isFinite(b)) return NONE
+      if (b <= 0 || !isFinite(b) || Math.abs(b - t) > 1) return NONE // 이웃 밖으로 외삽된 포물선은 최소점이 아니다
       const conf = Math.max(0, Math.min(1, 1 - c[t]!))
       return { hz: sr / b, conf, tau: b }
     },

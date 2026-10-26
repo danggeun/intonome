@@ -14,6 +14,8 @@ export type WorkerIn =
   | { type: 'reset'; afterT: number }
   /** 메트로놈 클릭 누설 구간(초, AudioContext 시계). at = 클릭이 마이크에 닿을 예상 시각(예약 + 출력 지연) */
   | { type: 'mute'; from: number; until: number; at: number }
+  /** 메트로놈을 시작했거나 패턴을 바꿨다 — 클릭 도착 보정의 옛 후보를 버린다 */
+  | { type: 'metroPattern' }
   /** 앱 음(드론 · A 듣기)이 켜짐(hz)·꺼짐(null). at = 그 변화가 마이크에 닿을 예상 시각(AudioContext 시계, 출력 지연 포함) */
   | { type: 'tone'; hz: number | null; at: number }
   /** 소리 장치가 바뀌었다(이어폰을 꽂거나 뺐다) — 앱 음이 마이크에 들리는지 다시 잰다 */

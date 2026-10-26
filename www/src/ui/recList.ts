@@ -4,7 +4,7 @@ import { fmtT } from '../core/format.ts'
 import { deleteRec, restoreDeleted, recFileName, patchRec } from '../audio/recorder.ts'
 import { expires, warnDaysLeft } from '../core/recPolicy.ts'
 import { PAUSE_GLYPH, PLAY_GLYPH } from './dom.ts'
-import { saveFile, isIOS } from '../platform/index.ts'
+import { saveFile, isIOS, isNative } from '../platform/index.ts'
 import { bufToWav } from '../core/wav.ts'
 import { recExt } from '../audio/recorder.ts'
 import { attachGain, beforePlay, afterStop, detachGain } from '../audio/playback.ts'
@@ -55,9 +55,10 @@ export function handOff(blob: Blob, name: string): void {
   const go = (): void => { void saveFile(blob, name).then(r => { if (!r.ok) toast(tr('common.saveFailed', { e: r.error })) }) }
   if (isIOS()) toast(tr('rec.readyTap'), 8000, go); else go()
 }
-/** 다운로드 (편집기·목록 공용). 아이폰 + webm 녹음이면 WAV 로 변환해 건넨다 */
+/** 다운로드 (편집기·목록 공용). webm 녹음은 WAV 로 변환해 건넨다 — 아이폰은 webm 을 못 열고, 안드로이드 앱에서 공유한 파일도 받는 쪽이 아이폰이면 못 연다.
+ * 10 분이 넘으면(디코드 메모리) 아이폰은 안내만, 안드로이드 앱은 webm 그대로 */
 export async function downloadRec(item: RecItem): Promise<void> {
-  if (isIOS() && recExt(item) === 'webm') {
+  if ((isIOS() || isNative()) && recExt(item) === 'webm' && (isIOS() || item.dur <= WAV_RESCUE_MAX_SEC)) {
     if (item.dur > WAV_RESCUE_MAX_SEC) { toast(tr('rec.tooLongConvert')); return }
     toast(tr('rec.converting'))
     try {
@@ -82,10 +83,11 @@ export function itemMeta(item: RecItem, now = Date.now()): { text: string; link:
   let link: string | null = null
   // 남긴 표시는 자동 삭제가 켜져 있을 때만 — 플래그는 남아 다시 켜면 되살아난다
   if (item.keep && autoDelete) link = tr('rec.noAutoDelete')
-  else {
-    // 30일 자동 삭제 예고는 마지막 7일만. 판정은 persist 와 같은 함수
+  else if (autoDelete) {
+    // 30일 자동 삭제 예고는 마지막 7일만. 판정은 persist 와 같은 함수. '남기기' 는 늘 보인다 — 예고 전엔 남길 방법이 없었다(2.5.7 까지)
     const d = warnDaysLeft(item.ts, item.keep, autoDelete, now)
-    if (d !== null) { parts.push(d === 0 ? tr('rec.deletesToday') : tr('rec.deletesIn', { n: d })); link = tr('rec.keep') }
+    if (d !== null) parts.push(d === 0 ? tr('rec.deletesToday') : tr('rec.deletesIn', { n: d }))
+    link = tr('rec.keep')
   }
   return { text: parts.join(' · '), link }
 }
@@ -127,7 +129,7 @@ function renderItem(item: RecItem, idx: number, defaultOpen: boolean): HTMLEleme
           </div>
           <div class="rec-item-btns">
             <button class="rec-item-btn" data-action="edit" data-idx="${idx}">${tr('rec.edit')}</button>
-            <a class="rec-item-btn rec-dl-link" href="${item.url}" data-action="download" data-idx="${idx}">${tr('common.download')}</a>
+            <a class="rec-item-btn rec-dl-link" href="${item.url}" data-action="download" data-idx="${idx}">${tr(isNative() ? 'common.share' : 'common.download')}</a>
             <button class="rec-item-btn del" data-action="delete" data-idx="${idx}">${tr('rec.delete')}</button>
           </div>
         </div>
@@ -163,7 +165,9 @@ function render(): void {
 export function mountRecList(openEditor: (item: RecItem) => void, beforeDelete: (item: RecItem) => void): void {
   const list = q('rec-list')
   on(list, 'click', (e: MouseEvent) => {
-    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-action]'); if (!t) return
+    let t = (e.target as HTMLElement).closest<HTMLElement>('[data-action]')
+    // 카드의 여백(머리글 밖, 상세 밖)을 눌러도 펼친다 — 머리글 17 px 줄만 받으면 손가락이 자주 빗나간다
+    if (!t) { const card = (e.target as HTMLElement).closest<HTMLElement>('.rec-item[data-idx]'); if (!card || (e.target as HTMLElement).closest('.rec-item-detail')) return; t = card.querySelector<HTMLElement>('.rec-item-head[data-action="toggle"]'); if (!t) return }
     const idx = +t.dataset.idx!, item = recListStore.get().items[idx]
     switch (t.dataset.action) {
       case 'toggle': document.getElementById('rec-detail-' + idx)?.classList.toggle('open'); break

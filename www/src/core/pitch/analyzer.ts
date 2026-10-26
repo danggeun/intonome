@@ -62,7 +62,7 @@ export const DEFAULT_READOUT: Omit<ReadoutParams, 'windowFrames'> = { deadband: 
 
 export function createAnalyzer(p: AnalyzerParams): Analyzer {
   const N = p.windowSize ?? 4096, sr = p.sampleRate
-  const yin = createYinFast(N, { threshold: p.yinThreshold ?? 0.10, hzMin: p.hzMin ?? 40, hzMax: p.hzMax ?? 4200 })
+  const yin = createYinFast(N, { threshold: p.yinThreshold ?? 0.10, hzMin: p.hzMin ?? 29, hzMax: p.hzMax ?? 4200 })
   const spec = createSpectrum(N)
   const tracker = createTracker({ ...DEFAULT_TRACKER, ...p.tracker })
   const det = createDetector({ ...DEFAULT_DETECTOR, ...p.detector })
@@ -72,7 +72,17 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
 
   return {
     windowSize: N,
-    setSettings(patch) { Object.assign(s, patch) },
+    setSettings(patch) {
+      // 기준음이 바뀌면 트래커·읽는 값의 상태(440 정규화 공간)를 그만큼 옮긴다 — 안 옮기면 refK 만 즉시 바뀌어 Hz 가 드럼 값을 따라가고
+      // 숫자·초록이 0.3~0.9 s 늦게 맞춰졌다(2.5.7 까지)
+      const old = s.refHz
+      Object.assign(s, patch)
+      if (patch.refHz !== undefined && patch.refHz !== old && old > 0) {
+        const delta = 1200 * Math.log2(old / patch.refHz)
+        tracker.rebase(delta)
+        const t = tracker.current(); if (t.hz > 0) read.rebase(delta, t.midi)
+      }
+    },
     getSettings() { return { ...s } },
     reset() { tracker.reset(); det.reset(); read.reset() },
     process(buf, muted = false) {
@@ -90,15 +100,16 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
       if (rawHz > 0) rawHz = spec.octaveCorrect(rawHz)
       const harmonics = rawHz > 0 ? spec.harmonicCount(rawHz) : 0
       const flatness = spec.flatness()
-      // 클릭이 섞인 창: 감지기는 건드리지 않는다 (짧은 클릭으로 연주 시간이 끊기지 않게)
-      const playing = muted ? det.on : det.push({ conf: y.conf, rmsOk, harmonics, flatness, cents: rawHz > 0 ? 1200 * Math.log2(rawHz / 440) : NaN })
+      // 클릭이 섞인 창: 클릭 음높이로 읽힌 프레임만 버린다. 클릭은 기준음의 두 반음 사이에 있어(clickPitch.ts) 연주 음과 헷갈리지 않는다 —
+      // 창을 통째로 버리면 클릭 간격이 0.2 s 보다 짧은 빠른 세분에서 튜너가 아무것도 못 본다
+      const clickRead = muted && isClickPitch(rawHz, s.refHz)
+      // 감지기도 같은 규칙 — 2.5.7 까지는 muted 창을 전부 건너뛰어, 16분 ≥ 73 · 셋잇단 ≥ 98 · 8분 ≥ 146 bpm 이면 모든 창이 건너뛰어져
+      // 연주 시간이 메트로놈을 켜기 전 상태(0 % 또는 100 %)로 얼어붙었다
+      const playing = clickRead ? det.on : det.push({ conf: y.conf, rmsOk, harmonics, flatness, cents: rawHz > 0 ? 1200 * Math.log2(rawHz / 440) : NaN })
       // 표시용 신뢰도: 스펙트럼 정합성 실패면 0 (트래커의 confMin 게이트에서 걸러진다). 옥타브로 튀는 한 프레임은 트래커의 중앙값·전환 확인이 삼킨다 —
       // 여기서 비우면 활 바꿈마다 화면이 끊긴다
       const specOk = rawHz > 0 && spec.harmonicCount(rawHz, 1, SPEC_MIN_DB) > 0
       const dispConf = specOk ? y.conf : 0
-      // 클릭이 섞인 창: 클릭 음높이로 읽힌 프레임만 버린다. 클릭은 기준음의 두 반음 사이에 있어(clickPitch.ts) 연주 음과 헷갈리지 않는다 —
-      // 창을 통째로 버리면 클릭 간격이 0.2 s 보다 짧은 빠른 세분에서 튜너가 아무것도 못 본다
-      const clickRead = muted && isClickPitch(rawHz, s.refHz)
       // 트래커의 음이름 격자는 A=440 기준이라 refHz 로 정규화해 넣는다 (안 하면 |오프셋| > 50 ¢ 에서 이웃 반음으로 라벨링)
       const t = tracker.push(rawHz / refK(), clickRead ? 0 : dispConf, true, s.smoothing, muted)
       const f: Frame = { rawHz, conf: y.conf, rms, harmonics, flatness, hz: -1, midi: -1, cents: 0, readCents: 0, inTune: false, playing, held: t.held }

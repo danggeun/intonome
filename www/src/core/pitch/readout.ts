@@ -9,6 +9,8 @@ export interface Readout {
   /** @param midi 표시 음 (-1 없음) @param cents 표시 cents (반올림 전) @param fresh 새 측정이면 true, 유지(held) 프레임이면 false. 숫자를 돌려준다 (음이 없으면 0) */
   push(midi: number, cents: number, fresh: boolean): number
   reset(): void
+  /** 기준음이 바뀌었다: 창의 값을 deltaCents 만큼 옮기고 숫자를 바로 다시 센다(음이름이 바뀌면 그 음 기준으로) */
+  rebase(deltaCents: number, newMidi: number): void
 }
 export function createReadout(p: ReadoutParams): Readout {
   const buf: number[] = []; let midi = -1, shown = 0
@@ -19,6 +21,13 @@ export function createReadout(p: ReadoutParams): Readout {
   const tri = (a: number[]): number => { const n = a.length; let s = 0, w = 0; for (let i = 0; i < n; i++) { const k = Math.min(i + 1, n - i); s += a[i]! * k; w += k } return s / w }
   return {
     reset,
+    rebase(delta, newMidi) {
+      if (midi < 0) return
+      const shift = delta - (newMidi - midi) * 100 // 라벨이 옮겨 가면 그 음 중심 기준으로 다시 잰다
+      for (let i = 0; i < buf.length; i++) buf[i] = buf[i]! + shift
+      midi = newMidi
+      shown = buf.length ? Math.round(tri(buf)) : shown + Math.round(shift)
+    },
     push(m, cents, fresh) {
       if (m < 0) { reset(); return 0 }
       if (m !== midi) { buf.length = 0; midi = m; shown = Math.round(cents) } // 새 음: 평균을 버리고 바로

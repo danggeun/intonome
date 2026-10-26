@@ -48,12 +48,16 @@ export function onBackButton(handler: () => boolean): void {
 
 // 화면 켜짐 유지
 let wakeLock: WakeLockSentinel | null = null, wakeGen = 0
+const WAKE_WARNED_KEY = 'intonome_wake_warned_v1'
 let wakeWarned = false, wakeWarn: ((m: string) => void) | null = null
 export function onWakeLockUnsupported(fn: (m: string) => void): void { wakeWarn = fn }
 /** iOS 웹은 첫 요청에 DOM 탭(transient activation)이 필요 — 탭 핸들러에서 await 전에 부른다. 실패는 삼킨다(다음 syncWake 에서 재시도) */
 export async function acquireWakeLock(): Promise<void> {
   if (wakeLock && !wakeLock.released) return // 이미 쥐고 있으면 다시 요청하지 않는다 — 앞의 센티널이 샌다
-  if (!('wakeLock' in navigator)) { if (!wakeWarned) { wakeWarned = true; wakeWarn?.(t('set.wakeUnsupported')) } return }
+  if (!('wakeLock' in navigator)) { // 설치당 한 번만 — 매 실행 같은 토스트가 떴다
+    if (!wakeWarned) { wakeWarned = true; let shown = false; try { shown = localStorage.getItem(WAKE_WARNED_KEY) === '1'; localStorage.setItem(WAKE_WARNED_KEY, '1') } catch { /* 저장 불가면 세션당 한 번 */ } if (!shown) wakeWarn?.(t('set.wakeUnsupported')) }
+    return
+  }
   const gen = ++wakeGen
   try {
     const s = await navigator.wakeLock.request('screen')
@@ -124,6 +128,9 @@ export function sanitizeFileName(name: string): string {
   const cleaned = name.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').replace(/\.{2,}/g, '.').trim().replace(/^\.+/, '')
   return (cleaned || 'recording').slice(0, 120)
 }
+let sharing = false, onShareProgress: (() => void) | null = null
+/** 안드로이드 앱에서 큰 파일을 공유 시트에 넘기기 전 "준비 중" 안내를 띄울 곳 */
+export function setShareProgress(fn: () => void): void { onShareProgress = fn }
 const toBase64 = (b: Blob) => new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] ?? ''); r.onerror = () => rej(r.error); r.readAsDataURL(b) })
 /** 파일을 사용자에게 건넨다. 웹: 다운로드, iOS: 공유 시트, Android 앱: 캐시에 쓰고 공유 시트(WebView 의 <a download> 는 동작하지 않는다) */
 export async function saveFile(blob: Blob, name: string): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -147,21 +154,27 @@ export async function saveFile(blob: Blob, name: string): Promise<{ ok: true } |
       document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 3000)
       return { ok: true }
     }
-    const [{ Filesystem, Directory }, { Share }] = await Promise.all([import('@capacitor/filesystem'), import('@capacitor/share')])
-    const safe = sanitizeFileName(name)
-    // 이전 공유 파일 정리 — 캐시에 쌓이지 않게
-    await Filesystem.rmdir({ path: 'intonome', directory: Directory.Cache, recursive: true }).catch(() => {})
-    await Filesystem.mkdir({ path: 'intonome', directory: Directory.Cache, recursive: true }).catch(() => {})
-    // 큰 파일은 1 MB 씩 나눠 쓴다 — base64 문자열 한 덩어리로 브리지를 건너면 ANR/OOM
-    const CHUNK = 1024 * 1024; const path = 'intonome/' + safe
-    for (let off = 0; off < blob.size; off += CHUNK) {
-      const b64 = await toBase64(blob.slice(off, off + CHUNK))
-      if (off === 0) await Filesystem.writeFile({ path, data: b64, directory: Directory.Cache })
-      else await Filesystem.appendFile({ path, data: b64, directory: Directory.Cache })
-    }
-    const { uri } = await Filesystem.getUri({ path, directory: Directory.Cache })
-    await Share.share({ title: safe, url: uri, dialogTitle: t('app.shareTitle') })
-    return { ok: true }
+    // 한 번에 하나만 — 긴 파일(60 분 ≈ 115 MB)은 쓰는 데 10 s 넘게 걸리는데, 그 사이 다시 누르면 앞 파일을 지우며 썼다
+    if (sharing) return { ok: true }
+    sharing = true
+    try {
+      const [{ Filesystem, Directory }, { Share }] = await Promise.all([import('@capacitor/filesystem'), import('@capacitor/share')])
+      const safe = sanitizeFileName(name)
+      const CHUNK = 1024 * 1024; const path = 'intonome/' + safe
+      if (blob.size > 4 * CHUNK) onShareProgress?.() // 몇 초 걸리면 "준비 중" 안내
+      // 이전 공유 파일 정리 — 캐시에 쌓이지 않게
+      await Filesystem.rmdir({ path: 'intonome', directory: Directory.Cache, recursive: true }).catch(() => {})
+      await Filesystem.mkdir({ path: 'intonome', directory: Directory.Cache, recursive: true }).catch(() => {})
+      // 큰 파일은 1 MB 씩 나눠 쓴다 — base64 문자열 한 덩어리로 브리지를 건너면 ANR/OOM
+      for (let off = 0; off < blob.size; off += CHUNK) {
+        const b64 = await toBase64(blob.slice(off, off + CHUNK))
+        if (off === 0) await Filesystem.writeFile({ path, data: b64, directory: Directory.Cache })
+        else await Filesystem.appendFile({ path, data: b64, directory: Directory.Cache })
+      }
+      const { uri } = await Filesystem.getUri({ path, directory: Directory.Cache })
+      await Share.share({ title: safe, url: uri, dialogTitle: t('app.shareTitle') })
+      return { ok: true }
+    } finally { sharing = false }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     if (/cancel/i.test(msg)) return { ok: true } // 공유 시트 취소는 오류가 아님

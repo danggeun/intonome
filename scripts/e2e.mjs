@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 동작 e2e — 체크리스트(docs/CHECKLIST.md)의 [A] 항목을 헤드리스 Chromium 에서 실제로 조작해 확인한다.
-// 사용: node scripts/e2e.mjs [--dist <dir>] [--port 4174]
+// 사용: node scripts/e2e.mjs [--dist <dir>] [--port 4174] [--only <regex>] [--shard k/n]
 // 왜: 스크린샷은 정지 화면만 본다. 리팩토링 전/후 빌드에 같은 시나리오를 돌려 "동작 변경 0"을 증명한다.
 // 마이크는 --use-file-for-fake-audio-capture 로 WAV 를 주입한다 (사람 연주 불필요).
 import { chromium } from 'playwright'
@@ -34,8 +34,12 @@ let browser
 const ONLY = typeof args.only === 'string' ? new RegExp(args.only) : null
 /** 앱 기본은 다크, 첫 실행 언어는 폰을 따른다(테스트 브라우저는 영어 폰).  시나리오는 한국어 문구 · 라이트 색으로 짜여 있어, 저장이 없으면 한국어 · 라이트 · 도레미를 심고 연다(__seed 표시: 앱이 한 번 저장하면 사라진다). { fresh: true } 면 심지 않는다 */
 const SEED = () => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', noteNames: 'ko', __seed: 1 })) }
+// --shard k/n: 시나리오를 n 묶음으로 나눠 k 번째만 돈다 (CI 가 병렬로 — 전체는 25 분을 넘겼다). 순서 기준이라 묶음은 결정적이다
+const SHARD = typeof args.shard === 'string' && /^\d+\/\d+$/.test(args.shard) ? args.shard.split('/').map(Number) : null
+let scenarioNo = 0
 async function scenario(name, wav, fn, { fresh = false, ...ctxOpts } = {}) {
   if (ONLY && !ONLY.test(name)) return
+  if (SHARD && (scenarioNo++ % SHARD[1]) !== SHARD[0] - 1) return
   browser = await launch(wav)
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, permissions: ['microphone'], ...ctxOpts })
   if (!fresh) await ctx.addInitScript(SEED)
@@ -210,6 +214,8 @@ await scenario('metro: bpm +/- , clamp, drag, time sig 6/8 disables subdiv, dots
   assert.equal(await bpm(), 90, 'drag 100px = +50 bpm')
   await p.click('[data-ts="6"]'); assert.equal(await p.evaluate(() => document.getElementById('sd-grid').style.pointerEvents), 'none')
   assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector('[data-sd="1"] .flag')).display), 'block', '6/8 shows eighth-note flag')
+  // 6/8 의 숫자는 점4분음표(♩.) 기준 — 헤더 글리프가 바뀌고, aria-pressed 로 고른 박자가 읽힌다
+  assert.deepEqual(await p.evaluate(() => [getComputedStyle(document.querySelector('#metro-hdr-label .g-q')).display, getComputedStyle(document.querySelector('#metro-hdr-label .g-dq')).display, document.querySelector('[data-ts="6"]').getAttribute('aria-pressed'), document.querySelector('[data-ts="4"]').getAttribute('aria-pressed')]), ['none', 'block', 'true', 'false'], '6/8: ♩. 글리프 + aria-pressed')
   // 헤더 LED 는 9칸 고정
   await p.click('#metro-play-btn'); await sleep(p, 150)
   assert.equal(await p.evaluate(() => document.querySelectorAll('#beat-vis .led').length), 9)
@@ -236,6 +242,10 @@ await scenario('rec: recording with the metronome on says the click is muted, an
 await scenario('metro: changing the time signature while playing starts the first beat on the left', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel').catch(() => {})
   await toFull(p) // 전용 모드 (13칸 줄이 크게 보인다)
+  // 전용 모드에서도 DRONE 창이 본문 폭으로 열린다 (2.5.7 까지 숨은 튜너 카드 기준이라 폭 0)
+  await p.click('#drone-btn'); await sleep(p, 300)
+  const popW = await p.evaluate(() => document.getElementById('drone-pop').getBoundingClientRect().width); assert.ok(popW > 300, `drone popup width in full mode: ${popW}`)
+  await p.keyboard.press('Escape'); await sleep(p, 200); assert.equal(await p.evaluate(() => document.getElementById('drone-pop').classList.contains('open')), false)
   await p.click('#metro-play-btn'); await sleep(p, 300)
   /** 다음 정박(hit-acc)이 몇 번 칸에서 나는지 */
   const firstBeatCell = async () => p.evaluate(async () => {
@@ -972,14 +982,14 @@ await scenario('rec: two deletes in a row → each undo toast stays alive', 'vio
   await p.click('#toast'); await sleep(p, 400) // 남아 있던 첫 번째 토스트
   assert.equal((await names()).length, 2, '첫 번째 실행 취소도 살아 있다')
 })
-await scenario('rec: keep — only inside the notice, toggles, persists, hidden when auto-delete is off', 'violin_A4.wav', async p => {
+await scenario('rec: keep — always offered while auto-delete is on, the countdown only in the last 7 days; toggles, persists, hidden when auto-delete is off', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#rec-hdr-btn'); await sleep(p, 1200); await p.click('#rec-hdr-btn'); await sleep(p, 800)
   await p.click('#menu-btn'); await sleep(p, 400)
   const meta = () => p.evaluate(() => document.querySelector('#rec-list .rec-item-meta').textContent)
   const link = () => p.evaluate(() => { const l = document.querySelector('#rec-list .rec-keep-link'); return l ? l.textContent : null })
   assert.equal(await p.evaluate(() => document.querySelectorAll('#rec-list .rec-item-btn').length), 3, '버튼 줄은 편집·다운로드·삭제 셋뿐')
-  assert.equal(await link(), null, '예고 전에는 남기기 글자도 없다 (정보는 있는 것만)')
+  assert.equal(await link(), '남기기', '예고 전에도 남길 수 있다 (2.5.7 까지는 마지막 7 일에만)'); assert.equal(await meta(), '남기기', '예고 글은 아직 없다')
   // 녹음을 27일 전으로 돌려 예고 구간(마지막 7일)에 넣는다
   await p.evaluate(async () => {
     const db = await new Promise(r => { const q = indexedDB.open('intonome_rec', 4); q.onsuccess = () => r(q.result) })
@@ -1019,7 +1029,7 @@ await scenario('rec: keep — only inside the notice, toggles, persists, hidden 
   await p.reload(); await sleep(p, 1500); await p.click('#menu-btn'); await sleep(p, 400)
   assert.equal(await meta(), '자동 삭제 안 함', '기한이 지나도 남긴 항목은 로드된다')
   await p.click('#rec-list .rec-keep-link'); await sleep(p, 300)
-  assert.match(await p.evaluate(() => document.getElementById('toast').textContent), /되돌리기/, '기한 지난 해제는 경고 토스트')
+  assert.match(await p.evaluate(() => document.getElementById('toast').textContent), /실행 취소/, '기한 지난 해제는 경고 토스트')
   await p.click('#toast'); await sleep(p, 300)
   assert.equal(await meta(), '자동 삭제 안 함', '되돌리기로 다시 남김')
 })
@@ -1029,7 +1039,7 @@ await scenario('editor: A/B/loop/bookmark flows', 'violin_A4.wav', async p => {
   await p.click('#rec-hdr-btn'); await sleep(p, 2200); await p.click('#rec-hdr-btn'); await sleep(p, 800)
   await p.click('#menu-btn'); await p.click('[data-action="edit"][data-idx="0"]'); await sleep(p, 1500)
   await p.click('#ed-b-btn'); await sleep(p, 100) // A 없이 B → 토스트
-  assert.equal(await p.evaluate(() => document.getElementById('toast').textContent), '먼저 A 지점을 설정해주세요')
+  assert.equal(await p.evaluate(() => document.getElementById('toast').textContent), '먼저 A 지점을 정해 주세요')
   await p.click('#ed-play-btn'); await sleep(p, 600); await p.click('#ed-a-btn'); await sleep(p, 500); await p.click('#ed-b-btn'); await sleep(p, 100)
   assert.equal(await p.evaluate(() => document.getElementById('ed-ab-range').style.display), 'block')
   await p.click('#ed-loop-btn'); assert.equal(await p.evaluate(() => document.querySelector('#ed-loop-btn span').textContent), '켜짐')
@@ -1409,11 +1419,11 @@ await scenario('ux: list meta shows bookmarks n · A-B after editing', 'violin_A
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#rec-hdr-btn'); await sleep(p, 2200); await p.click('#rec-hdr-btn'); await sleep(p, 800)
   const meta = () => p.evaluate(() => document.querySelector('#rec-list .rec-item-meta').textContent)
-  await p.click('#menu-btn'); assert.equal(await meta(), '', 'no meta line when nothing to say')
+  await p.click('#menu-btn'); assert.equal(await meta(), '남기기', 'nothing to say but the keep link (auto-delete is on)')
   await p.click('[data-action="edit"][data-idx="0"]'); await sleep(p, 1200)
   await p.click('#ed-play-btn'); await sleep(p, 500); await p.click('#ed-bm-add-btn'); await sleep(p, 300); await p.click('#ed-a-btn'); await sleep(p, 500); await p.click('#ed-b-btn'); await sleep(p, 300)
   await p.click('#ed-back-btn'); await sleep(p, 300)
-  assert.equal(await meta(), '북마크 1 · A-B')
+  assert.equal(await meta(), '북마크 1 · A-B · 남기기')
   assert.equal(await p.evaluate(() => document.getElementById('rec-detail-0').classList.contains('open')), true, 'list not re-rendered (expanded state kept)')
   await p.click('.rec-play-btn'); await sleep(p, 200); assert.equal(await p.evaluate(() => document.querySelector('.rec-play-btn').textContent), '❚❚', 'list pause glyph'); await p.click('.rec-play-btn')
   await p.click('.menu-close-btn'); await sleep(p, 200)
@@ -1538,6 +1548,16 @@ await scenario('lifecycle: inactivity watch closes the mic without the practice 
   await sleep(p, 31000)
   assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), false, 'mic closed by inactivity watch')
   assert.equal(await p.evaluate(() => document.getElementById('tuner-card').classList.contains('tap-hint')), true, '시작 버튼으로 다시 켠다')
+  assert.equal(await p.evaluate(() => document.getElementById('tuner-start-sub').textContent), '15분 동안 조용해서 마이크를 껐어요', '왜 꺼졌는지가 버튼 아래 남는다 (토스트는 2.5 s 뒤 사라진다)')
+})
+await scenario('lifecycle: recording keeps the mic open past the inactivity limit (a quiet stretch in a lesson)', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 1500); assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true)
+  await p.click('#rec-hdr-btn'); await sleep(p, 500)
+  await p.evaluate(() => { window.__tt.backdate(16 * 60 * 1000) })
+  await sleep(p, 31000)
+  assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true, '녹음 중엔 무활동 종료가 없다 (2.5.7 까지 녹음이 끊겼다)')
+  assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true, '녹음도 계속된다')
+  await p.click('#rec-hdr-btn'); await sleep(p, 800)
 })
 await scenario('lifecycle: turning the mic back on after a long session doesn’t switch it off immediately', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 1500); assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true)

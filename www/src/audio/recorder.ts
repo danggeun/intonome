@@ -1,20 +1,26 @@
 /** 녹음 (MediaRecorder) + 녹음 목록 상태 */
 import { recListStore, sessionStore, type RecItem } from '../state/index.ts'
-import { dbSave, dbDelete, dbPatchMeta, dbLoadAll, dbChunkAdd, dbChunksClear, dbChunksLoad, type ChunkRow } from '../persist/recordingsDb.ts'
+import { dbSave, dbDelete, dbPatchMeta, dbLoadAll, dbLastExpired, dbChunkAdd, dbChunksClear, dbChunksLoad, type ChunkRow } from '../persist/recordingsDb.ts'
 import { computePeaks, peakOf } from '../core/peaks.ts'
 import { containerOf, extFromMime, type RecContainer } from '../core/container.ts'
 import { t } from '../core/i18n/index.ts'
 import { isIOS, isSafari } from '../platform/index.ts'
 import { A, onMic } from './engine.ts'
 
+/** 파일 하나의 상한. 이보다 길면 같은 세션이 새 파일로 이어진다 — 조각은 10 s 마다 IndexedDB 에 있지만 blob 을 만들 parts 는 메모리에 쌓인다(256 kbps × 60 min ≈ 115 MB) */
 const MAX_REC_SEC = 60 * 60
-let cappedNotice: string | null = null
 let recorder: MediaRecorder | null = null
 let timerInt: ReturnType<typeof setInterval> | null = null
 
 /** 확장자: 저장 때 파일 내용으로 판정해 둔 값이 우선, 없으면(옛 행) mime 으로 추정 */
 export const recExt = (item: Pick<RecItem, 'ext' | 'mime'>): RecContainer => item.ext ?? extFromMime(item.mime)
 export function recFileName(item: RecItem): string { return 'intonome_' + item.name + '.' + recExt(item) }
+const stamp = (ms: number): string => { const n = new Date(ms); return `${n.getFullYear()}${String(n.getMonth() + 1).padStart(2, '0')}${String(n.getDate()).padStart(2, '0')}_${String(n.getHours()).padStart(2, '0')}${String(n.getMinutes()).padStart(2, '0')}` }
+/** 목록에 같은 이름이 있으면 _2, _3 … — 같은 분(分)에 짧은 테이크를 여러 번 하면 이름·파일명이 전부 같았다 */
+export function uniqueName(base: string, taken: ReadonlyArray<string> = recListStore.get().items.map(i => i.name)): string {
+  if (!taken.includes(base)) return base
+  for (let k = 2; ; k++) { const n = `${base}_${k}`; if (!taken.includes(n)) return n }
+}
 
 export type RecResult = { ok: true } | { ok: false; error: string }
 /** 조각 간격. 앱이 죽어도 이만큼만 잃는다 */
@@ -23,6 +29,20 @@ export function startRec(): RecResult {
   if (!A.micStream) return { ok: false, error: t('rec.needMic') }
   if (recorder && recorder.state !== 'inactive') return { ok: false, error: t('rec.already') }
   const t0 = Date.now()
+  const r = startFile(t0, stamp(t0))
+  if (!r.ok) return r
+  sessionStore.set({ recording: true, recElapsedSec: 0 })
+  if (timerInt) clearInterval(timerInt)
+  timerInt = setInterval(() => {
+    const sec = Math.round((Date.now() - t0) / 1000); sessionStore.set({ recElapsedSec: sec }) // 벽시계 기준 — 백그라운드 스로틀링에도 정확
+    if (recorder && recorder.state !== 'inactive' && Date.now() - fileT0 >= MAX_REC_SEC * 1000) rollover() // 60 분마다 파일을 끊어 잇는다 — 레슨이 멈추지 않게
+  }, 1000)
+  return { ok: true }
+}
+let fileT0 = 0, fileBase = '', filePart = 1
+/** 파일 하나를 시작한다. 세션(sessionStore.recording·헤더 시간)은 건드리지 않는다 */
+function startFile(t0: number, base: string, part = 1): RecResult {
+  if (typeof MediaRecorder === 'undefined') return { ok: false, error: t('rec.unsupported') }
   // iOS 18.4+ Safari 는 webm 녹음이 되지만 iOS 가 .webm 을 못 연다 → iOS 만 mp4(AAC) 우선
   // Chromium 은 'audio/mp4' 를 Opus-in-MP4 로 출력하므로 다른 플랫폼은 webm 우선
   const mimes = isIOS() || isSafari()
@@ -32,9 +52,10 @@ export function startRec(): RecResult {
   const opts: MediaRecorderOptions = { audioBitsPerSecond: 256000 }; if (mime) opts.mimeType = mime
   // 세션 상태는 클로저에 가둔다 — 정지 직후 재시작하면 이전 세션의 늦은 ondataavailable/onstop 이 섞인다
   let rec: MediaRecorder
-  try { rec = new MediaRecorder(A.micStream, opts) } catch (e) { return { ok: false, error: t('rec.unsupported') + (e instanceof Error ? ` (${e.name})` : '') } }
+  try { rec = new MediaRecorder(A.micStream!, opts) } catch (e) { return { ok: false, error: t('rec.unsupported') + (e instanceof Error ? ` (${e.name})` : '') } }
   const parts: Blob[] = []
-  rec.ondataavailable = e => { if (e.data.size > 0) { parts.push(e.data); void dbChunkAdd({ session: t0, t: Date.now(), mime: rec.mimeType, blob: e.data }) } }
+  let liveFrom = 0 // 조각마다 그 사이의 실시간 피크를 같이 저장한다 — 복구 때 파형과 재생 보정 피크가 된다
+  rec.ondataavailable = e => { if (e.data.size > 0) { parts.push(e.data); const live = myPeaks.slice(liveFrom); liveFrom = myPeaks.length; void dbChunkAdd({ session: t0, t: Date.now(), mime: rec.mimeType, blob: e.data, live }) } }
   rec.onerror = () => { errorFn?.(t('rec.errSaved')); if (recorder === rec) stopRec() }
   // 파형·피크·확장자는 부가 정보 — 실패해도 녹음은 저장한다. blob 을 못 만들 때만 포기
   rec.onstop = async () => {
@@ -42,8 +63,7 @@ export function startRec(): RecResult {
     try { blob = new Blob(parts, { type: rec.mimeType || 'audio/mp4' }) }
     catch { parts.length = 0; errorFn?.(t('rec.saveFailed')); return }
     parts.length = 0 // 60분 녹음 ≈ 115 MB 가 두 벌 남지 않게
-    const n = new Date(t0)
-    const name = `${n.getFullYear()}${String(n.getMonth() + 1).padStart(2, '0')}${String(n.getDate()).padStart(2, '0')}_${String(n.getHours()).padStart(2, '0')}${String(n.getMinutes()).padStart(2, '0')}`
+    const name = uniqueName(part > 1 ? `${base}_${part}` : base)
     // 파형용 peaks 는 정규화돼 절대 레벨이 사라진다 → 재생 보정용 원시 피크를 따로 남긴다
     let peak: number | undefined, peaks: Float32Array | undefined
     try {
@@ -55,22 +75,25 @@ export function startRec(): RecResult {
     try { ext = containerOf(new Uint8Array(await blob.slice(0, 16).arrayBuffer().catch(() => new ArrayBuffer(0))), rec.mimeType) }
     catch { ext = extFromMime(rec.mimeType) }
     const item: RecItem = { id: null, url: URL.createObjectURL(blob), name, dur: Math.round((Date.now() - t0) / 1000), blob, mime: rec.mimeType, ext, peak, ts: t0, bookmarks: [], ab: null, peaks }
-    item.id = await dbSave({ name: item.name, dur: item.dur, blob: item.blob, mime: item.mime, ts: item.ts }, { bookmarks: [], ab: null, peaks, ext, peak }).catch(() => null)
-    if (item.id == null) errorFn?.(t('rec.sessionOnly')) // 용량 부족·프라이빗 모드 등
-    else void dbChunksClear(t0)
+    // 목록에는 먼저 넣고 id 는 저장이 끝난 뒤 붙인다 — 큰 파일은 저장에 1~3 s 걸려 "녹음 완료" 뒤 메뉴를 열면 항목이 없었다
     const st = recListStore.get(); recListStore.set({ items: [item, ...st.items], rev: st.rev + 1 })
-    if (cappedNotice) { errorFn?.(cappedNotice); cappedNotice = null }
+    const id = await dbSave({ name: item.name, dur: item.dur, blob: item.blob, mime: item.mime, ts: item.ts }, { bookmarks: [], ab: null, peaks, ext, peak }).catch(() => null)
+    if (id == null) errorFn?.(t('rec.sessionOnly'), 10000) // 용량 부족·프라이빗 모드 등 — 앱을 닫으면 사라진다. 다운로드할 시간을 준다
+    else void dbChunksClear(t0)
+    const st2 = recListStore.get(); const i = st2.items.findIndex(x => x.blob === item.blob); if (i >= 0) { const items2 = st2.items.slice(); items2[i] = { ...items2[i]!, id }; recListStore.set({ items: items2, rev: st2.rev }) }
   }
   try { rec.start(REC_SLICE_MS) } catch (e) { return { ok: false, error: t('rec.startFailed') + (e instanceof Error ? ` (${e.name})` : '') } } // 트랙이 막 죽은 순간 InvalidStateError
-  recorder = rec
-  const myPeaks = startPeakCapture() // 이 세션의 피크 배열 — 다음 세션이 새 배열을 만들어도 참조 유지
-  sessionStore.set({ recording: true, recElapsedSec: 0 })
-  if (timerInt) clearInterval(timerInt)
-  timerInt = setInterval(() => {
-    const sec = Math.round((Date.now() - t0) / 1000); sessionStore.set({ recElapsedSec: sec }) // 벽시계 기준 — 백그라운드 스로틀링에도 정확
-    if (sec >= MAX_REC_SEC) { cappedNotice = t('rec.capped'); stopRec() } // 청크가 메모리에 쌓인다 — 256 kbps × 60 min ≈ 115 MB
-  }, 1000)
+  recorder = rec; fileT0 = t0; fileBase = base; filePart = part
+  const myPeaks = startPeakCapture() // 이 파일의 피크 배열 — 다음 파일이 새 배열을 만들어도 참조 유지
   return { ok: true }
+}
+/** 60 분 상한: 지금 파일을 저장하고 같은 세션을 새 파일(_2, _3 …)로 잇는다. 헤더의 시간은 계속 흐른다 */
+function rollover(): void {
+  if (!recorder || recorder.state === 'inactive') return
+  recorder.stop(); stopPeakCapture()
+  const r = startFile(Date.now(), fileBase, filePart + 1)
+  if (r.ok) errorFn?.(t('rec.rolledOver'), 6000)
+  else { errorFn?.(r.error); stopRec() }
 }
 export function stopRec(): void {
   if (recorder && recorder.state !== 'inactive') recorder.stop()
@@ -113,8 +136,10 @@ export async function restoreDeleted(item: RecItem, at: number): Promise<void> {
   items.splice(Math.min(at, items.length), 0, back)
   recListStore.set({ items, rev: st.rev + 1 })
   const id = await dbSave({ name: back.name, dur: back.dur, blob: back.blob, mime: back.mime, ts: back.ts }, { bookmarks: back.bookmarks, ab: back.ab, peaks: back.peaks, ext: back.ext, peak: back.peak, keep: back.keep }).catch(() => null)
-  // 그 사이 patchRec 이 객체를 바꿨을 수 있다 → blob 동일성으로 찾는다
-  const st2 = recListStore.get(); const i = st2.items.findIndex(x => x.blob === back.blob); if (i >= 0) { const items2 = st2.items.slice(); items2[i] = { ...items2[i]!, id }; recListStore.set({ items: items2, rev: st2.rev }) }
+  // 그 사이 patchRec 이 객체를 바꿨을 수 있다 → blob 동일성으로 찾는다. 저장되는 동안 다시 지웠으면(id 가 없어 목록에서만 빠졌다) DB 에서도 지운다 — 안 그러면 다음 실행에 유령 행
+  const st2 = recListStore.get(); const i = st2.items.findIndex(x => x.blob === back.blob)
+  if (i < 0) { void dbDelete(id); return }
+  const items2 = st2.items.slice(); items2[i] = { ...items2[i]!, id }; recListStore.set({ items: items2, rev: st2.rev })
 }
 /** 편집 상태(북마크/A-B/파형/속도)·이름을 메모리와 IndexedDB(meta) 에 반영. 새 항목 객체를 반환 */
 export function patchRec(item: RecItem, patch: Partial<Pick<RecItem, 'name' | 'bookmarks' | 'ab' | 'peaks' | 'speed' | 'keep'>>): RecItem | null {
@@ -125,14 +150,16 @@ export function patchRec(item: RecItem, patch: Partial<Pick<RecItem, 'name' | 'b
   recListStore.set({ items, rev: 'name' in patch ? st.rev + 1 : st.rev })
   return next
 }
-let errorFn: ((m: string) => void) | null = null
-export function onRecorderError(fn: (m: string) => void): void { errorFn = fn }
-/** 앱 시작 시 IndexedDB 에서 복원 */
-export async function restoreRecordings(): Promise<void> {
+let errorFn: ((m: string, ms?: number) => void) | null = null
+export function onRecorderError(fn: (m: string, ms?: number) => void): void { errorFn = fn }
+/** 앱 시작 시 IndexedDB 에서 복원. 30 일이 지나 지운 개수를 돌려준다 */
+export async function restoreRecordings(): Promise<number> {
   const rows = await dbLoadAll().catch(() => [])
-  if (!rows.length) return
-  const items: RecItem[] = rows.map(r => ({ id: r.id ?? null, url: URL.createObjectURL(r.blob), name: r.name, dur: r.dur, blob: r.blob, mime: r.mime, ext: r.ext, peak: r.peak, ts: r.ts, bookmarks: r.bookmarks, ab: r.ab, peaks: r.peaks, speed: r.speed, keep: r.keep }))
-  const st = recListStore.get(); recListStore.set({ items: [...st.items, ...items], rev: st.rev + 1 })
+  if (rows.length) {
+    const items: RecItem[] = rows.map(r => ({ id: r.id ?? null, url: URL.createObjectURL(r.blob), name: r.name, dur: r.dur, blob: r.blob, mime: r.mime, ext: r.ext, peak: r.peak, ts: r.ts, bookmarks: r.bookmarks, ab: r.ab, peaks: r.peaks, speed: r.speed, keep: r.keep }))
+    const st = recListStore.get(); recListStore.set({ items: [...st.items, ...items], rev: st.rev + 1 })
+  }
+  return dbLastExpired()
 }
 /** 지난 실행에서 끝내지 못한 녹음(조각)을 항목으로 되살린다. 되살린 개수를 돌려준다 */
 export async function recoverInProgress(): Promise<number> {
@@ -140,14 +167,19 @@ export async function recoverInProgress(): Promise<number> {
   let n = 0
   for (const [session, chunks] of groups) {
     if (sessionStore.get().recording && chunks[0]?.session === session) continue
+    // 저장이 끝난 직후 앱이 죽어 조각만 남은 경우(dbChunksClear 전) — 같은 녹음이 이미 목록에 있으면 조각만 치운다
+    if (recListStore.get().items.some(i => i.ts === session)) { await dbChunksClear(session); continue }
     const mime = chunks[0]!.mime, blob = new Blob(chunks.map(c => c.blob), { type: mime || 'audio/mp4' })
     const last = chunks[chunks.length - 1]!.t, dur = Math.max(1, Math.round((last - session) / 1000))
-    const d = new Date(session)
-    const name = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${t('rec.recoveredSuffix')}`
+    const name = uniqueName(`${stamp(session)}${t('rec.recoveredSuffix')}`)
     let ext: RecContainer
     try { ext = containerOf(new Uint8Array(await blob.slice(0, 16).arrayBuffer()), mime) } catch { ext = extFromMime(mime) }
-    const item: RecItem = { id: null, url: URL.createObjectURL(blob), name, dur, blob, mime, ext, peak: undefined, ts: session, bookmarks: [], ab: null, peaks: undefined }
-    item.id = await dbSave({ name, dur, blob, mime, ts: session }, { bookmarks: [], ab: null, ext }).catch(() => null)
+    // 조각에 같이 저장한 실시간 피크로 파형과 재생 보정 피크를 되살린다 — 없으면(옛 조각) 재생 보정은 기본 부스트(LEGACY_GAIN)로 가고 왜곡될 수 있었다
+    const live = chunks.flatMap(c => c.live ?? [])
+    let peak: number | undefined, peaks: Float32Array | undefined
+    try { if (live.length) { peak = peakOf(live); peaks = computePeaks([Float32Array.from(live)], 600) } } catch { peak = undefined; peaks = undefined }
+    const item: RecItem = { id: null, url: URL.createObjectURL(blob), name, dur, blob, mime, ext, peak, ts: session, bookmarks: [], ab: null, peaks }
+    item.id = await dbSave({ name, dur, blob, mime, ts: session }, { bookmarks: [], ab: null, ext, peak, peaks }).catch(() => null)
     if (item.id == null) continue
     await dbChunksClear(session)
     const st = recListStore.get(); recListStore.set({ items: [item, ...st.items], rev: st.rev + 1 })

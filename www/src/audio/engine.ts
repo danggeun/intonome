@@ -169,7 +169,8 @@ export function micErrorMessage(e: unknown): string {
   if (/audio session/i.test(msg)) return tr('mic.errSession')
   return msg || tr('mic.errUnknown')
 }
-export const isPermissionError = (msg: string): boolean => /권한|차단/.test(msg)
+/** 권한 거절 오류인가 — 현재 언어의 문구와 비교한다(2.5.7 까지 한국어 정규식이라 영어 UI 에선 권한 오류를 못 알아봤다) */
+export const isPermissionError = (msg: string): boolean => msg === tr('mic.errDeniedNative') || msg === tr('mic.errDeniedWeb')
 
 function teardownMic(): void {
   micGen++ // 진행 중인 openMic 세션 무효화
@@ -194,6 +195,7 @@ export function resumeIfRunning(): void {
   if (tunerStore.get().running) sendToWorker({ type: 'reset', afterT: A.ac.currentTime })
 }
 /** 메트로놈 클릭 구간을 워커에 알려 그 창의 프레임을 버리게 한다 (같은 컨텍스트 시계) */
+export function resetArrival(): void { if (A.worker) sendToWorker({ type: 'metroPattern' }) }
 export function muteAnalysis(fromT: number, untilT: number, at: number): void { if (A.worker) sendToWorker({ type: 'mute', from: fromT, until: untilT, at }) }
 
 // 이어폰을 꽂거나 빼면 앱 음(드론 · A 듣기)이 마이크에 들리는지 워커가 다시 잰다. 이 알림이 없는 기기에서도 워커가 소리로 알아본다

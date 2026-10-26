@@ -73,8 +73,12 @@ export async function dbPatchMeta(id: number | null | undefined, patch: Partial<
     await req(s.put({ ...cur, ...patch, id }))
   } catch { metaError?.(t('rec.metaFailed')) }
 }
+/** 마지막 dbLoadAll 이 TTL 로 지운 개수 — 시작 때 "n개를 지웠어요" 로 알린다(2.5.7 까지는 말없이 사라졌다) */
+let expiredLast = 0
+export const dbLastExpired = (): number => expiredLast
 /** 전체 로드 (최신순). TTL 지난 항목은 삭제 후 제외. */
 export async function dbLoadAll(): Promise<RecFull[]> {
+  expiredLast = 0
   if (!db) return []
   const rows = (await req(store(REC_STORE, 'readonly').getAll())) as RecRow[]
   const metas = new Map(((await req(store(META_STORE, 'readonly').getAll())) as RecMeta[]).map(m => [m.id, m]))
@@ -83,14 +87,15 @@ export async function dbLoadAll(): Promise<RecFull[]> {
   for (const r of rows.sort((a, b) => (b.ts || 0) - (a.ts || 0))) {
     const m = metas.get(r.id!)
     // 삭제 판정은 core/recPolicy 의 expires 하나로 — 목록의 예고문도 같은 함수를 본다
-    if (expires(r.ts, m?.keep, autoDelete, now)) { void dbDelete(r.id); continue }
+    if (expires(r.ts, m?.keep, autoDelete, now)) { void dbDelete(r.id); expiredLast++; continue }
     keep.push({ ...r, name: m?.name ?? r.name, bookmarks: m?.bookmarks ?? [], ab: m?.ab ?? null, peaks: m?.peaks, speed: m?.speed, ext: m?.ext, peak: m?.peak, keep: m?.keep })
   }
   return keep
 }
 
 // 녹음 중 조각
-export interface ChunkRow { seq?: number; session: number; t: number; mime: string; blob: Blob }
+/** live: 이 조각 동안의 실시간 피크(20 개/초) — 복구 때 파형·재생 보정 피크를 만든다. 옛 조각에는 없다 */
+export interface ChunkRow { seq?: number; session: number; t: number; mime: string; blob: Blob; live?: number[] }
 export async function dbChunkAdd(row: ChunkRow): Promise<void> {
   if (!db) return
   try { await req(store(CHUNK_STORE, 'readwrite').add(row)) } catch { /* 용량 부족 — 메모리의 조각으로 stop 때 저장된다 */ }

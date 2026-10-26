@@ -10,10 +10,11 @@ import { softClipCurve } from '../core/softclip.ts'
 import { recListStore, type RecItem } from '../state/index.ts'
 import { patchRec } from '../audio/recorder.ts'
 import { attachGain, beforePlay, afterStop } from '../audio/playback.ts'
-import { q, on, reflow, PLAY_GLYPH, PAUSE_GLYPH } from './dom.ts'
+import { q, on, reflow, setOn, PLAY_GLYPH, PAUSE_GLYPH } from './dom.ts'
 import { displayName, releaseAudio, downloadRec, handOff, WAV_RESCUE_MAX_SEC } from './recList.ts'
 import { toast } from './toast.ts'
 import { t as tr } from '../core/i18n/index.ts'
+import { isNative } from '../platform/index.ts'
 import { hideMenu, showMenuInstant } from './menu.ts'
 import { attachSwipeBack } from './swipeBack.ts'
 
@@ -38,7 +39,7 @@ const pct = (t: number, _d?: number) => (frac(t) * 100).toFixed(3) + '%'
 function setZoom(on: boolean): void {
   const d = dur()
   view = on && ed.ptA !== null && ed.ptB !== null && d ? { t0: Math.max(0, ed.ptA - ZOOM_PAD), t1: Math.min(d, ed.ptB + ZOOM_PAD) } : null
-  q('ed-zoom-btn').classList.toggle('on', !!view); q('ed-zoom-btn').textContent = tr(view ? 'ed.showAll' : 'ed.zoom')
+  setOn(q('ed-zoom-btn'), !!view); q('ed-zoom-btn').textContent = tr(view ? 'ed.showAll' : 'ed.zoom')
   updateHandles(); renderBmTicks(); if (ed.audio) setPosUI(ed.audio.currentTime); requestWave()
 }
 function updateZoomBtn(): void { const ok = ed.ptA !== null && ed.ptB !== null; q('ed-zoom-btn').classList.toggle('dim', !ok); if (!ok && view) setZoom(false) }
@@ -57,15 +58,18 @@ function setPosUI(t: number): void {
   requestWave()
 }
 function onTimeUpdate(): void {
-  if (ed.dragging || !ed.audio) return
+  if (!ed.audio) return
+  loopCheck(ed.audio) // 화면이 꺼지면 rAF 가 멈춘다 — timeupdate(≤ 250 ms 늦음)가 B 를 지나치지 않게 받친다
+  if (ed.dragging) return
   const d = dur(); if (!d) return
   setPosUI(ed.audio.currentTime)
 }
+function loopCheck(a: HTMLAudioElement): void { if (ed.loop && ed.ptA !== null && ed.ptB !== null && a.currentTime >= ed.ptB - 0.02) a.currentTime = loopStart() }
 // A-B 반복은 timeupdate(≈4 Hz, 최대 250 ms 늦음)가 아니라 rAF 로 검사
 let loopRaf: number | null = null
 function loopTick(): void {
   loopRaf = null; const a = ed.audio; if (!a || a.paused) return
-  if (ed.loop && ed.ptA !== null && ed.ptB !== null && a.currentTime >= ed.ptB - 0.02) a.currentTime = loopStart()
+  loopCheck(a)
   loopRaf = requestAnimationFrame(loopTick)
 }
 function startLoopWatch(): void { if (loopRaf == null) loopRaf = requestAnimationFrame(loopTick) }
@@ -85,7 +89,7 @@ function updateHandles(): void {
 }
 // A/B/반복 버튼 표시 — 상태는 클래스(.on 액센트 / .dim 비활성)로, 색은 CSS 토큰이 정한다
 const abBtn = (id: string, active: boolean, label: string, dim = false) => {
-  const btn = q(id); btn.classList.toggle('on', active); btn.classList.toggle('dim', dim)
+  const btn = q(id); setOn(btn, active); btn.classList.toggle('dim', dim)
   btn.querySelector('span')!.textContent = label
 }
 const LOOP_LABEL = ['common.off', 'common.on', 'ed.loopFrom1s'] as const
@@ -102,7 +106,9 @@ function nudge(which: 'a' | 'b', d: number): void {
   if (which === 'b' && ed.ptB !== null) ed.ptB = Math.max(ed.ptA !== null ? ed.ptA + 0.1 : 0, Math.min(len, ed.ptB + d))
   updateHandles(); if (ed.ptA !== null) updateABtn(); if (ed.ptB !== null) updateBBtn(); persistEdit()
 }
-function checkExportBtn(): void { q('ed-export-btn').classList.toggle('dim', ed.ptA === null || ed.ptB === null) }
+/** 10 분이 넘는 녹음은 구간 저장이 안 된다(디코드 메모리) — 열 때부터 흐리게, 눌러야 알게 하지 않는다 */
+const tooLongToCut = (): boolean => !!ed.item && ed.item.dur > WAV_RESCUE_MAX_SEC
+function checkExportBtn(): void { q('ed-export-btn').classList.toggle('dim', tooLongToCut() || ed.ptA === null || ed.ptB === null) }
 
 /** 편집 상태(북마크/A-B)를 녹음 항목에 저장 — 다시 열어도 그대로 */
 function persistEdit(): void {
@@ -275,7 +281,7 @@ function togglePlay(): void {
   if (!ed.audio) return
   const a = ed.audio
   if (a.paused) {
-    if (ed.ptA !== null && a.currentTime < loopStart()) a.currentTime = loopStart()
+    if (ed.loop && ed.ptA !== null && a.currentTime < loopStart()) a.currentTime = loopStart() // 반복이 꺼져 있으면 A 앞도 그냥 듣는다
     beforePlay(a) // 보정 게인을 타는 경우 컨텍스트가 자고 있으면 무음이 된다 → 먼저 깨운다
     setPlayGlyph(true)
     const tryPlay = () => { if (ed.audio !== a) return /* 편집기가 닫힌 뒤 canplay 가 와도 재생하지 않음 */; const p = a.play(); if (p && p.catch) p.catch(() => { setTimeout(() => { if (ed.audio && ed.audio.paused) { const p2 = ed.audio.play(); if (p2 && p2.catch) p2.catch(() => { setPlayGlyph(false) }) } }, 50) }) }
@@ -358,7 +364,7 @@ function addBookmark(): void {
 async function exportAB(): Promise<void> {
   if (ed.ptA === null || ed.ptB === null || !ed.item) { toast(tr('ed.needAB')); return }
   // 녹음 전체를 디코드한다 — 60분이면 ~690 MB PCM 이라 아이폰 탭이 죽는다
-  if (ed.item.dur > WAV_RESCUE_MAX_SEC) { toast(tr('ed.tooLongCut')); return }
+  if (tooLongToCut()) { toast(tr('ed.tooLongCut')); return }
   const item = ed.item
   try {
     const arrayBuf = await (await fetch(item.url)).arrayBuffer()
@@ -408,6 +414,7 @@ export function mountEditor(): void {
   on(q('ed-a-btn'), 'click', toggleA); on(q('ed-b-btn'), 'click', toggleB); on(q('ed-loop-btn'), 'click', toggleLoop)
   on(q('ed-bm-add-btn'), 'click', addBookmark); on(q('ed-export-btn'), 'click', exportAB)
   on(q('ed-zoom-btn'), 'click', () => { if (ed.ptA !== null && ed.ptB !== null) setZoom(!view); else toast(tr('ed.needAB')) })
+  if (isNative()) { const b = q('ed-dl-btn'); b.dataset.t = 'common.share'; b.textContent = tr('common.share') } // 앱에서는 공유 시트가 열린다 — '다운로드' 가 아니다
   on(q('ed-dl-btn'), 'click', (e: Event) => { e.preventDefault(); void downloadWhole() })
   on(q('ed-a-nudge-l'), 'click', () => nudge('a', -0.25)); on(q('ed-a-nudge-r'), 'click', () => nudge('a', 0.25))
   on(q('ed-b-nudge-l'), 'click', () => nudge('b', -0.25)); on(q('ed-b-nudge-r'), 'click', () => nudge('b', 0.25))

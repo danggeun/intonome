@@ -12,43 +12,48 @@ concurrency:
 jobs:
   check:
     name: typecheck · boundaries · unit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run check
 
   build:
     name: build (pages + capacitor base)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     needs: check
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run build
       - run: npm run build:cap
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with: { name: dist-capacitor, path: dist, retention-days: 7 }
 
   e2e:
-    name: e2e (fake mic WAV)
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # 102 개 시나리오를 한 러너에서 돌리면 25 분을 넘긴다(느린 러너) — 3 묶음으로 나눠 병렬로
+    name: e2e (fake mic WAV) ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/3', '2/3', '3/3']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with: { name: dist-capacitor, path: dist }
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         id: pw
         with:
           path: ~/.cache/ms-playwright
@@ -56,19 +61,21 @@ jobs:
       - if: steps.pw.outputs.cache-hit != 'true'
         run: npx playwright install chromium
       - run: npx playwright install-deps chromium
-      - run: node scripts/e2e.mjs --dist dist
+      - run: node scripts/e2e.mjs --dist dist --shard ${{ matrix.shard }}
 
   screenshots:
-    name: screenshot regression
-    runs-on: ubuntu-latest
+    # 기준선(test-assets/screens/baseline)은 개발 환경에서 찍은 것이라 글꼴이 다른 CI 에서는 늘 '다르다' 고 나온다 —
+    # 비교는 패치마다 개발 환경에서 하고(npm run shots), CI 는 찍어서 아티팩트로 남기기만 한다
+    name: screenshots (artifact)
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: check
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         id: pw
         with:
           path: ~/.cache/ms-playwright
@@ -78,16 +85,10 @@ jobs:
       - run: |
           npx playwright install-deps chromium
           sudo apt-get install -y fonts-noto-cjk
-      # 기준선은 아직 CI 환경에서 찍은 것이 아니다. 첫 녹색 실행의 screenshot-diffs 아티팩트를 baseline/ 으로 커밋한 뒤 이 줄을 지운다.
-      - id: shots
-        continue-on-error: true
-        run: npm run shots
-      - if: always()
-        uses: actions/upload-artifact@v4
+      - run: node scripts/screenshots.mjs --serve --out test-assets/screens/current
+      - uses: actions/upload-artifact@v6
         with:
-          name: screenshot-diffs
+          name: screenshots
           path: test-assets/screens/current/*.png
           if-no-files-found: ignore
           retention-days: 14
-      - if: steps.shots.outcome == 'failure'
-        run: echo "::warning::Screenshots differ from the baselines — see the screenshot-diffs artifact"

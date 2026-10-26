@@ -42,6 +42,23 @@ describe('detector', () => {
     for (let i = 0; i < DEFAULT_DETECTOR.holdFrames - 1; i++) expect(d.push(bad)).toBe(true)
     expect(d.push(bad)).toBe(false)
   })
+  test('after a long stretch of playing, silence turns it off within holdFrames + 1 — the count does not pile up', () => {
+    // 2.5.7 까지: run 에 상한이 없어 2 분 연주 뒤 쉬면 약 60 s 동안(11 프레임 ON · 1 프레임 OFF 반복) 계속 '연주 중' 으로 셌다
+    const d = createDetector()
+    for (let i = 0; i < 120 * 43; i++) d.push(good) // 약 2 분
+    let offAt = -1
+    for (let i = 0; i < 200; i++) if (!d.push(bad)) { offAt = i; break }
+    expect(offAt).toBeGreaterThanOrEqual(0); expect(offAt).toBeLessThanOrEqual(DEFAULT_DETECTOR.holdFrames)
+    for (let i = 0; i < 100; i++) expect(d.push(bad)).toBe(false) // 다시 켜지지 않는다
+  })
+  test('a wild frame or two at the onset (harmonic, click) does not delay the start — on 6 frames after the pitch settles', () => {
+    // 2.5.7 까지: 시작의 +963 ¢·−2400 ¢ 두 프레임이 24 프레임 창의 기울기를 지배해 그동안 attack 이 매번 버려졌다(≈ 0.5 s 늦게 켜짐)
+    const d = createDetector()
+    d.push({ ...good, cents: 963 }); d.push({ ...good, cents: -2400 })
+    let onAt = -1
+    for (let i = 0; i < 30; i++) if (d.push({ ...good, cents: (i % 3) - 1 })) { onAt = i; break }
+    expect(onAt).toBeGreaterThanOrEqual(0); expect(onAt).toBeLessThanOrEqual(DEFAULT_DETECTOR.attackFrames)
+  })
   test('noise (flat spectrum) never qualifies even if periodic-ish', () => {
     const d = createDetector(); for (let i = 0; i < 40; i++) expect(d.push({ conf: 0.7, rmsOk: true, harmonics: 3, flatness: 0.7 })).toBe(false)
   })
