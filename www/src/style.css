@@ -476,7 +476,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   #metro-vol-pad{display:flex!important;}
   #metro-grids-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   #ts-grid,#sd-grid{display:flex;flex-direction:column;gap:6px;}
-  .m-seg{height:52px;font-size:17px;}
+  .m-seg{flex:0 0 auto;height:52px;font-size:17px;} /* 세로 flex 안에서 flex:1(basis 0%) 은 height 를 무시하고 내용 높이로 주저앉는다 */
   #metro-body-wrap{grid-template-rows:1fr!important;}
   #metro-body-clip{opacity:1!important;pointer-events:auto!important;}
 }

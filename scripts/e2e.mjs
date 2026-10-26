@@ -36,6 +36,7 @@ const ONLY = typeof args.only === 'string' ? new RegExp(args.only) : null
 const SEED = () => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', noteNames: 'ko', __seed: 1 })) }
 // --shard k/n: 시나리오를 n 묶음으로 나눠 k 번째만 돈다 (CI 가 병렬로 — 전체는 25 분을 넘겼다). 순서 기준이라 묶음은 결정적이다
 const SHARD = typeof args.shard === 'string' && /^\d+\/\d+$/.test(args.shard) ? args.shard.split('/').map(Number) : null
+if (args.shard !== undefined && (!SHARD || SHARD[0] < 1 || SHARD[0] > SHARD[1])) { console.error(`bad --shard ${args.shard} (want k/n with 1 <= k <= n)`); process.exit(2) } // 범위 밖이면 0 개 돌고 초록이 된다
 let scenarioNo = 0
 async function scenario(name, wav, fn, { fresh = false, ...ctxOpts } = {}) {
   if (ONLY && !ONLY.test(name)) return
@@ -1558,6 +1559,37 @@ await scenario('lifecycle: recording keeps the mic open past the inactivity limi
   assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true, '녹음 중엔 무활동 종료가 없다 (2.5.7 까지 녹음이 끊겼다)')
   assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true, '녹음도 계속된다')
   await p.click('#rec-hdr-btn'); await sleep(p, 800)
+})
+await scenario('rec: past 60 minutes the session continues in a new file (_2) and the elapsed time keeps running', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#rec-hdr-btn'); await sleep(p, 1500)
+  // 60 분을 기다릴 수 없으니 파일의 시작 시각을 과거로 돌리고 녹음 타이머(1 s)가 상한을 보게 한다
+  await p.evaluate(() => { window.__tt.recBackdate(61 * 60 * 1000) })
+  await sleep(p, 2500)
+  assert.match(await p.evaluate(() => [...document.querySelectorAll('#toast-host .toast')].map(t => t.textContent).join(' | ')), /60분이 넘어 새 파일로/, '새 파일로 잇는다는 안내')
+  assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true, '녹음은 계속된다 (2.5.7 까지는 멈췄다)')
+  assert.ok(await p.evaluate(() => document.getElementById('hdr-rec-time').textContent) >= '00:03', '헤더 시간은 세션 기준으로 계속 흐른다(파일이 바뀌어도 0 으로 돌아가지 않는다): ' + await p.evaluate(() => document.getElementById('hdr-rec-time').textContent))
+  await sleep(p, 1500); await p.click('#rec-hdr-btn'); await sleep(p, 1000)
+  await p.click('#menu-btn'); await sleep(p, 400)
+  const names = await p.evaluate(() => [...document.querySelectorAll('#rec-list .rec-item-name')].map(n => n.textContent))
+  assert.equal(names.length, 2, '두 파일: ' + names.join(' / '))
+  assert.equal(names[0], names[1] + ' (2)', '둘째 파일은 첫 파일 이름 + (2) (최신이 위, 저장명은 _2): ' + names.join(' / '))
+  assert.equal(await p.evaluate(async () => { const db = await new Promise(r => { const q = indexedDB.open('intonome_rec', 4); q.onsuccess = () => r(q.result) }); return new Promise(r => { const g = db.transaction('recordings').objectStore('recordings').count(); g.onsuccess = () => r(g.result) }) }), 2, '둘 다 저장됐다')
+})
+await scenario('rec: recordings deleted after 30 days are announced on launch', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#rec-hdr-btn'); await sleep(p, 1200); await p.click('#rec-hdr-btn'); await sleep(p, 800)
+  await p.evaluate(async () => {
+    const db = await new Promise(r => { const q = indexedDB.open('intonome_rec', 4); q.onsuccess = () => r(q.result) })
+    const tx = db.transaction('recordings', 'readwrite'), st = tx.objectStore('recordings')
+    const rows = await new Promise(r => { const g = st.getAll(); g.onsuccess = () => r(g.result) })
+    for (const row of rows) { row.ts -= 31 * 86400000; st.put(row) }
+    await new Promise(r => { tx.oncomplete = r }); db.close()
+  })
+  await p.reload(); await sleep(p, 1500)
+  assert.match(await p.evaluate(() => [...document.querySelectorAll('#toast-host .toast')].map(t => t.textContent).join(' | ')), /30일이 지난 녹음 1개를 지웠어요/, '지운 개수를 알린다 (2.5.7 까지는 말없이 사라졌다)')
+  await p.click('#menu-btn'); await sleep(p, 400)
+  assert.equal(await p.evaluate(() => document.querySelectorAll('#rec-list .rec-item').length), 0, '목록에서 사라졌다')
 })
 await scenario('lifecycle: turning the mic back on after a long session doesn’t switch it off immediately', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 1500); assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true)

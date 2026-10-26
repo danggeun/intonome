@@ -62,6 +62,7 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
 | Settings | `localStorage["intonome_settings_v1"]` | `{v:3, …}`, value ranges validated on read. v2 records (2.0.2–2.4.6) load; their response-speed value is mapped by level, since 2.5.0 changed the table |
 | Recordings | IndexedDB `intonome_rec` v4 | `recordings` (blob) · `meta` (bookmarks, A-B, waveform, speed, extension, peak, keep) · `chunks` (pieces while recording) |
 | First-run guide | `localStorage["intonome_tour_v1"]` | `new` = show when the tuner turns on, `done` = seen or closed. Written once on start: `new` only when no settings were saved (a new install), so updates never see it |
+| Wake-lock notice | `localStorage["intonome_wake_warned_v1"]` | `1` once the "screen may turn off" toast has been shown on a browser without the Screen Wake Lock API — shown once per install, not on every start |
 | Old names | `persist/legacy` | keys and DBs from earlier names (Go practice, TempoTune) are deleted once on start |
 | Retention | `core/recPolicy` | 30-day TTL (can be turned off; deletions are announced on launch; Keep is always offered), notice in the last 7 days; a session past 60 minutes continues in a new file (`_2`, `_3`) so the in-memory parts of one file stay bounded |
 | Chunks | `chunks` store | every 10 s: the blob piece plus the live peaks of that span, so a recovered recording gets its waveform and playback level |

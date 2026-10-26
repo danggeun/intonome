@@ -1,6 +1,6 @@
 # Feature checklist
 
-User-facing scenarios. `[A]` items are automated (CI checks them every time); `[D]` items need a real device (check once before a release).
+User-facing scenarios. `[A]` items are automated (CI checks them every time); `[M]` items run from a script in the development environment before each patch (`npm run shots`); `[D]` items need a real device (check once before a release).
 
 ## Startup / mic
 - [A] First launch opens the mic without a popup (iOS web shows a start button first). If the browser requires a gesture, a start button appears
@@ -28,7 +28,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Sharps show the enharmonic flat
 - [A] Reference drum (410–466 Hz) drag → A= updates, cents recalculated, setting saved
 - [A] Settings: tolerance ±5/10/15 (default ±10) changes the band width
-- [A] Recording: a quiet stretch longer than the 15-minute idle limit doesn't close the mic or end the recording (e2e); past 60 minutes the session continues in a new file `_2`; recordings deleted after 30 days are announced on launch; Keep is offered on every recording while auto-delete is on (e2e)
+- [A] Recording: a quiet stretch longer than the 15-minute idle limit doesn't close the mic or end the recording; past 60 minutes the session continues in a new file (`_2`, shown as " (2)") and the header time keeps running; recordings deleted after 30 days are announced on launch; Keep is offered on every recording while auto-delete is on (all e2e)
 - [A] Settings: response slow/normal/fast, mic sensitivity low/normal/high → saved and restored
 - [A] The tuner keeps working while the metronome clicks, at any tempo and subdivision (16ths up to 160 bpm, triplets, 8ths): a held note shows in every frame with the click at 0.3× and 1× the instrument, an A major scale under 16ths at A = 415/442/466 shows every note within 0.2 s, notes on either side of each click pitch read at ±25 cents, and the clicks alone never show as a note (unit tests with the real sequencer and analyzer)
 - [A] Click pitches sit exactly between two notes of the reference pitch, for every reference 410–466 Hz; no note played less than 30 cents off is taken for a click (unit tests)
@@ -117,7 +117,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] Phone calls during and after use, Bluetooth headphone latency
 
 ## Look and feel
-- [A] Screenshot baselines: 18 screens (dark, light, English) match pixel for pixel
+- [M] Screenshot baselines: 18 screens (dark, light, English) match pixel for pixel in the development environment; CI only uploads its screenshots as an artifact (its fonts differ)
 - [A] Touch targets are at least 44 px (visible size unchanged)
 - [A] Text and control contrast meets WCAG AA in both themes
 - [A] Haptic feedback: dragging the dial, the BPM or the A = drum taps once per step (8 ms), firmer on every ten (16 ms), none while recording, none when Settings › Haptic feedback is off (kept after reload)

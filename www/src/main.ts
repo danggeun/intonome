@@ -12,7 +12,7 @@ import { clearLegacyStorage } from './persist/legacy.ts'
 import { openMic, closeMic, onMic, A, resumeIfRunning, onEngineFatal, setIdleCheck, onContextState, isPermissionError, isOpening, cancelOpen, untilOpenSettled } from './audio/engine.ts'
 import { startAnalysis, lastFrameMs, metroCalibMs } from './audio/analysis.ts'
 import { playbackActive, playbackDiag, onPlaybackChange } from './audio/playback.ts'
-import { restoreRecordings, recoverInProgress, onRecorderError } from './audio/recorder.ts'
+import { restoreRecordings, recoverInProgress, onRecorderError, backdateRecFile } from './audio/recorder.ts'
 import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton, onWakeLockUnsupported, setShareProgress } from './platform/index.ts'
 import { q, qsa, on, setOn } from './ui/dom.ts'
 import { toast } from './ui/toast.ts'
@@ -240,6 +240,8 @@ if (!isNative() && 'serviceWorker' in navigator) {
   ac: () => A.ac,
   /** 테스트용: 마지막 활동 시각을 과거로 (무활동 감시 검증) */
   backdate: (ms: number) => tunerStore.set({ lastActivityMs: Date.now() - ms }),
+  /** 테스트용: 녹음 중인 파일의 시작 시각을 과거로 (60 분 상한 검증) */
+  recBackdate: backdateRecFile,
   editor: editorDiag,
   closeMic,
   /** 재생 보정 게인 진단 (e2e) */

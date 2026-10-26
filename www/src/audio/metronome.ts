@@ -57,8 +57,10 @@ export function toggleMetro(): StartResult { return metroStore.get().playing ? (
 let toastFn: ((m: string) => void) | null = null
 export function onMetroError(fn: (m: string) => void): void { toastFn = fn }
 
-function pushPattern(): void { node?.port.postMessage({ type: 'pattern', pattern: pattern() }); if (metroStore.get().playing) resetArrival() }
-function restartBar(): void { if (metroStore.get().playing && node) { node.port.postMessage({ type: 'pattern', pattern: pattern() }); node.port.postMessage({ type: 'resetBar' }) } } // 다음 예약 클릭을 1박으로 (더블클릭 없음)
+function pushPattern(): void { node?.port.postMessage({ type: 'pattern', pattern: pattern() }) }
+/** 클릭 간격이 바뀌는 변경(BPM) — 도착 보정의 옛 후보는 옛 간격에서 '다음 클릭'에 잠긴 값일 수 있어 버린다(적용 중인 보정은 새 합의까지 둔다). 음량·기준음·녹음 무음은 간격이 그대로라 건드리지 않는다 */
+function pushTiming(): void { pushPattern(); if (metroStore.get().playing) resetArrival() }
+function restartBar(): void { if (metroStore.get().playing && node) { pushPattern(); node.port.postMessage({ type: 'resetBar' }); resetArrival() } } // 다음 예약 클릭을 1박으로 (더블클릭 없음) · 박자·세분도 간격이 바뀐다
 
 export function setBPM(v: number): void { settingsStore.set({ bpm: Math.max(CFG.metro.bpmMin, Math.min(CFG.metro.bpmMax, v)) }) } // 다음 틱부터 반영
 export function adjBPM(d: number): void { setBPM(settingsStore.get().bpm + d) }
@@ -66,5 +68,6 @@ export function setTimeSig(v: TimeSig): void { const patch: { timeSig: TimeSig; 
 export function setSubDiv(v: SubDiv): void { settingsStore.set({ subDiv: v }); restartBar() }
 export function setMetroVol(v: number): void { settingsStore.set({ metroVol: v }) }
 
-settingsStore.select(s => [s.bpm, s.metroVol, s.refHz].join(), pushPattern) // 기준음이 바뀌면 클릭 음높이도 그 기준의 반음 사이로
+settingsStore.select(s => s.bpm, pushTiming)
+settingsStore.select(s => [s.metroVol, s.refHz].join(), pushPattern) // 기준음이 바뀌면 클릭 음높이도 그 기준의 반음 사이로
 sessionStore.select(s => s.recording, pushPattern) // 녹음 중 클릭 무음 (시각 피드백은 유지)

@@ -32,7 +32,8 @@ export interface Arrival {
   update(now: number): void
   /** 적용할 보정(초). 합의가 없으면 0 */
   offset(): number
-  reset(): void
+  /** @param keepOffset true = 후보만 버리고 적용 중인 보정은 새 합의가 올 때까지 둔다(패턴·템포 변경 — 지연은 그대로인데 BPM 드래그마다 0 으로 떨어지지 않게) */
+  reset(keepOffset?: boolean): void
   diag(): { offset: number; candidates: number[]; applied: boolean }
 }
 
@@ -56,7 +57,7 @@ export function createArrival(p: ArrivalParams = DEFAULT_ARRIVAL): Arrival {
   }
   /** 중앙값 ±agreeTol 에 minAgree 개가 모이면 그 합의 집합의 중앙값을 쓴다. 후보가 안 생기면 마지막 보정이 남는다 */
   function recompute(): void {
-    if (cands.length < p.minAgree) { off = 0; applied = false; return }
+    if (cands.length < p.minAgree) return // 모자라면 지금 값을 둔다 — 시작 때는 0, 후보만 버린 뒤엔 새 합의가 올 때까지 이전 보정
     const s = [...cands].sort((a, b) => a - b), m = s[s.length >> 1]!
     const agree = cands.filter(c => Math.abs(c - m) <= p.agreeTol).sort((a, b) => a - b)
     if (agree.length >= p.minAgree) { off = agree[agree.length >> 1]!; applied = true } else { off = 0; applied = false }
@@ -81,7 +82,7 @@ export function createArrival(p: ArrivalParams = DEFAULT_ARRIVAL): Arrival {
       }
     },
     offset() { return off },
-    reset() { T.length = 0; E.length = 0; pending.length = 0; cands.length = 0; off = 0; applied = false },
+    reset(keepOffset = false) { T.length = 0; E.length = 0; pending.length = 0; cands.length = 0; if (!keepOffset) { off = 0; applied = false } },
     diag() { return { offset: off, candidates: [...cands], applied } },
   }
 }

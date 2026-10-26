@@ -13,10 +13,13 @@ import { t as tr } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
 import { q, on } from './dom.ts'
 
-/** 자동 이름(YYYYMMDD_HHMM)은 저장명으로 두고 표시는 읽히는 형태로: '9/5 10:50'. 사용자가 바꾼 이름은 그대로 */
+/** 자동 이름(YYYYMMDD_HHMM)은 저장명으로 두고 표시는 읽히는 형태로: '9/5 10:50'. 뒤에 붙는 꼬리는 같은 분의 둘째 녹음·60 분 뒤 이어진 파일(`_2` → ' (2)')과
+ * 복구(`_복구` → ' 복구')뿐 — 저장명 그대로 '20261026_1405_2' 로 보이지 않게. 사용자가 바꾼 이름은 그대로 */
 export function displayName(item: RecItem): string {
-  const m = /^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})$/.exec(item.name)
-  return m ? `${+m[2]!}/${+m[3]!} ${m[4]}:${m[5]}` : item.name
+  const m = /^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})((?:_\d+)*)(?:_(\D\S*))?$/.exec(item.name)
+  if (!m) return item.name
+  const nums = m[6]!.split('_').filter(Boolean) // 같은 분의 둘째 테이크가 60 분을 넘기면 _2_2 → (2-2)
+  return `${+m[2]!}/${+m[3]!} ${m[4]}:${m[5]}` + (nums.length ? ` (${nums.join('-')})` : '') + (m[7] ? ` ${m[7]}` : '')
 }
 const players: Record<number, HTMLAudioElement> = {}
 function setPlayBtn(idx: number, playing: boolean): void { const b = document.getElementById('rec-pb-' + idx); if (b) { b.textContent = playing ? PAUSE_GLYPH : PLAY_GLYPH; b.classList.toggle('playing', playing) } }
@@ -57,15 +60,19 @@ export function handOff(blob: Blob, name: string): void {
 }
 /** 다운로드 (편집기·목록 공용). webm 녹음은 WAV 로 변환해 건넨다 — 아이폰은 webm 을 못 열고, 안드로이드 앱에서 공유한 파일도 받는 쪽이 아이폰이면 못 연다.
  * 10 분이 넘으면(디코드 메모리) 아이폰은 안내만, 안드로이드 앱은 webm 그대로 */
+let converting = false // 변환은 10 분에 Float32 ≈ 115 MB — 연타로 두 번 돌리지 않는다
 export async function downloadRec(item: RecItem): Promise<void> {
   if ((isIOS() || isNative()) && recExt(item) === 'webm' && (isIOS() || item.dur <= WAV_RESCUE_MAX_SEC)) {
     if (item.dur > WAV_RESCUE_MAX_SEC) { toast(tr('rec.tooLongConvert')); return }
     toast(tr('rec.converting'))
+    if (converting) return
+    converting = true
     try {
       const arrayBuf = await (await fetch(item.url)).arrayBuffer()
       const decoded = await new OfflineAudioContext(1, 1, 48000).decodeAudioData(arrayBuf)
       handOff(new Blob([bufToWav(decoded)], { type: 'audio/wav' }), 'intonome_' + item.name + '.wav')
     } catch (e) { toast(tr('rec.convertFailed', { e: e instanceof Error ? e.message : String(e) })) }
+    finally { converting = false }
     return
   }
   const r = await saveFile(item.blob, recFileName(item)); if (!r.ok) toast(tr('common.saveFailed', { e: r.error }))

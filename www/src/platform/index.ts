@@ -55,7 +55,7 @@ export function onWakeLockUnsupported(fn: (m: string) => void): void { wakeWarn 
 export async function acquireWakeLock(): Promise<void> {
   if (wakeLock && !wakeLock.released) return // 이미 쥐고 있으면 다시 요청하지 않는다 — 앞의 센티널이 샌다
   if (!('wakeLock' in navigator)) { // 설치당 한 번만 — 매 실행 같은 토스트가 떴다
-    if (!wakeWarned) { wakeWarned = true; let shown = false; try { shown = localStorage.getItem(WAKE_WARNED_KEY) === '1'; localStorage.setItem(WAKE_WARNED_KEY, '1') } catch { /* 저장 불가면 세션당 한 번 */ } if (!shown) wakeWarn?.(t('set.wakeUnsupported')) }
+    if (!wakeWarned && wakeWarn) { wakeWarned = true; let shown = false; try { shown = localStorage.getItem(WAKE_WARNED_KEY) === '1' } catch { /* 저장 불가면 세션당 한 번 */ } if (!shown) { wakeWarn(t('set.wakeUnsupported')); try { localStorage.setItem(WAKE_WARNED_KEY, '1') } catch { /* 위와 같음 */ } } } // 실제로 보여 준 뒤에만 기록
     return
   }
   const gen = ++wakeGen
@@ -155,7 +155,7 @@ export async function saveFile(blob: Blob, name: string): Promise<{ ok: true } |
       return { ok: true }
     }
     // 한 번에 하나만 — 긴 파일(60 분 ≈ 115 MB)은 쓰는 데 10 s 넘게 걸리는데, 그 사이 다시 누르면 앞 파일을 지우며 썼다
-    if (sharing) return { ok: true }
+    if (sharing) { onShareProgress?.(); return { ok: true } } // 토스트가 사라진 뒤 다시 누르면 '준비 중' 을 다시 보여 준다
     sharing = true
     try {
       const [{ Filesystem, Directory }, { Share }] = await Promise.all([import('@capacitor/filesystem'), import('@capacitor/share')])

@@ -93,7 +93,7 @@ self.onmessage = (e: MessageEvent<WorkerIn>) => {
     case 'settings': analyzer?.setSettings(m.settings); break
     case 'reset': analyzer?.reset(); filled = 0; dropBefore = m.afterT; minOffset = Infinity; break
     case 'mute': mutes.push({ from: m.from, until: m.until }); if (mutes.length > 64) mutes.shift(); arrival.expect(m.at); break
-    case 'metroPattern': arrival.reset(); break // 시작·패턴 변경 — 옛 패턴의 후보가 새 보정에 섞이지 않게(2.5.7 까지는 init 에만 reset)
+    case 'metroPattern': arrival.reset(true); break // 시작·템포·패턴 변경 — 옛 간격의 후보('다음 클릭'에 잠긴 값일 수 있다)는 버리되 적용 중인 보정은 새 합의까지 둔다(2.5.7 까지는 init 에만 reset)
     case 'tone':
       if (m.hz === null) { if (tone) toneOffAt = m.at + TONE_TAIL_S; break }
       if (!tone || Math.abs(tone.hz - m.hz) > 1e-6) { tone = createToneFilter(sr, m.hz); probe = createToneProbe(sr, m.hz, WINDOW); toneHoldUntil = m.at + TONE_SETTLE_S }
