@@ -14,6 +14,9 @@ export function createReadout(p: ReadoutParams): Readout {
   const buf: number[] = []; let midi = -1, shown = 0
   const reset = (): void => { buf.length = 0; midi = -1; shown = 0 }
   const mean = (a: number[]): number => a.reduce((x, y) => x + y, 0) / a.length
+  /** 삼각 가중 평균(가운데가 무겁다) — 그냥 평균은 비브라토가 창 길이의 정수배 주기가 아니면(4.5 Hz 등) 남은 흔들림이 ±1 ¢ 쯤이라
+   * 숫자가 −1 ↔ +1 을 오갔다. 삼각 가중은 그 남은 흔들림을 4 분의 1 아래로 줄인다(5.5 Hz 는 둘 다 0) */
+  const tri = (a: number[]): number => { const n = a.length; let s = 0, w = 0; for (let i = 0; i < n; i++) { const k = Math.min(i + 1, n - i); s += a[i]! * k; w += k } return s / w }
   return {
     reset,
     push(m, cents, fresh) {
@@ -27,7 +30,7 @@ export function createReadout(p: ReadoutParams): Readout {
           shown = Math.round(mean(last))
         }
       }
-      const mm = buf.length ? mean(buf) : cents
+      const mm = buf.length ? tri(buf) : cents
       if (Math.abs(mm - shown) >= p.deadband) shown = Math.round(mm)
       return shown
     },

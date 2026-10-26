@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { createAnalyzer } from './analyzer.ts'
+import type { TrackerParams } from './tracker.ts'
 import { keepInTrace, buildSegments } from '../trace.ts'
 
 const sr = 44100, N = 4096
@@ -114,9 +115,10 @@ describe('one note, bowed again and again, reads as one unbroken line', () => {
   test.each(cases)('%s: the note never goes to "--", never changes, and the trace is one line', (_, hz, gap, seed, att, attNoiseDb) => {
     const x = bowed(hz, 0.5, gap, 6, seed, att, attNoiseDb)
     const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .20, refHz: 440, tolCents: 15 })
-    const cents: Array<number | null> = [], midi: Array<number | null> = []
+    const cents: Array<number | null> = [], midi: Array<number | null> = []; let shown = false
     for (let end = N; end <= x.length; end += HOP) {
-      const f = a.process(x.subarray(end - N, end)); if (end / sr < 0.6) continue // 첫 활의 음이름이 확정된 뒤부터
+      const f = a.process(x.subarray(end - N, end))
+      if (!shown) { if (f.hz <= 0) { expect(end / sr, 'the first stroke shows within 0.25 s').toBeLessThan(0.4 + 0.25); continue } shown = true } // 첫 활의 음이름이 뜬 뒤부터
       expect(f.hz, `t=${(end / sr).toFixed(2)} s shows a note`).toBeGreaterThan(0)
       expect(f.midi, `t=${(end / sr).toFixed(2)} s is still the same note`).toBe(expectMidi(hz))
       const keep = keepInTrace(f.hz, f.held); cents.push(keep ? f.cents : null); midi.push(keep ? f.midi : null)
@@ -139,8 +141,8 @@ describe('one note, bowed again and again, reads as one unbroken line', () => {
 })
 
 describe('nothing is played — the tuner shows nothing', () => {
-  // 피드백(2026-10-24): 바깥에서 그냥 켜 두면 주변 소리에 음이 틱틱 떴다. 말소리 음절·새소리·딸깍은 한두 프레임만 주기적이거나 피치가 미끄러진다 —
-  // 같은 음으로 3 프레임 이어질 때만 새로 띄운다
+  // 피드백(2026-10-24): 바깥에서 그냥 켜 두면 주변 소리에 음이 틱틱 떴다. 말소리 음절·새소리·딸깍은 짧거나 피치가 미끄러진다 —
+  // 같은 음으로 여러 프레임 이어질 때만 새로 띄운다 (2.5.1 은 3 프레임, 2.5.7 은 7 프레임)
   const sr = 48000, N = 4096, HOP = 1024
   /** 야외 20 s: 분홍+갈색 배경 −45/−40 dBFS, 사건(멀리서 말소리 음절·새·딸깍·차·바람) 최대 −24 dBFS, 시드 고정 */
   function ambient(seedIn: number, sec = 20): Float32Array {
@@ -166,13 +168,39 @@ describe('nothing is played — the tuner shows nothing', () => {
     for (let end = N; end <= x.length; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0) shown++; if (f.playing) playing++ }
     expect(shown, 'frames with a note').toBe(0); expect(playing, 'frames counted as playing').toBe(0)
   }, 20000)
-  test('a note that starts over the same ambience still shows within 150 ms', () => {
+  test('a note that starts over the same ambience still shows within 250 ms', () => {
     const x = ambient(1, 6), f0 = 442 * Math.pow(2, -14 / 12); let ph = 0 // G3
     for (let i = Math.round(3 * sr); i < x.length; i++) { const t = i / sr - 3; ph += 2 * Math.PI * f0 * 2 ** (5 * Math.sin(2 * Math.PI * 5.3 * t) / 1200) / sr; let s = 0; for (let h = 1; h <= 12; h++) s += Math.sin(ph * h + h) / h; x[i] = x[i]! + 0.1 * s * Math.min(1, t / 0.08) }
     const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
     let first = -1
     for (let end = N; end <= x.length; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0 && first < 0) { first = end / sr - 3; expect(f.midi).toBe(55) } }
-    expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.15)
+    expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.25) // 2.5.7: 무음에서 새로 띄우려면 7 프레임 — 말소리 모음이 틱틱 뜨지 않게(2.5.1 은 3 프레임, 0.15 s)
+  })
+  /** 조용한 방에서 가까이 말한 모음 하나: 0.5 s 무음 → 모음(f0, 프레임당 glide st/s 로 미끄러짐, 포먼트 700/1200 Hz) → 무음 */
+  function vowel(dur: number, f0: number, glide: number): Float32Array {
+    const n = Math.round((dur + 1) * sr), x = new Float32Array(n), s0 = Math.round(0.5 * sr), m = Math.round(dur * sr), ramp = 0.015 * sr
+    let seed = 7, ph = 0; for (let i = 0; i < n; i++) { seed = (seed * 1664525 + 1013904223) >>> 0; x[i] = (seed / 2 ** 32 - 0.5) * 2e-4 }
+    const amp = (hz: number) => 1 / (1 + ((hz - 700) / 150) ** 2) + 0.6 / (1 + ((hz - 1200) / 200) ** 2) + 0.05
+    for (let i = 0; i < m; i++) {
+      const t = i / sr, f = f0 * 2 ** (glide * t / 12); ph += 2 * Math.PI * f / sr
+      let s = 0; for (let h = 1; h * f < 4000; h++) s += Math.sin(ph * h) * amp(h * f)
+      x[s0 + i] = x[s0 + i]! + 0.06 * s * Math.min(1, i / ramp, (m - i) / ramp)
+    }
+    return x
+  }
+  function shownFrames(x: Float32Array, tracker?: Partial<TrackerParams>): number {
+    const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200, tracker }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
+    let shown = 0; for (let end = N; end <= x.length; end += HOP) if (a.process(x.subarray(end - N, end)).hz > 0) shown++
+    return shown
+  }
+  test.each([[0.06, 0], [0.1, 0], [0.06, 4], [0.1, -4]])('a lone spoken vowel of %s s (gliding %s st/s) after silence shows nothing', (dur, glide) => {
+    for (const f0 of [120, 210]) {
+      expect(shownFrames(vowel(dur, f0, glide), { acquireFrames: 3, acquireCents: 20, acquireGap: 0 }), `2.5.6 rule, f0 ${f0}`).toBeGreaterThan(0) // 재현: 예전 조건에선 떴다
+      expect(shownFrames(vowel(dur, f0, glide)), `f0 ${f0}`).toBe(0)
+    }
+  })
+  test('a held note (or a long sung vowel) of 0.3 s does show', () => {
+    expect(shownFrames(vowel(0.3, 210, 0))).toBeGreaterThan(0)
   })
 })
 

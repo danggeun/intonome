@@ -21,7 +21,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] 440 Hz input with A=442 → A4 (라4), −8 ¢ (WAV injection e2e)
 - [A] Cello C2 (65 Hz) → C2 (도2)
 - [A] Silence → "--", empty history
-- [A] Outdoor ambience with nothing played (distant talk, birds, clicks, a passing car, wind; three noise seeds) → "--" in every frame and no playing time; a note starting over it shows within 150 ms (unit tests with the real analyzer)
+- [A] Outdoor ambience with nothing played (distant talk, birds, clicks, a passing car, wind; three noise seeds) → "--" in every frame and no playing time; a note starting over it shows within 250 ms (unit tests with the real analyzer)
+- [A] Talk nearby puts fewer notes on the screen: from silence a note needs 7 steady frames (≈ 0.2 s), so a lone spoken vowel of 60–100 ms (steady or gliding, low and high voice) shows nothing while a 0.3 s one does; vibrato ±25 cents from the very first frame still acquires on the seventh; one dropped frame is skipped, two restart the count; bowed strokes on G3 / D3 / A4 / A2 / E5 show within 0.25 s of the first stroke (unit tests)
 - [A] Inside the tolerance the note turns green, the card gets `in-tune`, the band is green
 - [A] Sharps show the enharmonic flat
 - [A] Reference drum (410–466 Hz) drag → A= updates, cents recalculated, setting saved
@@ -29,7 +30,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Settings: response slow/normal/fast, mic sensitivity low/normal/high → saved and restored
 - [A] The tuner keeps working while the metronome clicks, at any tempo and subdivision (16ths up to 160 bpm, triplets, 8ths): a held note shows in every frame with the click at 0.3× and 1× the instrument, an A major scale under 16ths at A = 415/442/466 shows every note within 0.2 s, notes on either side of each click pitch read at ±25 cents, and the clicks alone never show as a note (unit tests with the real sequencer and analyzer)
 - [A] Click pitches sit exactly between two notes of the reference pitch, for every reference 410–466 Hz; no note played less than 30 cents off is taken for a click (unit tests)
-- [A] The cents number and the green are calm: vibrato ±15 cents keeps the number still while the trace swings; +14 cents with ±6 vibrato at ±15 tolerance keeps the green on; after turning a peg the number reads 0 within 0.45 s; a 25-cent step reads within 3 cents when the line arrives (unit tests)
+- [A] The cents number and the green are calm: vibrato ±15 cents at 4.5, 5.5 and 6.5 Hz keeps the number still while the trace swings; +14 cents with ±6 vibrato at ±15 tolerance keeps the green on; after turning a peg the number reads 0 within 0.45 s; a 25-cent step reads within 3 cents when the line arrives (unit tests)
 - [A] Scales: a slurred semitone step (E→F, B→C, C→B) with the previous note still ringing reads the new note's own offset within 2 cents from 0.2 s after the change; after a note change the needle starts from the new note's median, not from the old note's smoothed value (unit tests)
 - [A] Trace at a note change: the last frame of the old note and the first two of the new one are not drawn, and the two notes are joined straight from one settled value to the other (no tick towards the old note); a fast trill keeps half of every note and stays one line (unit tests)
 - [A] One note bowed again and again (G3 / D3 / A4 / A2 / E5; 40, 50 or 250 ms between strokes; smooth and rough attacks; three noise seeds) never goes to "--", never changes note, and leaves one unbroken pitch trace; after the sound stops the note lingers about 0.5 s (unit tests with the real analyzer)

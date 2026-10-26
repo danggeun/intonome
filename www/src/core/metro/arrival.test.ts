@@ -53,8 +53,8 @@ function room(x: Float32Array, att: number, delayS: number): Float32Array {
   return y
 }
 /** 워커와 같은 규칙. outLat = 앱이 아는 출력 지연, calib = 보정 사용 여부 */
-function pipeline(sig: Float32Array, marks: Array<{ sample: number }>, outLat: number, calib: boolean) {
-  const an = createAnalyzer({ sampleRate: SR, windowSize: WIN }); an.setSettings({ rmsMin: .005, smoothing: .12, refHz: 442, tolCents: 15 })
+function pipeline(sig: Float32Array, marks: Array<{ sample: number }>, outLat: number, calib: boolean, tracker?: { acquireFrames: number; acquireCents: number; acquireGap: number }) {
+  const an = createAnalyzer({ sampleRate: SR, windowSize: WIN, tracker }); an.setSettings({ rmsMin: .005, smoothing: .12, refHz: 442, tolCents: 15 })
   const arr = createArrival(), mutes: Array<{ from: number; until: number }> = []; let mi = 0
   const ring = new Float32Array(WIN * 4); let rp = 0, filled = 0; const win = new Float32Array(WIN)
   const out: Array<{ t: number; midi: number; off: number }> = []
@@ -78,9 +78,12 @@ describe('self-calibrating metronome click arrival (same flow as the app)', () =
   const { buf, marks } = renderMetro(8)
   test.each([[0.08], [0.12], [0.20]])('입력 지연 오차 +%s s: 보정 없으면 정박마다 음이 뜨고, 보정하면 수렴 뒤 0 이다', (err) => {
     const sig = room(buf, 0.1, 0.03 + err) // 앱은 outLat 0.03 만 안다
-    const without = pipeline(sig, marks, 0.03, false), withCal = pipeline(sig, marks, 0.03, true)
+    // 보정의 효과는 2.5.1 의 시작 조건(3 프레임)에서 본다 — 2.5.7 의 7 프레임은 클릭 한 번(≈ 0.1 s)을 그것만으로도 띄우지 않는다
+    const OLD = { acquireFrames: 3, acquireCents: 20, acquireGap: 0 }
+    const without = pipeline(sig, marks, 0.03, false, OLD), withCal = pipeline(sig, marks, 0.03, true, OLD)
     if (err >= 0.12) expect(shownAfter(without, 3)).toBeGreaterThan(0) // 재현: 클릭 음(라6)이 뜬다 (+0.08 s 는 트래커의 3 프레임 확인만으로도 안 뜬다)
     expect(shownAfter(withCal, 3)).toBe(0)                  // 수렴(3박 ≈ 2.3초) 뒤에는 0
+    expect(shownAfter(pipeline(sig, marks, 0.03, false), 0)).toBe(0) // 지금 시작 조건: 보정 전에도 클릭은 안 뜬다
     expect(Math.abs(withCal[withCal.length - 1]!.off - err)).toBeLessThan(0.012) // 추정이 실제 오차와 12 ms 안에서 맞는다
   })
   test('device with zero offset: the correction stays near 0 and nothing changes', () => {

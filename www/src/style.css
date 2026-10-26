@@ -13,9 +13,11 @@
   /* 액센트 — 빨강 하나, 두 값: 어두운 면 위의 글자·테두리와 흰 글자를 얹는 면 */
   --accent:#f15f54;--accent-rgb:241,95,84;--accent-soft:rgba(241,95,84,.13); /* 글자·테두리(작은 면적) — surface 위 4.59:1 */
   --accent-fill:#cc473e;--on-accent:#fff; /* 솔리드 버튼(큰 면적) — 흰 글자 4.63:1 */
+  /* 고른 값(설정 단계 버튼·박자 칸) — 무채색. 빨강은 울리는 중·녹음 중·켜짐에만 쓴다 */
+  --sel:rgba(var(--text-rgb),.14);
   /* 상태 — 초록은 튜너 안에서만. --warn(주의 점)과 --mark(북마크)는 같은 색, 다른 뜻 */
   --ok:#22c55e;--ok-rgb:34,197,94;--ok-text:#22c55e;--warn:#f59e0b;--mark:#f59e0b;--mark-rgb:245,158,11;
-  --tune-glow:0 0 20px rgba(34,197,94,1),0 0 40px rgba(34,197,94,.7),0 0 80px rgba(34,197,94,.4);
+  --tune-glow:0 0 18px rgba(34,197,94,.35); /* 맞음: 음이름에 옅은 번짐 하나 — 연습 내내 켜졌다 꺼졌다 하는 것이라 세게 빛나지 않게 */
   --acc-led:var(--text);--acc-glow:0 0 10px rgba(223,227,232,.6); /* 첫 박 LED = 테마의 글자색 + 빛 번짐. 다크는 흰색 */
   --scrim:rgba(0,0,0,.65);--shadow-rgb:0,0,0;
   /* 튜너 카드 전용 */
@@ -52,6 +54,7 @@
   --accent:#bf3227;--accent-rgb:191,50,39;--accent-soft:rgba(191,50,39,.10);
   --ok:#16a34a;--ok-rgb:22,163,74;--ok-text:#15803d;--warn:#d97706;--mark:#d97706;--mark-rgb:217,119,6;--mark-text:#b45309;
   --tune-glow:0 0 18px rgba(22,163,74,.35);
+  --sel:rgba(var(--text-rgb),.14);
   --acc-led:var(--ink);--acc-glow:0 0 12px rgba(17,20,24,.6); /* 라이트는 검정 — 번짐을 진하게 해야 켜진 점으로 읽힌다 */
   --scrim:rgba(20,24,30,.4);--shadow-rgb:20,24,30;
   --tuner-bg:#ffffff;--tuner-line:#dde1e6;--tuner-well:#eef1f4;--tuner-text-0:#1f242b;--tuner-text-1:#3a414a;--tuner-text-2:#555d67;--tuner-text-3:#5b636d;--tuner-empty:#c7ccd3;
@@ -130,7 +133,7 @@ button{font-family:inherit;color:inherit;}
 
 /* 튜너 — 검정 무대. 색은 '맞음' 에만 */
 #tuner-card{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--tuner-bg);border:1px solid var(--tuner-line);border-radius:var(--r-lg);overflow:hidden;transition:box-shadow var(--t-std);} /* 헤어라인: 무대가 bg 위에서 한 단 낮게 읽히도록 윤곽을 남긴다 */
-#tuner-card.in-tune{box-shadow:0 0 0 2px var(--ok),0 0 28px rgba(var(--ok-rgb),.45);}
+#tuner-card.in-tune{box-shadow:0 0 0 1.5px rgba(var(--ok-rgb),.6);} /* 맞음: 카드 둘레 가는 테만 — 멀리서 보이는 신호는 초록 음이름이 맡는다 */
 #tuner-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--tuner-line);transition:border-color .06s;}
 @keyframes tunerbeat{0%{border-color:var(--accent)}50%{border-color:var(--accent)}100%{border-color:var(--tuner-line)}}
 @keyframes tunerbeatweak{0%{border-color:rgba(var(--accent-rgb),.6)}100%{border-color:var(--tuner-line)}}
@@ -238,9 +241,9 @@ button{font-family:inherit;color:inherit;}
 #metro-card.full #metro-vol-pad input{flex:1;}
 #metro-card.full #metro-grids-wrap{gap:var(--s3);}
 #metro-card.full .m-seg{height:52px;font-size:17px;}
-/* 선택 표시 = 밝기 3단 + 얇은 액센트 테두리. 펼침에도 같이 적용 */
+/* 선택 표시 = 무채색 면(--sel) + 밝은 글자 + 회색 테두리. 펼침에도 같이 적용 */
 #metro-grids-wrap .m-seg{color:var(--text-2);}
-#metro-grids-wrap .m-seg.on{border-color:var(--accent);color:var(--text);background:var(--surface-2);}
+#metro-grids-wrap .m-seg.on{border-color:var(--text-2);color:var(--text);background:var(--sel);}
 #metro-card.full #sd-grid .note-glyph{transform:scale(1.15);}
 /* 세이코식 LED 줄: 칸 수 고정, 불이 한 박에 끝→끝으로 쓸고 간다. 양 끝 = 정박(초록), 사이 분할 = 액센트, 첫 박은 더 크게 */
 .led{border-radius:50%;background:var(--line);flex-shrink:0;transition:background .05s,transform .05s,box-shadow .05s;}
@@ -303,7 +306,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .m-grid{display:flex;gap:var(--s2);}
 #metro-grids-wrap{display:flex;flex-direction:column;gap:8px;}
 .m-seg{flex:1;min-width:0;height:var(--h-seg);background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-md);color:var(--text);font-family:'DM Mono',monospace;font-size:var(--fs-base);font-weight:var(--fw-md);gap:2px;cursor:pointer;text-align:center;transition:border-color .1s,color .1s,background .1s;display:flex;align-items:center;justify-content:center;}
-.m-seg.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+.m-seg.on{border-color:var(--text-2);color:var(--text);background:var(--sel);}
 
 /* 기준음 패널 */
 /* 드론 음 고르기 — 헤더 바로 아래, 튜너 카드 폭. 바깥 탭은 배경이 받아 닫기만 한다 */
@@ -367,7 +370,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .step-row{display:flex;align-items:center;gap:0;border:1px solid var(--line-ctl);border-radius:var(--r-md);overflow:hidden;}
 .step-btn{flex:1;height:var(--h-seg);background:transparent;border:none;border-right:1px solid var(--line);color:var(--text-2);font-family:inherit;font-size:var(--fs-base);font-weight:var(--fw-md);cursor:pointer;text-align:center;transition:background .1s,color .1s;position:relative;}
 .step-btn:last-child{border-right:none;}
-.step-btn.on{background:var(--accent-soft);color:var(--accent);}
+.step-btn.on{background:var(--sel);color:var(--text);font-weight:var(--fw-b);}
 #cents-steps .step-btn,#notenames-steps .step-btn[data-v="1"]{font-family:'DM Mono',monospace;} /* 모노는 숫자·음이름에만 */
 
 /* 토스트 — 떠 있는 면 (배경에 묻히지 않게) */

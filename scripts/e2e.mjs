@@ -298,11 +298,11 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   assert.deepEqual(await p.evaluate(() => ({ title: getComputedStyle(document.getElementById('metro-hdr-title')).display, label: getComputedStyle(document.getElementById('metro-hdr-label')).display })), { title: 'flex', label: 'none' }, '펼침2 상단은 ♩80 대신 METRONOME')
   assert.equal(await p.evaluate(() => document.getElementById('tuner-card').style.height + document.getElementById('metro-card').style.height), '', '애니메이션이 끝나면 인라인 높이를 지운다')
   assert.equal(await p.evaluate(() => document.querySelectorAll('#sweep-leds .led').length), 13)
-  // M3: 선택 pill = 밝기(면·글자) + 얇은 빨간 테두리. 글자까지 빨갛던 옛 방식으로는 돌아가지 않는다
+  // 선택 pill = 무채색 밝기(면·글자·테두리). 빨강은 울리는 중·켜짐에만 — 고른 값에는 쓰지 않는다 (2.5.7)
   const colors = await p.evaluate(() => { const on = document.querySelector('#metro-card.full .m-seg.on'); const cs = getComputedStyle(on); return { border: cs.borderTopColor, color: cs.color, bg: cs.backgroundColor } })
-  assert.equal(colors.border, 'rgb(241, 95, 84)', '선택 pill 테두리는 액센트')
+  assert.equal(colors.border, 'rgb(162, 169, 178)', '선택 pill 테두리는 --text-2')
   assert.equal(colors.color, 'rgb(223, 227, 232)', '글자는 밝기로 (--text)')
-  assert.equal(colors.bg, 'rgb(46, 51, 60)', '면도 한 단 (--surface-2)')
+  assert.equal(colors.bg, 'rgba(223, 227, 232, 0.14)', '면은 글자색 14 % (--sel)')
   await p.click('[data-sd="2"]'); await p.click('#metro-play-btn')
   const seen = new Set(), hits = new Set(); let flashed = false
   for (let i = 0; i < 40; i++) {
