@@ -1089,6 +1089,10 @@ await scenario('editor: other speeds play through the app time stretch — speed
   v = await speed(); assert.ok(v > 0.35 && v < 0.65, `0.5×: ${v.toFixed(2)}`)
   await tap(); await sleep(p, 100); v = await speed() // 0.7× — 재생 중 같은 재생기에서
   assert.equal(await src(), 'worklet'); assert.ok(v > 0.5 && v < 0.9, `0.7×: ${v.toFixed(2)}`)
+  // 슬라이더가 1.0 을 지나가도(<audio> 로 갔다가 곧바로 돌아옴) 배속 재생기가 '재생 중' 으로 남는다 — 화면 꺼짐 방지·연습 시간이 이것을 본다
+  await p.evaluate(() => { const s = document.getElementById('ed-speed'); for (const x of ['1', '1.05', '0.7']) { s.value = x; s.dispatchEvent(new Event('input')) } })
+  await sleep(p, 300)
+  assert.deepEqual(await p.evaluate(() => { const d = window.__tt.playback(); return [d.active, d.sources.join()] }), [true, 'worklet'], 'still marked as playing')
   // A-B 반복을 0.7× 로: A 0.5 s · B 1.3 s
   await p.click('#ed-play-btn'); await waitUntil(p, () => window.__tt.editor().audio.paused && document.getElementById('ed-play-btn').textContent === '▶', 2000, 'paused')
   await p.evaluate(() => { window.__tt.editor().audio.currentTime = 0.5 }); await p.click('#ed-a-btn')

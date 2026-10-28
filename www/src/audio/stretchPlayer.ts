@@ -22,9 +22,10 @@ export interface StretchPlayer extends Playing {
 let moduleCtx: BaseAudioContext | null = null
 async function loadModule(ac: AudioContext): Promise<void> { if (moduleCtx !== ac) { await ac.audioWorklet.addModule(stretchWorkletUrl); moduleCtx = ac } }
 
-export async function createStretchPlayer(url: string, peak: number | undefined, rate: number): Promise<StretchPlayer> {
+/** @param cancelled 디코드 차례가 왔을 때 이미 필요 없으면 true(편집기가 닫혔다) */
+export async function createStretchPlayer(url: string, peak: number | undefined, rate: number, cancelled?: () => boolean): Promise<StretchPlayer> {
   const ac = getContext()
-  const [data] = await Promise.all([decodeMono(url, ac.sampleRate), loadModule(ac)])
+  const [data] = await Promise.all([decodeMono(url, ac.sampleRate, 0, Infinity, cancelled), loadModule(ac)])
   const duration = data.length / ac.sampleRate
   const node = new AudioWorkletNode(ac, 'gp-stretch', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1] })
   node.port.postMessage({ type: 'load', data, rate }, [data.buffer])
@@ -38,7 +39,7 @@ export async function createStretchPlayer(url: string, peak: number | undefined,
   node.port.onmessage = (e: MessageEvent) => {
     const m = e.data; if (m.gen !== gen) return
     if (m.type === 'pos') { pos = m.pos; at = m.t; if (!paused) emit('timeupdate') }
-    else if (m.type === 'ended') { paused = true; ended = true; pos = duration; emit('timeupdate'); emit('ended') }
+    else if (m.type === 'ended') { const was = paused; paused = true; ended = true; pos = duration; emit('timeupdate'); if (!was) emit('ended') } // 이미 멈춘 뒤 도착한 끝은 반복을 다시 켜지 않는다
   }
   const p: StretchPlayer = {
     duration,

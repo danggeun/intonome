@@ -10,7 +10,7 @@ import { softClipCurve } from '../core/softclip.ts'
 import { recListStore, type RecItem } from '../state/index.ts'
 import { patchRec } from '../audio/recorder.ts'
 import { createEditorPlayer, type EditorPlayer } from '../audio/editorPlayer.ts'
-import { decodeMono } from '../audio/decode.ts'
+import { decodeMono, oneAtATime } from '../audio/decode.ts'
 import { viewRange as viewOf, frac as fracIn, timeAt, zoomWindow, clampA, clampB, loopStart as loopStartOf, clampSpeed, speedLabel, nextPreset, type TimeWindow } from '../core/editRange.ts'
 import { q, on, reflow, setOn, PLAY_GLYPH, PAUSE_GLYPH } from './dom.ts'
 import { displayName, downloadRec, handOff } from './recList.ts'
@@ -152,9 +152,11 @@ async function ensurePeaks(item: RecItem): Promise<void> {
   peaks = null; requestWave()
   if (item.dur > 12 * 60) return
   try {
-    const buf = await (await fetch(item.url)).arrayBuffer()
-    const ac = new OfflineAudioContext(1, 1, 48000); const decoded = await ac.decodeAudioData(buf)
-    const p = computePeaks(Array.from({ length: decoded.numberOfChannels }, (_, i) => decoded.getChannelData(i)), 600)
+    const p = await oneAtATime(async () => { // 디코드는 한 번에 하나(audio/decode)
+      const buf = await (await fetch(item.url)).arrayBuffer()
+      const decoded = await new OfflineAudioContext(1, 1, 48000).decodeAudioData(buf)
+      return computePeaks(Array.from({ length: decoded.numberOfChannels }, (_, i) => decoded.getChannelData(i)), 600)
+    })
     if (!ed.item || ed.item.blob !== item.blob) return // 그 사이 다른 항목을 열었음 — patchRec 은 객체를 바꾸므로 blob 으로 동일성 판단
     peaks = p; const next = patchRec(ed.item, { peaks: p }); if (next) ed.item = next; requestWave()
   } catch { /* 디코드 실패 → 레일 유지 */ }
@@ -282,7 +284,9 @@ function togglePlay(): void {
     if (ed.loop && ed.ptA !== null && a.currentTime < loopStart()) a.currentTime = loopStart() // 반복이 꺼져 있으면 A 앞도 그냥 듣는다
     a.willPlay() // 보정 게인을 타는 경우 컨텍스트가 자고 있으면 무음이 된다 → 먼저 깨운다
     setPlayGlyph(true)
-    const tryPlay = () => { if (ed.audio !== a) return /* 편집기가 닫힌 뒤 canplay 가 와도 재생하지 않음 */; const p = a.play(); if (p && p.catch) p.catch(() => { setTimeout(() => { if (ed.audio && ed.audio.paused) { const p2 = ed.audio.play(); if (p2 && p2.catch) p2.catch(() => { setPlayGlyph(false) }) } }, 50) }) }
+    // 첫 play() 가 거절되면 50 ms 뒤 한 번 더 — 그 사이 사용자가 멈췄으면(글리프 ▶) 다시 틀지 않는다
+    const wantsPlay = (): boolean => q('ed-play-btn').classList.contains('playing')
+    const tryPlay = () => { if (ed.audio !== a) return /* 편집기가 닫힌 뒤 canplay 가 와도 재생하지 않음 */; const p = a.play(); if (p && p.catch) p.catch(() => { setTimeout(() => { if (ed.audio && ed.audio.paused && wantsPlay()) { const p2 = ed.audio.play(); if (p2 && p2.catch) p2.catch(() => { setPlayGlyph(false) }) } }, 50) }) }
     if (a.readyState < 2) a.addEventListener('canplay', tryPlay, { once: true }); else tryPlay()
   } else { a.pause(); a.stopped(); setPlayGlyph(false) }
 }

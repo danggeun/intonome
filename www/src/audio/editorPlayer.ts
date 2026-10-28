@@ -43,16 +43,17 @@ export function createEditorPlayer(url: string, peak: number | undefined, dur: n
   let fallback = false // 배속 재생기를 못 쓴다 → <audio> 의 배속
   let pending = false // 재생을 눌렀는데 배속 재생기가 아직 준비 중
   let released = false
+  /** playback.ts 에 '재생 중' 으로 올려 둔 쪽 — 길이 바뀌면 옮긴다 */
+  let marked: Playing | null = null
   /** 재생 이벤트(timeupdate·play·pause·ended)는 지금 소리를 내는 쪽에서 온 것만 편집기에 전한다 — 쉬고 있는 쪽의 늦은 ended 가 편집기를 멈춰 보이게 하지 않게 */
   type PlayEvent = 'timeupdate' | 'play' | 'pause' | 'ended'
   const listeners: Record<PlayEvent, Array<() => void>> = { timeupdate: [], play: [], pause: [], ended: [] }
   const emit = (e: PlayEvent): void => { for (const f of listeners[e].slice()) f() }
-  for (const e of ['timeupdate', 'play', 'pause', 'ended'] as const) el.addEventListener(e, () => { if (!stretching()) emit(e) })
+  // 쉬고 있는 쪽 = 지금 길이 아니고 '재생 중' 으로 올라 있지도 않은 쪽. 막 끝난 <audio> 의 pause·ended 는 그 사이 속도를 바꿔도 전한다
+  for (const e of ['timeupdate', 'play', 'pause', 'ended'] as const) el.addEventListener(e, () => { if (!stretching() || marked === el) emit(e) })
 
   const stretching = (): boolean => rate !== 1 && st !== null
   const engine = (): Playing & { pause(): void } => stretching() ? st! : el
-  /** playback.ts 에 '재생 중' 으로 올려 둔 쪽 — 길이 바뀌면 옮긴다 */
-  let marked: Playing | null = null
   function mark(p: Playing | null): void { if (marked === p) return; if (marked) afterStop(marked); if (p) beforePlay(p); marked = p }
 
   /** 길을 바꾼다: 위치를 넘기고, 재생 중이었으면 새 길에서 이어 재생 */
@@ -65,11 +66,11 @@ export function createEditorPlayer(url: string, peak: number | undefined, dur: n
   function prepare(): void {
     if (loading || st || fallback) return
     if (!audioSupported() || typeof AudioWorkletNode === 'undefined' || dur > DECODE_MAX_SEC) { useFallback(dur > DECODE_MAX_SEC); return }
-    loading = createStretchPlayer(url, peak, rate).then(p => {
+    loading = createStretchPlayer(url, peak, rate, () => released).then(p => {
       loading = null
       if (released) { p.release(); return }
       st = p; p.rate = rate // 디코드하는 동안 바뀐 속도
-      p.on(e => { if (stretching()) emit(e) })
+      p.on(e => { if (stretching() || marked === p) emit(e) })
       if (rate !== 1) handover(el, 'st')
       else st.currentTime = el.currentTime
     }, () => { loading = null; if (!released) useFallback(false) })
@@ -81,7 +82,13 @@ export function createEditorPlayer(url: string, peak: number | undefined, dur: n
     if (pending) playEl()
   }
   /** 기다리던 재생을 <audio> 로. 손짓 밖이라 거절되면(아이폰) 멈춤으로 알린다 — 편집기 글리프가 '재생 중' 으로 남지 않게 */
-  function playEl(): void { pending = false; mark(el); void el.play().catch(() => { mark(null); emit('pause') }) }
+  function playEl(): void {
+    pending = false; mark(el)
+    void el.play().catch((e: unknown) => {
+      if (e instanceof Error && e.name === 'AbortError' && (stretching() || pending)) return // 곧바로 다른 속도로 넘어갔다(슬라이더가 1.0 을 지나감)
+      if (marked === el) { mark(null); emit('pause') }
+    })
+  }
 
   return {
     get currentTime() { return engine().currentTime },
