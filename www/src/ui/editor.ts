@@ -9,9 +9,9 @@ import { playbackGain } from '../core/playbackGain.ts'
 import { softClipCurve } from '../core/softclip.ts'
 import { recListStore, type RecItem } from '../state/index.ts'
 import { patchRec } from '../audio/recorder.ts'
-import { attachGain, beforePlay, afterStop } from '../audio/playback.ts'
+import { createEditorPlayer, type EditorPlayer } from '../audio/editorPlayer.ts'
 import { q, on, reflow, setOn, PLAY_GLYPH, PAUSE_GLYPH } from './dom.ts'
-import { displayName, releaseAudio, downloadRec, handOff, WAV_RESCUE_MAX_SEC } from './recList.ts'
+import { displayName, downloadRec, handOff, WAV_RESCUE_MAX_SEC } from './recList.ts'
 import { toast } from './toast.ts'
 import { t as tr } from '../core/i18n/index.ts'
 import { isNative } from '../platform/index.ts'
@@ -19,7 +19,7 @@ import { hideMenu, showMenuInstant } from './menu.ts'
 import { attachSwipeBack } from './swipeBack.ts'
 
 interface EdState {
-  idx: number; item: RecItem | null; audio: HTMLAudioElement | null
+  idx: number; item: RecItem | null; audio: EditorPlayer | null
   ptA: number | null; ptB: number | null
   /** 0 꺼짐 · 1 켜짐(A 부터) · 2 켜짐, A 보다 1 s 앞에서(프리롤) */
   loop: 0 | 1 | 2; bookmarks: number[]
@@ -64,7 +64,7 @@ function onTimeUpdate(): void {
   const d = dur(); if (!d) return
   setPosUI(ed.audio.currentTime)
 }
-function loopCheck(a: HTMLAudioElement): void { if (ed.loop && ed.ptA !== null && ed.ptB !== null && a.currentTime >= ed.ptB - 0.02) a.currentTime = loopStart() }
+function loopCheck(a: EditorPlayer): void { if (ed.loop && ed.ptA !== null && ed.ptB !== null && a.currentTime >= ed.ptB - 0.02) a.currentTime = loopStart() }
 // A-B 반복은 timeupdate(≈4 Hz, 최대 250 ms 늦음)가 아니라 rAF 로 검사
 let loopRaf: number | null = null
 function loopTick(): void {
@@ -197,11 +197,10 @@ function initDrag(): void {
 export function openEditor(item: RecItem): void {
   if (!recListStore.get().items.includes(item)) return
   hideMenu()
-  if (ed.audio) { releaseAudio(ed.audio); ed.audio = null }
+  if (ed.audio) { ed.audio.release(); ed.audio = null }
   ed.idx = 0; ed.item = item; ed.ptA = null; ed.ptB = null; ed.loop = 0; ed.bookmarks = item.bookmarks.slice(); ed.dragging = null; view = null
 
-  const audio = new Audio(item.url); audio.preservesPitch = true; audio.playbackRate = 1.0; audio.preload = 'auto'
-  attachGain(audio, item.peak) // 녹음 레벨 보정
+  const audio = createEditorPlayer(item.url, item.peak) // 녹음 레벨 보정 포함
   ed.audio = audio
   const updateDur = () => { if (ed.audio !== audio) return; q('ed-dur').textContent = fmtT(isFinite(audio.duration) && audio.duration > 0 ? Math.max(item.dur || 0, Math.round(audio.duration)) : (item.dur || 0)) }
   // webm duration=Infinity 트릭: 끝으로 seek 하면 durationchange 로 실제 길이가 온다
@@ -225,7 +224,7 @@ export function openEditor(item: RecItem): void {
   audio.addEventListener('play', startLoopWatch)
   audio.addEventListener('ended', () => {
     if (ed.audio !== audio) return
-    afterStop(audio)
+    audio.stopped()
     setPlayGlyph(false)
     if (ed.loop && ed.ptA !== null && ed.ptB !== null) { audio.currentTime = loopStart(); safePlay(audio) }
   })
@@ -249,7 +248,7 @@ export function openEditor(item: RecItem): void {
 }
 
 export function closeEditor(): void {
-  if (ed.audio) { releaseAudio(ed.audio); ed.audio = null }
+  if (ed.audio) { ed.audio.release(); ed.audio = null }
   if (loopRaf != null) { cancelAnimationFrame(loopRaf); loopRaf = null }
   peaks = null; ed.idx = -1; ed.item = null; ed.ptA = null; ed.ptB = null; ed.loop = 0; view = null // 닫힌 뒤 늦게 오는 ended 가 반복을 되살리지 않게
   if (ed.readyTimeout) clearTimeout(ed.readyTimeout)
@@ -276,23 +275,23 @@ function editTitle(): void {
 }
 
 /** play() 의 거부(AbortError·디코드 실패)를 삼키지 않는다 — 글리프가 '재생 중' 으로 남지 않게 */
-function safePlay(a: HTMLAudioElement): void { beforePlay(a); setPlayGlyph(true); a.play().catch(() => { if (ed.audio === a) { afterStop(a); setPlayGlyph(false); toast(tr('common.cantPlay')) } }) }
+function safePlay(a: EditorPlayer): void { a.willPlay(); setPlayGlyph(true); a.play().catch(() => { if (ed.audio === a) { a.stopped(); setPlayGlyph(false); toast(tr('common.cantPlay')) } }) }
 function togglePlay(): void {
   if (!ed.audio) return
   const a = ed.audio
   if (a.paused) {
     if (ed.loop && ed.ptA !== null && a.currentTime < loopStart()) a.currentTime = loopStart() // 반복이 꺼져 있으면 A 앞도 그냥 듣는다
-    beforePlay(a) // 보정 게인을 타는 경우 컨텍스트가 자고 있으면 무음이 된다 → 먼저 깨운다
+    a.willPlay() // 보정 게인을 타는 경우 컨텍스트가 자고 있으면 무음이 된다 → 먼저 깨운다
     setPlayGlyph(true)
     const tryPlay = () => { if (ed.audio !== a) return /* 편집기가 닫힌 뒤 canplay 가 와도 재생하지 않음 */; const p = a.play(); if (p && p.catch) p.catch(() => { setTimeout(() => { if (ed.audio && ed.audio.paused) { const p2 = ed.audio.play(); if (p2 && p2.catch) p2.catch(() => { setPlayGlyph(false) }) } }, 50) }) }
     if (a.readyState < 2) a.addEventListener('canplay', tryPlay, { once: true }); else tryPlay()
-  } else { a.pause(); afterStop(a); setPlayGlyph(false) }
+  } else { a.pause(); a.stopped(); setPlayGlyph(false) }
 }
 function setSpeed(v: number, persist = true): void {
   v = Math.max(0.5, Math.min(1.5, Math.round(v * 100) / 100))
   q('ed-speed-val').textContent = (Number.isInteger(v * 10) ? v.toFixed(1) : v.toFixed(2)) + '×'
   q<HTMLInputElement>('ed-speed').value = String(v)
-  if (ed.audio) { ed.audio.playbackRate = v; ed.audio.preservesPitch = true }
+  if (ed.audio) ed.audio.playbackRate = v // 음높이는 그대로(preservesPitch)
   if (persist && ed.item && ed.item.speed !== v) { const next = patchRec(ed.item, { speed: v }); if (next) ed.item = next }
 }
 /** 값 라벨 탭: 1.0 → 0.5 → 0.7 → 0.85 → 1.0 순환 (활 든 손으로 슬라이더 대신 한 번씩 탭) */

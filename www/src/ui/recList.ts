@@ -7,7 +7,7 @@ import { PAUSE_GLYPH, PLAY_GLYPH } from './dom.ts'
 import { saveFile, isIOS, isNative } from '../platform/index.ts'
 import { bufToWav } from '../core/wav.ts'
 import { recExt } from '../audio/recorder.ts'
-import { attachGain, beforePlay, afterStop, detachGain } from '../audio/playback.ts'
+import { attachGain, beforePlay, afterStop, releaseAudio } from '../audio/playback.ts'
 import { toast } from './toast.ts'
 import { t as tr } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
@@ -78,7 +78,6 @@ export async function downloadRec(item: RecItem): Promise<void> {
   const r = await saveFile(item.blob, recFileName(item)); if (!r.ok) toast(tr('common.saveFailed', { e: r.error }))
 }
 /** src 도 비운다 — WebView 는 동시 미디어 플레이어 수에 상한이 있어 붙잡고 있으면 재생이 조용히 실패한다 */
-export function releaseAudio(a: HTMLAudioElement): void { detachGain(a); try { a.pause(); a.removeAttribute('src'); a.load() } catch { /* */ } }
 export function stopPlayer(idx: number): void { const a = players[idx]; if (a) { releaseAudio(a); delete players[idx] } }
 
 /** 목록 메타 한 줄: 편집 흔적(북마크 n · A-B)과 삭제 예고. link 는 탭할 수 있는 꼬리('남기기' / '자동 삭제 안 함'), 없으면 null */
