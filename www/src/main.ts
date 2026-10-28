@@ -20,6 +20,7 @@ import { mountTuner, showTapHint, hideTapHint, setHistSec, histDiag, retheme, se
 import { mountTheme, onThemeChange } from './ui/theme.ts'
 import { mountLang } from './ui/lang.ts'
 import { t } from './core/i18n/index.ts'
+import { release, onHide, type Release } from './core/micLease.ts'
 import { onNotice } from './core/notice.ts'
 import { mountRefDrum } from './ui/refDrum.ts'
 import { mountMetro } from './ui/metro.ts'
@@ -97,8 +98,8 @@ const syncWake = () => { if (wantWake()) acquireWakeLock(); else releaseWakeLock
 onPlaybackChange(syncWake)
 onMic('afterOpen', syncWake)
 // 타이머는 마이크가 닫힐 때 같이 멈추되, 화면 숨김·편집기로 잠시 놓는 경우는 건드리지 않는다
-let releasingForHide = false, releasingForEditor = false
-onMic('afterClose', () => { if (!releasingForHide && !releasingForEditor) stopTimer(); syncWake(); stopInactivityWatch() })
+let releasing = false
+onMic('afterClose', () => { if (!releasing) stopTimer(); syncWake(); stopInactivityWatch() })
 metroStore.select(s => s.playing, syncWake)
 droneStore.select(s => s.pitchClass, syncWake)
 // 15분 무활동 자동 종료 — 연습 타이머와 무관하게 마이크가 켜져 있으면 항상 감시
@@ -112,23 +113,25 @@ function checkInactivity(): void {
 }
 onMic('afterOpen', () => { tunerStore.set({ lastActivityMs: Date.now() }); stopInactivityWatch(); inactInt = setInterval(checkInactivity, 30 * 1000) })
 settingsStore.select(s => s.wakeLock, syncWake)
-// 숨김: 마이크를 놓고 메트로놈·드론을 멈춘다(복귀 시 자동 재개 안 함). 녹음 중이면 마이크는 둔다
+/** 잠시 놓기(규칙은 core/micLease) — 놓았으면 true. 다시 여는 동안 "켜라" 고 하지 않게 micReopening 을 세운다 */
+function letGo(r: Release): boolean {
+  if (r === 'keep') return false
+  if (r === 'close') { releasing = true; tunerStore.set({ micReopening: true }); try { closeMic() } finally { releasing = false } } // closeMic 전에 — 닫히는 순간 renderEmpty 가 micReopening 을 본다
+  else { cancelOpen(); tunerStore.set({ micReopening: true }) } // getUserMedia 대기 중 — 무효화하지 않으면 뒤에서 열린 채 남는다
+  return true
+}
+const micNow = () => ({ micOpen: !!A.micStream, opening: isOpening(), recording: sessionStore.get().recording })
+// 숨김: 소리 나는 것은 전부 멈추고(복귀 시 자동 재개 안 함) 마이크를 놓는다. 녹음 중이면 마이크는 둔다(안드로이드 앱은 녹음을 먼저 저장)
 // 복귀: 컨텍스트 재개 + wake lock 재획득 + 놓았던 마이크를 다시 연다(못 열면 탭 안내)
 let micReleasedByHide = false, pendingToast: string | null = null
 on(document, 'visibilitychange', () => {
   if (document.visibilityState !== 'visible') {
-    // Android 는 백그라운드 앱의 마이크를 무음으로 만든다 → 무음 파일이 되기 전에 저장
-    if (isNative() && sessionStore.get().recording) { stopRec(); pendingToast = t('rec.savedOnHide') }
-    // 소리 나는 것은 전부 멈춘다 — A 듣기는 마이크를 놓을 때만 꺼져서, 마이크가 닫혀 있거나 녹음 중이면 뒤에서 계속 울렸다(2.5.7 까지)
-    const sounding = metroStore.get().playing || droneOn() || refToneStore.get().active
-    if (metroStore.get().playing) stopMetro()
-    stopDrone(); stopRefNote()
-    if (sounding && !pendingToast) pendingToast = t('app.stoppedOnHide')
-    if (A.micStream && !sessionStore.get().recording) {
-      micReleasedByHide = true; releasingForHide = true
-      tunerStore.set({ micReopening: true }) // closeMic 전에 — 닫히는 순간 renderEmpty 가 이 값을 본다
-      try { closeMic() } finally { releasingForHide = false }
-    } else if (isOpening()) { cancelOpen(); micReleasedByHide = true; tunerStore.set({ micReopening: true }) } // getUserMedia 대기 중 숨겨짐 — 무효화하지 않으면 뒤에서 열린 채 남는다
+    const plan = onHide({ ...micNow(), native: isNative(), metroPlaying: metroStore.get().playing, droneOn: droneOn(), refToneOn: refToneStore.get().active, hasPendingToast: pendingToast !== null })
+    if (plan.stopRec) stopRec()
+    if (plan.stopMetro) stopMetro()
+    stopDrone(); stopRefNote() // A 듣기는 마이크를 놓을 때만 꺼져서, 마이크가 닫혀 있거나 녹음 중이면 뒤에서 계속 울렸다(2.5.7 까지)
+    if (plan.setPending) pendingToast = t(plan.setPending)
+    if (letGo(plan.release)) micReleasedByHide = true
     return
   }
   resumeIfRunning(); syncWake()
@@ -142,12 +145,8 @@ let micReleasedByEditor = false
   const page = q('editor-page')
   const sync = (): void => {
     const open = page.classList.contains('open')
-    if (open && A.micStream && !sessionStore.get().recording) {
-      micReleasedByEditor = true; releasingForEditor = true
-      tunerStore.set({ micReopening: true }) // 다시 여는 0.2~0.5 초 동안 "켜라" 고 하지 않는다
-      try { closeMic() } finally { releasingForEditor = false }
-    } else if (open && isOpening()) { cancelOpen(); micReleasedByEditor = true; tunerStore.set({ micReopening: true }) }
-    else if (!open && micReleasedByEditor) {
+    if (open) { if (letGo(release(micNow()))) micReleasedByEditor = true }
+    else if (micReleasedByEditor) {
       micReleasedByEditor = false
       // 못 열면 숨김 경로와 같이 시작 버튼으로 받는다
       if (document.visibilityState === 'visible') tryOpenMic().then(ok => { if (!ok && !A.micStream && !isOpening()) showTapHint(tryOpenMic) })
