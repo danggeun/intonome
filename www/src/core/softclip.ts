@@ -4,7 +4,7 @@
  */
 export const SOFT_KNEE = 0.7
 /** 출력 천장 (−0.009 dBFS). tanh 는 float64 에서 x≳19 면 정확히 1.0 이라 C=1 이면 |y|=1 에 닿는다 */
-export const SOFT_CEIL = 0.999
+const SOFT_CEIL = 0.999
 
 export function softClip(x: number, knee = SOFT_KNEE): number {
   const a = Math.abs(x)

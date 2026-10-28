@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 라벨 없는 실제 녹음 진단 — "물리적으로 불가능한 출력" 과 "스펙트럼에 없는 음" 은 라벨 없이도 판정할 수 있다.
-// 사용: node --experimental-strip-types scripts/analyze-recording.mjs <wav> [--lo G3] [--hi E7] [--json out.json]
+// 사용: node scripts/analyze-recording.mjs <wav> [--lo G3] [--hi E7] [--json out.json]
 //   --lo/--hi  악기의 물리적 음역. 생략하면 음역 검사를 건너뛴다.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createYinFast } from '../www/src/core/pitch/yinFast.ts'

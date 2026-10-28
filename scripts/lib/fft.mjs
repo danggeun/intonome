@@ -1,4 +1,4 @@
-// 실수 입력 radix-2 FFT (벤치마크/코어 공용). 의존성 없음.
+// 실수 입력 radix-2 FFT — 옛 v1 어댑터(adapter-v1)와 그 테스트 전용. 앱은 core/pitch/fft.ts. v1 비교 수치가 그대로 남게 따로 둔다
 export function makeFFT(n) {
   if ((n & (n - 1)) !== 0) throw new Error('FFT size must be power of 2')
   const levels = Math.log2(n) | 0

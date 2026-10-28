@@ -3,7 +3,7 @@
  */
 export const REC_DB = 'intonome_rec', REC_STORE = 'recordings', META_STORE = 'meta', CHUNK_STORE = 'chunks'
 export const LEGACY_REC_DBS = ['gopractice_rec', 'tempotune_rec'] // 옛 이름(Go practice · TempoTune) DB — persist/legacy.ts 가 지운다
-export const REC_DB_VERSION = 4 // v3: meta 분리, v4: chunks
+const REC_DB_VERSION = 4 // v3: meta 분리, v4: chunks
 import { REC_TTL, expires } from '../core/recPolicy.ts'
 import { t } from '../core/i18n/index.ts'
 import { notice } from '../core/notice.ts'

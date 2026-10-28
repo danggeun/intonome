@@ -45,7 +45,7 @@ function setZoom(on: boolean): void {
 function updateZoomBtn(): void { const ok = ed.ptA !== null && ed.ptB !== null; q('ed-zoom-btn').classList.toggle('dim', !ok); if (!ok && view) setZoom(false) }
 // Chromium 은 MediaRecorder webm 의 duration 을 끝까지 seek 하기 전까지 Infinity 로 본다(crbug 642012) → item.dur 폴백
 const dur = () => (ed.audio && isFinite(ed.audio.duration) && ed.audio.duration > 0) ? ed.audio.duration : (ed.item?.dur ?? 0)
-export const PREROLL_SEC = 1
+const PREROLL_SEC = 1
 /** 반복 시작점: 프리롤이면 A−1 s (0 아래로는 안 감) */
 const loopStart = () => ed.ptA === null ? 0 : (ed.loop === 2 ? Math.max(0, ed.ptA - PREROLL_SEC) : ed.ptA)
 // 편집기의 정지는 위치를 유지하는 일시정지 ❚❚. 글리프 크기는 .playing 클래스로 CSS 가 맞춘다
@@ -263,7 +263,7 @@ export const isEditorOpen = (): boolean => ed.item !== null
 export const editorDiag = () => ({ ptA: ed.ptA, ptB: ed.ptB, loop: ed.loop, audio: ed.audio })
 
 /** 녹음 이름의 최대 길이 — 파일명·목록 카드가 감당할 수 있는 길이 */
-export const NAME_MAX = 40
+const NAME_MAX = 40
 function editTitle(): void {
   const current = ed.item ? ed.item.name : ''
   const newName = prompt(tr('ed.namePrompt'), current)

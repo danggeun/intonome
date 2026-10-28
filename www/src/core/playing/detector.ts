@@ -13,10 +13,9 @@ export interface DetectorParams {
   /** 한 연속 구간에서 피치가 이만큼(cents) 이상 단조 이동하면 말소리 억양으로 보고 attack 누적을 버린다. 비브라토는 왕복이라 기울기 ≈ 0 */
   driftMaxCents: number
 }
-/** 기본: 음악 우선 — 스타카토(150 ms 음 + 100 ms 공백)도 잡는다. 대화 음절도 대부분 연주로 센다 (speech fPlay ≈ 90%) */
+/** 음악 우선 — 스타카토(150 ms 음 + 100 ms 공백)도 잡는다. 대화 음절도 대부분 연주로 센다 (speech fPlay ≈ 90%).
+ * 엄격안(attackFrames 14 · missPenalty 5 · holdFrames 6)은 대화 음절(≤300 ms)을 거르지만(speech fPlay 0%) 스타카토·피치카토 런을 시작하지 못해 쓰지 않는다 */
 export const DEFAULT_DETECTOR: DetectorParams = { confMin: 0.6, harmonicsMin: 2, flatnessMax: 0.5, attackFrames: 6, missPenalty: 2, holdFrames: 11, driftMaxCents: 60 }
-/** 엄격: 대화 음절(≤300 ms)을 거른다 (speech fPlay 0%). 스타카토·피치카토 런은 시작하지 못한다. 현재 미사용 */
-export const STRICT_DETECTOR: DetectorParams = { ...DEFAULT_DETECTOR, attackFrames: 14, missPenalty: 5, holdFrames: 6 }
 
 export interface DetectorInput { conf: number; rmsOk: boolean; harmonics: number; flatness: number; /** 절대 cents (1200·log2(hz/440)), 없으면 NaN */ cents?: number }
 export interface Detector { push(f: DetectorInput): boolean; reset(): void; readonly on: boolean }

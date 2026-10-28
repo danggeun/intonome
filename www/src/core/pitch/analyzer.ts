@@ -58,7 +58,7 @@ export interface Analyzer {
 const SPEC_MIN_DB = 6 // octaveCorrect 의 기준과 같은 값
 /** 읽는 값: 0.37 s(5.5 Hz 비브라토 두 주기) 평균, 1.5 ¢ 넘게 움직여야 숫자가 바뀐다, 6 프레임 연속 한쪽으로 3 ¢ 넘으면 바로 따라간다 */
 const READ_S = 0.37
-export const DEFAULT_READOUT: Omit<ReadoutParams, 'windowFrames'> = { deadband: 1.5, trendFrames: 6, trendCents: 3 }
+const DEFAULT_READOUT: Omit<ReadoutParams, 'windowFrames'> = { deadband: 1.5, trendFrames: 6, trendCents: 3 }
 
 export function createAnalyzer(p: AnalyzerParams): Analyzer {
   const N = p.windowSize ?? 4096, sr = p.sampleRate

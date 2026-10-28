@@ -85,11 +85,11 @@ export function suspendIfIdle(): void { if (A.ac && A.ac.state === 'running' && 
 export const micOpen = (): boolean => !!A.micStream
 
 /** 설정 → 분석기 설정 (평활 계수는 43 Hz 프레임 기준) */
-export function analyzerSettings(): AnalyzerSettings {
+function analyzerSettings(): AnalyzerSettings {
   const s = settingsStore.get()
   return { rmsMin: s.rmsMin, smoothing: s.smoothing, refHz: s.refHz, tolCents: s.tolCents }
 }
-export function sendToWorker(m: WorkerIn, transfer?: Transferable[]): void { A.worker?.postMessage(m, transfer ?? []) }
+function sendToWorker(m: WorkerIn, transfer?: Transferable[]): void { A.worker?.postMessage(m, transfer ?? []) }
 
 function waitWorkerReady(w: Worker, timeoutMs: number): Promise<void> {
   return new Promise((res, rej) => {
@@ -157,7 +157,7 @@ export async function openMic(): Promise<MicResult> {
   }
 }
 /** getUserMedia 오류를 사용자가 행동할 수 있는 문장으로 */
-export function micErrorMessage(e: unknown): string {
+function micErrorMessage(e: unknown): string {
   const name = e instanceof Error ? e.name : ''
   const msg = e instanceof Error ? e.message : String(e)
   if (name === 'NotAllowedError' || name === 'PermissionDeniedError') return tr(isNative() ? 'mic.errDeniedNative' : 'mic.errDeniedWeb')

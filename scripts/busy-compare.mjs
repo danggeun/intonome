@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // 표준 회귀 세트 — "이 변경으로 튜너 화면이 더 부산해졌나 / 더 틀려졌나" 를 1분 안에 답한다.
 // 사용:
-//   npx tsx scripts/busy-compare.mjs --save  base.json          # 변경 전 기준 저장
-//   npx tsx scripts/busy-compare.mjs --compare base.json        # 변경 후 비교 (나빠진 칸에 ▲)
+//   node scripts/busy-compare.mjs --save  base.json          # 변경 전 기준 저장
+//   node scripts/busy-compare.mjs --compare base.json        # 변경 후 비교 (나빠진 칸에 ▲)
 //   옵션: --rec <dir>  실녹음 wav 폴더(리포 밖, 사용자 녹음) · --v1  리팩토링 전 v1 어댑터도 같이
 // 지표: 표시율 · 라벨 변화/초 · 0.1초 미만 스침/초 · 낼 수 없는 음(바이올린 솔3 미만) % · 트레이스에 그려지는 비율 %
 import { createAnalyzer } from '../www/src/core/pitch/analyzer.ts'

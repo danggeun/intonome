@@ -69,9 +69,9 @@ export function releaseWakeLock(): void { wakeGen++; wakeLock?.release().catch((
 
 // 끌어서 값을 바꿀 때의 눈금 진동. 앱: Capacitor Haptics 의 짧은 진동(VIBRATE 권한은 플러그인이 붙인다). 웹: navigator.vibrate.
 // 아이폰 웹: 사파리에 진동 기능이 없다. 대신 켜기/끄기 스위치(<input type=checkbox switch>, 사파리 17.4+)가 바뀔 때 iOS 가 내는 햅틱을 쓴다 — 숨긴 스위치를 코드로 누른다. 안 되는 기기면 조용히 아무 일도 없다
-export const TICK_MS = 8, TICK_STRONG_MS = 16
+const TICK_MS = 8, TICK_STRONG_MS = 16
 /** 약한 틱 사이 최소 간격. 빨리 돌려도 초당 25 번까지라 '웅' 이 아니라 '드르륵'. 센 틱(10 단위)은 빠뜨리지 않는다 */
-export const TICK_GAP_MS = 40
+const TICK_GAP_MS = 40
 let lastTick = -Infinity
 const iosSwitchHaptics = (): boolean => !isNative() && isIOS() && typeof HTMLInputElement !== 'undefined' && 'switch' in HTMLInputElement.prototype
 /** 이 기기에서 진동을 낼 수 있는가 (앱은 항상, 웹은 navigator.vibrate 가 있거나 아이폰 스위치 햅틱이 될 때) */
@@ -124,7 +124,7 @@ export function onFullscreenChange(cb: () => void): void {
 
 // 파일 저장
 /** 사용자 이름에서 경로 문자·제어 문자를 제거 */
-export function sanitizeFileName(name: string): string {
+function sanitizeFileName(name: string): string {
   const cleaned = name.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').replace(/\.{2,}/g, '.').trim().replace(/^\.+/, '')
   return (cleaned || 'recording').slice(0, 120)
 }

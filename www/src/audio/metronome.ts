@@ -45,7 +45,7 @@ async function ensureNode(): Promise<AudioWorkletNode> {
 }
 
 export type StartResult = { ok: true } | { ok: false; error: string }
-export function startMetro(): StartResult {
+function startMetro(): StartResult {
   if (!audioSupported()) return { ok: false, error: t('audio.cantStart') }
   metroStore.set({ playing: true })
   resetArrival()

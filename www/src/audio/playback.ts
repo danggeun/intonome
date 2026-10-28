@@ -48,7 +48,7 @@ export function onPlaybackChange(fn: () => void): void { listeners.push(fn) }
 function notify(): void { for (const f of listeners) f() }
 
 /** 요소를 버릴 때 노드도 끊는다 — WebView 의 동시 미디어 상한을 물고 있지 않게 */
-export function detachGain(audio: HTMLAudioElement): void {
+function detachGain(audio: HTMLAudioElement): void {
   active.delete(audio); notify()
   const c = chains.get(audio); if (!c) return
   try { c.src.disconnect(); c.gain.disconnect(); c.shaper.disconnect() } catch { /* 이미 끊김 */ }
@@ -57,7 +57,7 @@ export function detachGain(audio: HTMLAudioElement): void {
 /** 요소를 버린다 — 노드를 끊고 소스를 비운다(목록·편집기 공용) */
 export function releaseAudio(a: HTMLAudioElement): void { detachGain(a); try { a.pause(); a.removeAttribute('src'); a.load() } catch { /* */ } }
 /** 진단/테스트용. 그래프를 타지 않은 요소는 1 */
-export const gainOf = (audio: HTMLAudioElement): number => chains.get(audio)?.gain.gain.value ?? 1
+const gainOf = (audio: HTMLAudioElement): number => chains.get(audio)?.gain.gain.value ?? 1
 /** 진단/테스트용 — 재생 중인 요소들의 (게인, 진행 시각). <audio> 는 DOM 에 붙지 않으므로 여기서만 셀 수 있다 */
 export const playbackDiag = (): { active: boolean; gains: number[]; times: number[] } => ({
   active: playbackActive(),

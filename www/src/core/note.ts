@@ -5,7 +5,7 @@ export type KrNote = typeof KR[number]
 export const ENHARMONIC: Readonly<Partial<Record<KrNote, string>>> = { '도♯': '레♭', '레♯': '미♭', '파♯': '솔♭', '솔♯': '라♭', '라♯': '시♭' }
 /** 영문 음이름 (설정 noteNames 로 전환) */
 export const EN = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'] as const
-export const EN_ENHARMONIC: Readonly<Record<string, string>> = { 'C♯': 'D♭', 'D♯': 'E♭', 'F♯': 'G♭', 'G♯': 'A♭', 'A♯': 'B♭' }
+const EN_ENHARMONIC: Readonly<Record<string, string>> = { 'C♯': 'D♭', 'D♯': 'E♭', 'F♯': 'G♭', 'G♯': 'A♭', 'A♯': 'B♭' }
 import type { Lang } from './i18n/index.ts'
 export type NoteNames = 'ko' | 'en'
 /** 표시용 이름: 선택한 체계의 이름 + 보조 줄(다른 체계의 이름, 이명동음은 '/' 로. 예: 라♯→A♯/B♭, 최대 5글자) */

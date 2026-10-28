@@ -2,7 +2,7 @@
  * 전용 모드 다이얼의 수학. 화면은 ui/dial.ts 가 그린다. BPM 은 270° 호에 절대 위치, 링을 돌린 만큼 상대 회전.
  * 각도 규약: 12시가 0°, 시계 방향이 +. 호는 −135°에서 +135°까지.
  */
-export const ARC_DEG = 270
+const ARC_DEG = 270
 
 /** BPM → 호 위의 각도(°). 범위 밖은 끝에 고정 */
 export function bpmToAngle(bpm: number, min: number, max: number): number {
@@ -56,10 +56,10 @@ export const ARC_LABELS: ReadonlyArray<readonly [string, number, number]> = [
 ]
 
 /** 글자 크기: SVG font-size 는 viewBox user unit 이라 렌더 픽셀을 고정하고 user unit 을 다이얼 크기에 반비례로 준다 */
-export const DIAL_VIEWBOX = 320
+const DIAL_VIEWBOX = 320
 /** 목표 px. NAME_MAX_UNITS = 제일 좁은 Largo 구간(반지름 94 에서 호 약 55 unit) ÷ "LARGO" 폭(약 3.55 × font).
  *  다이얼이 작으면 용어는 상한에 묶인 채 다이얼과 같이 줄고, 렌더 크기가 NAME_MIN_PX 아래로 가면 뺀다 */
-export const NUM_TARGET_PX = 11, NAME_TARGET_PX = 10.5, NAME_MAX_UNITS = 15, NAME_MIN_PX = 9
+const NUM_TARGET_PX = 11, NAME_TARGET_PX = 10.5, NAME_MAX_UNITS = 15, NAME_MIN_PX = 9
 export function dialTypography(dialPx: number): { numUnits: number; nameUnits: number; showNames: boolean } {
   const k = DIAL_VIEWBOX / Math.max(1, dialPx)
   const nameUnits = NAME_TARGET_PX * k

@@ -129,7 +129,7 @@ function nudge(): void {
 
 // ── 시작 · 끝 ──
 /** 안내를 연다(설정의 '다시 보기'도 여기). onDone: 끝나거나 그만두면 한 번 */
-export function startTour(onDone?: () => void): void {
+function startTour(onDone?: () => void): void {
   if (active) return
   autoArmed = false
   onFinish = onDone ?? null

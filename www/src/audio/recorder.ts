@@ -18,15 +18,15 @@ export const recExt = (item: Pick<RecItem, 'ext' | 'mime'>): RecContainer => ite
 export function recFileName(item: RecItem): string { return 'intonome_' + item.name + '.' + recExt(item) }
 const stamp = (ms: number): string => { const n = new Date(ms); return `${n.getFullYear()}${String(n.getMonth() + 1).padStart(2, '0')}${String(n.getDate()).padStart(2, '0')}_${String(n.getHours()).padStart(2, '0')}${String(n.getMinutes()).padStart(2, '0')}` }
 /** 목록에 같은 이름이 있으면 _2, _3 … — 같은 분(分)에 짧은 테이크를 여러 번 하면 이름·파일명이 전부 같았다 */
-export function uniqueName(base: string, taken: ReadonlyArray<string> = recListStore.get().items.map(i => i.name)): string {
+function uniqueName(base: string, taken: ReadonlyArray<string> = recListStore.get().items.map(i => i.name)): string {
   if (!taken.includes(base)) return base
   for (let k = 2; ; k++) { const n = `${base}_${k}`; if (!taken.includes(n)) return n }
 }
 
 export type RecResult = { ok: true } | { ok: false; error: string }
 /** 조각 간격. 앱이 죽어도 이만큼만 잃는다 */
-export const REC_SLICE_MS = 10_000
-export function startRec(): RecResult {
+const REC_SLICE_MS = 10_000
+function startRec(): RecResult {
   if (!A.micStream) return { ok: false, error: t('rec.needMic') }
   if (recorder && recorder.state !== 'inactive') return { ok: false, error: t('rec.already') }
   const t0 = Date.now()

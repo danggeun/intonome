@@ -10,7 +10,7 @@ import { midiToHz } from './note.ts'
 import { hannWindow } from './pitch/fft.ts'
 
 /** 드론은 모든 악기에서 4옥타브 (262–494 Hz). 폰 스피커는 이 아래에서 급격히 작아진다. 드론은 음이름이 중요하지 옥타브는 아니다 */
-export const DRONE_OCTAVE = 4
+const DRONE_OCTAVE = 4
 /** 앱 음의 파형. 삼각파: 홀수 배음이 있어 폰 스피커에서도 또렷하다 */
 export const TONE_WAVE = 'triangle' as const
 /** 앱 음의 진폭 (A 듣기가 쓰던 값 그대로, 드론도 같다) */
@@ -18,17 +18,17 @@ export const TONE_GAIN = 0.22
 /** 켜고 끌 때의 램프. 없으면 '틱' 소리가 난다 */
 export const TONE_FADE_S = 0.03
 /** 노치 −3 dB 폭 = 기본음의 1/35 (기본음에서 ±25 ¢). 정수배는 주파수 오차가 없어 모든 배음에 같은 Hz 폭을 쓴다 */
-export const COMB_Q = 35
+const COMB_Q = 35
 /** 폭의 하한. 노치가 자리 잡는 시간은 폭에만 달려 있다: 60 dB 까지 ln(1000) / (π · 7.5 Hz) = 0.29 s */
-export const COMB_MIN_BW_HZ = 7.5
+const COMB_MIN_BW_HZ = 7.5
 /** 여기까지의 정수배를 자른다. 분석 대역(40–4200 Hz) 위에서 주기를 만들 수 있는 성분까지 */
-export const COMB_MAX_HZ = 8000
+const COMB_MAX_HZ = 8000
 /** 켜거나 음을 바꾼 뒤 노치가 자리 잡는 시간. 이 동안 튜너는 '--' */
 export const TONE_SETTLE_S = 0.3
 /** 끈 뒤에도 페이드아웃 + 여유만큼 계속 잘라낸다 */
 export const TONE_TAIL_S = 0.15
 /** 잘라내고 남은 소리가 잘라낸 소리의 이 비율보다 작으면 '연주 없음' (튜너 '--', 연습 시간도 안 센다) */
-export const TONE_GATE = 0.12
+const TONE_GATE = 0.12
 
 /** 음 (0 = 도 … 11 = 시) → 드론 주파수. 기준음(A = refHz)을 따른다 */
 export function droneHz(pitchClass: number, refHz: number): number {
@@ -47,7 +47,7 @@ export interface ToneFilter {
 }
 
 /** 앱 음이 켜져 있는 동안 튜너가 읽는 대역의 위쪽 끝. 분석 상한 4200 Hz 위의 성분(노치 범위 밖 배음 포함)을 8차 버터워스로 내린다: 8 kHz −33 dB, 10 kHz −48 dB */
-export const LP_HZ = 5000
+const LP_HZ = 5000
 const BUTTER8_Q = [0.5098, 0.6013, 0.9000, 2.5629]
 
 /** f 와 그 정수배(COMB_MAX_HZ, 나이퀴스트의 90 % 중 낮은 쪽까지)를 모두 노치로 자르고, LP_HZ 위를 걸러낸다 */
@@ -85,12 +85,12 @@ export function rms(x: ArrayLike<number>): number { let s = 0; for (let i = 0; i
 export const onlyTone = (residualRms: number, removedRms: number): boolean => residualRms < TONE_GATE * removedRms
 
 /** 앱 음 성분이 튜너 감도 문턱(rmsMin)의 이 비율 아래면 '마이크에 안 들린다' — 튜너가 반응할 수 있는 크기보다 20 dB 작다 */
-export const TONE_HEARD_OF_GATE = 0.1
+const TONE_HEARD_OF_GATE = 0.1
 /** 이만큼(≈ 85 ms) 연달아 안 들리면 잘라내기를 끈다 */
-export const TONE_QUIET_FRAMES = 4
+const TONE_QUIET_FRAMES = 4
 /** 끈 뒤 앱 음 성분이 이만큼(≈ 0.13 s) TONE_STEADY_REL 안에서 그대로면 다시 켠다 — 사람이 켜는 소리는 크기·위상이 이렇게 그대로일 수 없다 */
-export const TONE_STEADY_FRAMES = 6
-export const TONE_STEADY_REL = 0.01
+const TONE_STEADY_FRAMES = 6
+const TONE_STEADY_REL = 0.01
 /** 재는 배음: 5 kHz(분석 대역 위쪽)까지, 많아야 16 개 */
 const PROBE_MAX_HZ = 5000, PROBE_MAX_K = 16
 

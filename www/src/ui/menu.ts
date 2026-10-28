@@ -3,14 +3,14 @@ import { q, qs, on, reflow } from './dom.ts'
 import { attachSwipeBack } from './swipeBack.ts'
 import { dronePopOpen } from './drone.ts'
 
-export function toggleMenu(): void { q('menu-overlay').classList.toggle('open') }
+function toggleMenu(): void { q('menu-overlay').classList.toggle('open') }
 /** 편집기에서 돌아올 때: 트랜지션 없이 즉시 열린 상태로 */
 export function showMenuInstant(): void {
   const el = q('menu-overlay'); el.style.transition = 'none'; el.classList.add('open'); reflow(el); el.style.transition = ''
 }
 export function hideMenu(): void { q('menu-overlay').classList.remove('open') }
 export function openMenu(): void { q('menu-overlay').classList.add('open') }
-export const openSettings = (): void => q('settings-page').classList.add('open')
+const openSettings = (): void => q('settings-page').classList.add('open')
 export const closeSettings = (): void => q('settings-page').classList.remove('open')
 
 /** 화면을 덮고 있는 오버레이가 있는가 — 전역 단축키(Space)는 지금 보이는 화면의 것 */
