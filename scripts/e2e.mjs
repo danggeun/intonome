@@ -1073,22 +1073,26 @@ await scenario('editor: other speeds play through the app time stretch — speed
   /** 벽시계 0.8 s 동안 재생 위치가 간 비율 */
   const speed = () => p.evaluate(async () => { const a = window.__tt.editor().audio, t0 = performance.now(), c0 = a.currentTime; await new Promise(r => setTimeout(r, 800)); return (a.currentTime - c0) / ((performance.now() - t0) / 1000) })
   const tap = () => p.click('#ed-speed-val')
-  await tap(); await p.click('#ed-play-btn') // 0.5×
+  // 디코드가 끝나기 전에 바꾼 속도도 지킨다: 한 태스크에서 세 번 탭(1.0 → 0.5 → 0.7 → 0.85) — 디코드는 그 뒤에 끝난다
+  await p.evaluate(() => { const b = document.getElementById('ed-speed-val'); b.click(); b.click(); b.click() })
+  await p.click('#ed-play-btn')
   await waitUntil(p, () => window.__tt.playback().sources.includes('worklet'), 5000, 'stretch player playing')
-  let v = await speed(); assert.ok(v > 0.35 && v < 0.65, `0.5× → 위치는 초당 0.5 s: ${v.toFixed(2)}`)
-  await tap(); await sleep(p, 100); v = await speed() // 0.7× — 재생 중 같은 재생기에서
-  assert.equal(await src(), 'worklet'); assert.ok(v > 0.5 && v < 0.9, `0.7×: ${v.toFixed(2)}`)
-  await tap(); await tap() // 0.85× → 1.0×: <audio> 로 넘어가며 이어 재생
+  let v = await speed(); assert.ok(v > 0.65 && v < 1.05, `0.85× → 위치는 초당 0.85 s: ${v.toFixed(2)}`)
+  await tap() // 1.0×: <audio> 로 넘어가며 이어 재생
   const before = await p.evaluate(() => window.__tt.editor().audio.currentTime)
   await waitUntil(p, () => window.__tt.playback().sources.join() === 'element', 2000, 'back to the audio element')
   const after = await p.evaluate(() => window.__tt.editor().audio.currentTime)
   assert.ok(Math.abs(after - before) < 0.4, `넘어갈 때 위치를 잇는다: ${before.toFixed(2)} → ${after.toFixed(2)}`)
   assert.equal(await p.evaluate(() => window.__tt.editor().audio.paused), false)
-  // A-B 반복을 0.5× 로: A 0.5 s · B 1.3 s
-  await p.click('#ed-play-btn'); await waitUntil(p, () => window.__tt.editor().audio.paused, 2000, 'paused')
+  await p.evaluate(() => { window.__tt.editor().audio.currentTime = 0.2 }) // 끝에 닿지 않게
+  await tap(); await waitUntil(p, () => window.__tt.playback().sources.join() === 'worklet', 2000, 'stretch again') // 0.5×
+  v = await speed(); assert.ok(v > 0.35 && v < 0.65, `0.5×: ${v.toFixed(2)}`)
+  await tap(); await sleep(p, 100); v = await speed() // 0.7× — 재생 중 같은 재생기에서
+  assert.equal(await src(), 'worklet'); assert.ok(v > 0.5 && v < 0.9, `0.7×: ${v.toFixed(2)}`)
+  // A-B 반복을 0.7× 로: A 0.5 s · B 1.3 s
+  await p.click('#ed-play-btn'); await waitUntil(p, () => window.__tt.editor().audio.paused && document.getElementById('ed-play-btn').textContent === '▶', 2000, 'paused')
   await p.evaluate(() => { window.__tt.editor().audio.currentTime = 0.5 }); await p.click('#ed-a-btn')
   await p.evaluate(() => { window.__tt.editor().audio.currentTime = 1.3 }); await p.click('#ed-b-btn')
-  await tap() // 1.0 → 0.5
   await p.click('#ed-loop-btn') // 켜짐: A 로 가서 재생
   await waitUntil(p, () => window.__tt.playback().sources.includes('worklet'), 5000, 'looping on the stretch player')
   const seen = await p.evaluate(async () => { const a = window.__tt.editor().audio, xs = []; for (let i = 0; i < 26; i++) { xs.push(a.currentTime); await new Promise(r => setTimeout(r, 100)) } return xs })

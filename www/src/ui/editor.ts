@@ -219,6 +219,8 @@ export function openEditor(item: RecItem): void {
   audio.addEventListener('canplaythrough', ready, { once: true })
   audio.addEventListener('timeupdate', onTimeUpdate)
   audio.addEventListener('play', startLoopWatch)
+  // 재생기가 스스로 멈췄을 때(손짓 밖 재생 거절, 전화 등으로 끊김) 글리프를 맞춘다
+  audio.addEventListener('pause', () => { if (ed.audio === audio && audio.paused) { audio.stopped(); setPlayGlyph(false) } })
   audio.addEventListener('ended', () => {
     if (ed.audio !== audio) return
     audio.stopped()
@@ -360,11 +362,10 @@ async function exportAB(): Promise<void> {
   const item = ed.item
   try {
     // 모노 — 살아 있는 채널 하나(아이폰 녹음의 둘째 채널은 무음이다). 앱 안 재생과 같은 소리
-    const sr = 48000, mono = await decodeMono(item.url, sr)
-    const s0 = Math.floor(ed.ptA * sr), s1 = Math.min(mono.length, Math.floor(ed.ptB * sr)), len = s1 - s0 // B 가 반올림된 dur 를 넘을 수 있다
+    const sr = 48000, cut = await decodeMono(item.url, sr, ed.ptA, ed.ptB), len = cut.length // A–B 만 복사한다. B 가 반올림된 dur 를 넘으면 끝까지
     if (len <= 0) { toast(tr('ed.tooShort')); return }
     const offAC = new OfflineAudioContext(1, len, sr); const buf = offAC.createBuffer(1, len, sr)
-    buf.copyToChannel(mono.subarray(s0, s1), 0)
+    buf.copyToChannel(cut, 0)
     const src = offAC.createBufferSource(); src.buffer = buf
     // 앱 안 재생과 같은 보정(게인 + 소프트 리미터)
     const g = playbackGain(item.peak)

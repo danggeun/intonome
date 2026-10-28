@@ -14,7 +14,7 @@ import { notice } from '../core/notice.ts'
 import { t } from '../core/i18n/index.ts'
 import { isIOS } from '../platform/index.ts'
 
-export type PlayerEventName = 'loadedmetadata' | 'durationchange' | 'canplaythrough' | 'canplay' | 'timeupdate' | 'play' | 'ended'
+export type PlayerEventName = 'loadedmetadata' | 'durationchange' | 'canplaythrough' | 'canplay' | 'timeupdate' | 'play' | 'pause' | 'ended'
 export interface EditorPlayer {
   currentTime: number
   readonly duration: number
@@ -43,7 +43,11 @@ export function createEditorPlayer(url: string, peak: number | undefined, dur: n
   let fallback = false // 배속 재생기를 못 쓴다 → <audio> 의 배속
   let pending = false // 재생을 눌렀는데 배속 재생기가 아직 준비 중
   let released = false
-  const stEvents: Record<'timeupdate' | 'play' | 'ended', Array<() => void>> = { timeupdate: [], play: [], ended: [] }
+  /** 재생 이벤트(timeupdate·play·pause·ended)는 지금 소리를 내는 쪽에서 온 것만 편집기에 전한다 — 쉬고 있는 쪽의 늦은 ended 가 편집기를 멈춰 보이게 하지 않게 */
+  type PlayEvent = 'timeupdate' | 'play' | 'pause' | 'ended'
+  const listeners: Record<PlayEvent, Array<() => void>> = { timeupdate: [], play: [], pause: [], ended: [] }
+  const emit = (e: PlayEvent): void => { for (const f of listeners[e].slice()) f() }
+  for (const e of ['timeupdate', 'play', 'pause', 'ended'] as const) el.addEventListener(e, () => { if (!stretching()) emit(e) })
 
   const stretching = (): boolean => rate !== 1 && st !== null
   const engine = (): Playing & { pause(): void } => stretching() ? st! : el
@@ -64,8 +68,8 @@ export function createEditorPlayer(url: string, peak: number | undefined, dur: n
     loading = createStretchPlayer(url, peak, rate).then(p => {
       loading = null
       if (released) { p.release(); return }
-      st = p
-      p.on(e => { for (const f of stEvents[e].slice()) f() })
+      st = p; p.rate = rate // 디코드하는 동안 바뀐 속도
+      p.on(e => { if (stretching()) emit(e) })
       if (rate !== 1) handover(el, 'st')
       else st.currentTime = el.currentTime
     }, () => { loading = null; if (!released) useFallback(false) })
@@ -76,15 +80,15 @@ export function createEditorPlayer(url: string, peak: number | undefined, dur: n
     if (tooLong && isIOS()) notice(t('ed.speedFallback'), 5000)
     if (pending) playEl()
   }
-  /** 기다리던 재생을 <audio> 로 */
-  function playEl(): void { pending = false; mark(el); void el.play().catch(() => { mark(null) }) }
+  /** 기다리던 재생을 <audio> 로. 손짓 밖이라 거절되면(아이폰) 멈춤으로 알린다 — 편집기 글리프가 '재생 중' 으로 남지 않게 */
+  function playEl(): void { pending = false; mark(el); void el.play().catch(() => { mark(null); emit('pause') }) }
 
   return {
     get currentTime() { return engine().currentTime },
     set currentTime(v: number) { el.currentTime = v; if (st) st.currentTime = v },
     get duration() { return el.duration },
     get paused() { return engine().paused && !pending },
-    get readyState() { return el.readyState },
+    get readyState() { return stretching() ? 4 : el.readyState },
     get playbackRate() { return rate },
     set playbackRate(v: number) {
       const was = stretching()
@@ -100,15 +104,18 @@ export function createEditorPlayer(url: string, peak: number | undefined, dur: n
     async play() {
       if (rate !== 1 && !st && !fallback) { pending = true; prepare(); return } // 준비되면 handover 가 시작한다
       if (stretching()) { st!.play(); return }
-      return el.play()
+      // 기다리던 <audio> 재생을 이 재생기가 스스로 끊은 것(배속으로 넘김)은 실패가 아니다
+      return el.play().catch((e: unknown) => { if (e instanceof Error && e.name === 'AbortError' && (stretching() || pending)) return; throw e })
     },
     pause() { pending = false; el.pause(); st?.pause() },
     load: () => el.load(),
     willPlay: () => mark(stretching() ? st : el), // 배속 재생기를 기다리는 동안은 <audio> 로 — 컨텍스트를 이 손짓 안에서 깨워야 한다(아이폰)
     stopped: () => mark(null),
     addEventListener(type, fn, opts) {
-      el.addEventListener(type, fn, opts)
-      if (type === 'timeupdate' || type === 'play' || type === 'ended') stEvents[type].push(fn)
+      if (type !== 'timeupdate' && type !== 'play' && type !== 'pause' && type !== 'ended') { el.addEventListener(type, fn, opts); return }
+      const list = listeners[type]
+      const once = (): void => { list.splice(list.indexOf(once), 1); fn() }
+      list.push(opts?.once ? once : fn)
     },
     release() { released = true; pending = false; mark(null); releaseAudio(el); st?.release(); st = null },
   }

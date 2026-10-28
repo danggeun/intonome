@@ -46,8 +46,9 @@ export async function createStretchPlayer(url: string, peak: number | undefined,
     get ended() { return ended },
     get currentTime() { return now() },
     set currentTime(t: number) {
+      if (Number.isNaN(t)) return
       pos = Math.max(0, Math.min(duration, t)); at = ac.currentTime; ended = false; gen++
-      node.port.postMessage({ type: 'seek', at: pos, gen })
+      node.port.postMessage({ type: 'seek', at: pos, gen, play: !paused })
       emit('timeupdate')
     },
     get rate() { return r },

@@ -30,7 +30,7 @@ export function createStretcher(src: Float32Array, sampleRate: number, rate = 1)
   const acc = new Float32Array(n) // 겹쳐 더하는 중인 출력. 앞 hs 가 다 차면 내보낸다
   const ready = new Float32Array(hs) // 다 찬 출력 반 프레임
   let readyAt = hs // ready 에서 다음에 읽을 자리 (hs = 비었음)
-  let readyBest = 0 // ready 를 만든 프레임의 소스 시작 — 위치 보고용
+  let readyNom = 0 // ready 를 만든 프레임의 명목 소스 위치 — 위치 보고용(고른 자리 ±10 ms 대신 명목 자리로 재야 위치가 뒤로 가지 않는다)
   let nominal = 0 // 다음 프레임의 명목 소스 위치 (소수)
   let prev = -1 // 앞 프레임의 소스 시작. -1 = 고르지 않는다(처음·seek 직후)
   let draining = false, ended = false
@@ -44,7 +44,7 @@ export function createStretcher(src: Float32Array, sampleRate: number, rate = 1)
     if (nom < 0 || nom + n > src.length) return false
     let best = nom
     const tpl = prev + hs
-    if (prev >= 0 && tpl + n <= src.length) {
+    if (prev >= 0 && tpl + hs <= src.length) { // 닮음은 앞 반창(hs)만 읽는다
       const lo = Math.max(0, nom - d), hi = Math.min(src.length - n, nom + d)
       let bestC = -Infinity
       for (let c = lo; c <= hi; c += 4) { const s = corr(c, tpl, 4); if (s > bestC) { bestC = s; best = c } }
@@ -54,18 +54,19 @@ export function createStretcher(src: Float32Array, sampleRate: number, rate = 1)
     }
     for (let i = 0; i < n; i++) acc[i]! += src[best + i]! * win[i]!
     ready.set(acc.subarray(0, hs)); acc.copyWithin(0, hs); acc.fill(0, hs)
-    readyAt = 0; readyBest = best; jumped = null
+    readyAt = 0; readyNom = nominal; jumped = null
     prev = best; nominal += hs * st.rate
     return true
   }
   /** 소스 끝: 마지막 프레임의 꼬리(내려가는 반창)를 내보내고 끝 */
-  function drain(): void { ready.set(acc.subarray(0, hs)); acc.fill(0); readyAt = 0; readyBest = prev >= 0 ? prev + hs : Math.round(nominal); draining = true }
+  function drain(): void { ready.set(acc.subarray(0, hs)); acc.fill(0); readyAt = 0; readyNom = nominal; draining = true }
 
   const st: Stretcher = {
     rate,
-    get position() { return jumped ?? (readyAt < hs ? readyBest + readyAt : Math.round(nominal)) },
+    get position() { return jumped ?? Math.round(readyAt < hs ? readyNom + readyAt * st.rate : nominal) },
     get ended() { return ended },
     seek(s, crossfade = true) {
+      if (!Number.isFinite(s)) return
       nominal = Math.max(0, Math.min(src.length, s)); prev = -1; draining = false; ended = false
       if (!crossfade) { acc.fill(0); readyAt = hs; jumped = null } else jumped = Math.round(nominal)
     },

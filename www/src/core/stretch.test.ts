@@ -45,6 +45,12 @@ describe('position, speed changes and jumps', () => {
     for (let i = 0; i < SR / 128; i++) st.render(blk)
     expect(st.position / SR).toBeCloseTo(2.0, 1)
   })
+  test('position never goes backwards while playing (a clock the editor can draw); a NaN jump is ignored', () => {
+    const st = createStretcher(sine(440, 3), SR, 0.7), blk = new Float32Array(128)
+    let last = -1
+    for (let i = 0; i < 400; i++) { st.render(blk); expect(st.position).toBeGreaterThanOrEqual(last); last = st.position }
+    st.seek(NaN); st.render(blk); expect(Number.isFinite(st.position)).toBe(true); expect(blk.every(Number.isFinite)).toBe(true)
+  })
   test('a jump while playing cross-fades: no click, continues from the new place', () => {
     const src = sine(440, 4), st = createStretcher(src, SR, 0.7), blk = new Float32Array(128), out: number[] = []
     for (let i = 0; i < 100; i++) { st.render(blk); out.push(...blk) }

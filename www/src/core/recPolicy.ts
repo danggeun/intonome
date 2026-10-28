@@ -17,5 +17,6 @@ export function warnDaysLeft(ts: number | undefined, keep: boolean | undefined, 
   return d < REC_WARN_DAYS ? d : null
 }
 
-/** 녹음 파일을 통째로 디코드하는 일(구간 WAV 저장 · webm → WAV 변환 · 편집기 배속 재생)의 상한 (s). 10 분 = 48 kHz 스테레오 PCM 약 230 MB — 아이폰 탭이 버티는 선 */
+/** 녹음 파일을 통째로 디코드하는 일(구간 WAV 저장 · webm → WAV 변환 · 편집기 배속 재생)의 상한 (s). 10 분 = 48 kHz 스테레오 PCM 약 230 MB
+ * (배속 재생은 그 위에 한 채널 115 MB 를 잠깐 더 쓰고 그 채널만 남긴다). 60 분(약 690 MB)은 아이폰 탭이 죽었다 */
 export const DECODE_MAX_SEC = 600
