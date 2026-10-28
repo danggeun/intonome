@@ -12,7 +12,7 @@ const AREAS = [
   { e2e: ['rec', 'recording', 'playback', 'editor', 'ux'],
     files: [/^www\/src\/audio\/recorder\.ts$/, /^www\/src\/persist\/recordingsDb\.ts$/, /^www\/src\/ui\/(recList|recHeader)\.ts$/, /^www\/src\/core\/(recPolicy|container|wav|peaks)\.ts$/] },
   { e2e: ['editor', 'ux', 'playback', 'keys'],
-    files: [/^www\/src\/ui\/editor\.ts$/, /^www\/src\/audio\/(playback|editorPlayer)\.ts$/, /^www\/src\/core\/(playbackGain|softclip|editRange)\.ts$/] },
+    files: [/^www\/src\/ui\/editor\.ts$/, /^www\/src\/audio\/(playback|editorPlayer|stretchPlayer|stretch\.worklet|decode)\.ts$/, /^www\/src\/core\/(playbackGain|softclip|editRange|stretch|mono)\.ts$/] },
   { e2e: ['first-run'], files: [/^www\/src\/(ui|persist)\/tour\.ts$/, /^www\/src\/core\/(tourPlace|metro\/card)\.ts$/] },
   { e2e: ['settings', 'theme', 'first launch', 'i18n', 'first-run'], files: [/^www\/src\/state\//, /^www\/src\/persist\/(settings|legacy)\.ts$/] },
   { e2e: ['i18n', 'first launch', 'settings: note names'], shots: true, files: [/^www\/src\/core\/i18n\//, /^www\/src\/ui\/lang\.ts$/] },

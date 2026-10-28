@@ -1063,6 +1063,62 @@ await scenario('editor: A/B/loop/bookmark flows', 'violin_A4.wav', async p => {
   assert.equal(await p.evaluate(() => document.getElementById('ed-speed-val').textContent), '0.75×')
 })
 
+// 1.0× 가 아닌 속도는 앱이 직접 늘인다(아이폰 WebKit 의 <audio> 배속이 Web Audio 에 연결되면 깨진다) — 같은 코드가 크로미움에서도 돈다
+await scenario('editor: other speeds play through the app time stretch — speed, hand-over while playing, A-B loop, end', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#rec-hdr-btn'); await sleep(p, 3200); await p.click('#rec-hdr-btn'); await sleep(p, 800)
+  await p.click('#menu-btn'); await p.click('[data-action="edit"][data-idx="0"]')
+  await waitUntil(p, () => !document.getElementById('ed-play-btn').disabled, 5000, 'editor ready')
+  const src = () => p.evaluate(() => window.__tt.playback().sources.join())
+  /** 벽시계 0.8 s 동안 재생 위치가 간 비율 */
+  const speed = () => p.evaluate(async () => { const a = window.__tt.editor().audio, t0 = performance.now(), c0 = a.currentTime; await new Promise(r => setTimeout(r, 800)); return (a.currentTime - c0) / ((performance.now() - t0) / 1000) })
+  const tap = () => p.click('#ed-speed-val')
+  await tap(); await p.click('#ed-play-btn') // 0.5×
+  await waitUntil(p, () => window.__tt.playback().sources.includes('worklet'), 5000, 'stretch player playing')
+  let v = await speed(); assert.ok(v > 0.35 && v < 0.65, `0.5× → 위치는 초당 0.5 s: ${v.toFixed(2)}`)
+  await tap(); await sleep(p, 100); v = await speed() // 0.7× — 재생 중 같은 재생기에서
+  assert.equal(await src(), 'worklet'); assert.ok(v > 0.5 && v < 0.9, `0.7×: ${v.toFixed(2)}`)
+  await tap(); await tap() // 0.85× → 1.0×: <audio> 로 넘어가며 이어 재생
+  const before = await p.evaluate(() => window.__tt.editor().audio.currentTime)
+  await waitUntil(p, () => window.__tt.playback().sources.join() === 'element', 2000, 'back to the audio element')
+  const after = await p.evaluate(() => window.__tt.editor().audio.currentTime)
+  assert.ok(Math.abs(after - before) < 0.4, `넘어갈 때 위치를 잇는다: ${before.toFixed(2)} → ${after.toFixed(2)}`)
+  assert.equal(await p.evaluate(() => window.__tt.editor().audio.paused), false)
+  // A-B 반복을 0.5× 로: A 0.5 s · B 1.3 s
+  await p.click('#ed-play-btn'); await waitUntil(p, () => window.__tt.editor().audio.paused, 2000, 'paused')
+  await p.evaluate(() => { window.__tt.editor().audio.currentTime = 0.5 }); await p.click('#ed-a-btn')
+  await p.evaluate(() => { window.__tt.editor().audio.currentTime = 1.3 }); await p.click('#ed-b-btn')
+  await tap() // 1.0 → 0.5
+  await p.click('#ed-loop-btn') // 켜짐: A 로 가서 재생
+  await waitUntil(p, () => window.__tt.playback().sources.includes('worklet'), 5000, 'looping on the stretch player')
+  const seen = await p.evaluate(async () => { const a = window.__tt.editor().audio, xs = []; for (let i = 0; i < 26; i++) { xs.push(a.currentTime); await new Promise(r => setTimeout(r, 100)) } return xs })
+  assert.ok(seen.every(t => t > 0.45 && t < 1.45), `A-B 안에서만: ${seen.map(t => t.toFixed(2)).join(' ')}`)
+  assert.ok(seen.some((t, i) => i > 0 && t < seen[i - 1] - 0.3), `B 에서 A 로 돌아간다: ${seen.map(t => t.toFixed(2)).join(' ')}`)
+  // 끝까지 가면 멈춘다
+  await p.click('#ed-loop-btn'); await p.click('#ed-loop-btn') // 1초 전부터 → 꺼짐
+  const d = await p.evaluate(() => window.__tt.editor().audio.duration); assert.ok(isFinite(d) && d > 2, 'duration ' + d)
+  await p.evaluate(d => { window.__tt.editor().audio.currentTime = d - 0.3 }, d)
+  await waitUntil(p, () => window.__tt.editor().audio.paused && document.getElementById('ed-play-btn').textContent === '▶', 3000, 'stopped at the end')
+  assert.equal(await p.evaluate(() => window.__tt.playback().active), false)
+  assert.equal(await p.evaluate(() => window.__tt.stats().acState), 'running')
+})
+
+// A-B 저장은 살아 있는 채널 하나를 모노 WAV 로(아이폰 녹음은 둘째 채널이 무음이다) — 앱 안 재생과 같은 보정 게인
+await scenario('editor: A-B WAV is one channel, at the in-app level, A to B long', 'violin_A4_m20.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#rec-hdr-btn'); await sleep(p, 3000); await p.click('#rec-hdr-btn'); await sleep(p, 800)
+  await p.click('#menu-btn'); await p.click('[data-action="edit"][data-idx="0"]')
+  await waitUntil(p, () => !document.getElementById('ed-play-btn').disabled, 5000, 'editor ready')
+  await p.evaluate(() => { window.__tt.editor().audio.currentTime = 0.5 }); await p.click('#ed-a-btn')
+  await p.evaluate(() => { window.__tt.editor().audio.currentTime = 1.5 }); await p.click('#ed-b-btn')
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 10000 }), p.click('#ed-export-btn')])
+  const b = readFileSync(await dl.path())
+  const ch = b.readUInt16LE(22), sr = b.readUInt32LE(24), n = b.readUInt32LE(40) / 2
+  assert.equal(ch, 1, '모노'); assert.ok(Math.abs(n / sr - 1.0) < 0.03, `A→B 길이 1 s: ${(n / sr).toFixed(3)}`)
+  let peak = 0; for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(b.readInt16LE(44 + i * 2)))
+  assert.ok(peak / 32768 > 0.5, `조용한 녹음도 보정된 크기: 피크 ${(peak / 32768).toFixed(2)}`)
+})
+
 await scenario('keys: Space belongs to the screen that is showing', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   const metroOn = () => p.evaluate(() => document.getElementById('metro-play-btn').textContent === '■')

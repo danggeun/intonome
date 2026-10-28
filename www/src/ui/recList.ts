@@ -2,7 +2,7 @@
 import { recListStore, settingsStore, type RecItem } from '../state/index.ts'
 import { fmtT } from '../core/format.ts'
 import { deleteRec, restoreDeleted, recFileName, patchRec } from '../audio/recorder.ts'
-import { expires, warnDaysLeft } from '../core/recPolicy.ts'
+import { expires, warnDaysLeft, DECODE_MAX_SEC } from '../core/recPolicy.ts'
 import { PAUSE_GLYPH, PLAY_GLYPH } from './dom.ts'
 import { saveFile, isIOS, isNative } from '../platform/index.ts'
 import { bufToWav } from '../core/wav.ts'
@@ -28,7 +28,7 @@ function getPlayer(idx: number): HTMLAudioElement {
   if (!a) {
     const item = recListStore.get().items[idx]!
     a = new Audio(item.url)
-    attachGain(a, item.peak) // 녹음 레벨 보정. 게인이 1 이면 요소를 건드리지 않는다
+    attachGain(a, item.peak) // 레벨 보정 · 첫 채널을 양쪽 귀로(audio/playback)
     a.ontimeupdate = () => {
       const sk = document.getElementById('rec-seek-' + idx) as HTMLInputElement | null, tm = document.getElementById('rec-time-' + idx)
       if (sk && a!.duration) { sk.max = String(isFinite(a!.duration) ? a!.duration : item.dur); sk.value = String(a!.currentTime) } // 크로미움 WebM 은 duration 이 Infinity (crbug 642012) — 슬라이더가 100 기준으로 깨진다
@@ -51,8 +51,6 @@ function playPause(idx: number): void {
   if (a.paused) { beforePlay(a); setPlayBtn(idx, true); a.play().catch(() => { afterStop(a); setPlayBtn(idx, false); toast(tr('common.cantPlay')) }) } else { a.pause(); afterStop(a); setPlayBtn(idx, false) }
 }
 function seek(idx: number): void { const sk = document.getElementById('rec-seek-' + idx) as HTMLInputElement | null, a = getPlayer(idx); if (sk && a.duration) a.currentTime = +sk.value }
-/** 옛 webm 녹음을 아이폰에서 열 수 있게 WAV 로 변환할 상한 (디코드 메모리: 48 kHz 모노 10분 ≈ 115 MB) */
-export const WAV_RESCUE_MAX_SEC = 600
 /** iOS: await 를 거친 뒤에는 탭의 활성화 창이 지나 공유 시트가 거부된다 → 토스트를 띄우고 그 탭 안에서 saveFile. 그 외는 바로 저장 */
 export function handOff(blob: Blob, name: string): void {
   const go = (): void => { void saveFile(blob, name).then(r => { if (!r.ok) toast(tr('common.saveFailed', { e: r.error })) }) }
@@ -62,8 +60,8 @@ export function handOff(blob: Blob, name: string): void {
  * 10 분이 넘으면(디코드 메모리) 아이폰은 안내만, 안드로이드 앱은 webm 그대로 */
 let converting = false // 변환은 10 분에 Float32 ≈ 115 MB — 연타로 두 번 돌리지 않는다
 export async function downloadRec(item: RecItem): Promise<void> {
-  if ((isIOS() || isNative()) && recExt(item) === 'webm' && (isIOS() || item.dur <= WAV_RESCUE_MAX_SEC)) {
-    if (item.dur > WAV_RESCUE_MAX_SEC) { toast(tr('rec.tooLongConvert')); return }
+  if ((isIOS() || isNative()) && recExt(item) === 'webm' && (isIOS() || item.dur <= DECODE_MAX_SEC)) {
+    if (item.dur > DECODE_MAX_SEC) { toast(tr('rec.tooLongConvert')); return }
     toast(tr('rec.converting'))
     if (converting) return
     converting = true

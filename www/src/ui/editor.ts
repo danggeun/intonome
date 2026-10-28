@@ -10,9 +10,11 @@ import { softClipCurve } from '../core/softclip.ts'
 import { recListStore, type RecItem } from '../state/index.ts'
 import { patchRec } from '../audio/recorder.ts'
 import { createEditorPlayer, type EditorPlayer } from '../audio/editorPlayer.ts'
+import { decodeMono } from '../audio/decode.ts'
 import { viewRange as viewOf, frac as fracIn, timeAt, zoomWindow, clampA, clampB, loopStart as loopStartOf, clampSpeed, speedLabel, nextPreset, type TimeWindow } from '../core/editRange.ts'
 import { q, on, reflow, setOn, PLAY_GLYPH, PAUSE_GLYPH } from './dom.ts'
-import { displayName, downloadRec, handOff, WAV_RESCUE_MAX_SEC } from './recList.ts'
+import { displayName, downloadRec, handOff } from './recList.ts'
+import { DECODE_MAX_SEC } from '../core/recPolicy.ts'
 import { toast } from './toast.ts'
 import { t as tr } from '../core/i18n/index.ts'
 import { isNative } from '../platform/index.ts'
@@ -102,7 +104,7 @@ function nudge(which: 'a' | 'b', d: number): void {
   updateHandles(); if (ed.ptA !== null) updateABtn(); if (ed.ptB !== null) updateBBtn(); persistEdit()
 }
 /** 10 분이 넘는 녹음은 구간 저장이 안 된다(디코드 메모리) — 열 때부터 흐리게, 눌러야 알게 하지 않는다 */
-const tooLongToCut = (): boolean => !!ed.item && ed.item.dur > WAV_RESCUE_MAX_SEC
+const tooLongToCut = (): boolean => !!ed.item && ed.item.dur > DECODE_MAX_SEC
 function checkExportBtn(): void { q('ed-export-btn').classList.toggle('dim', tooLongToCut() || ed.ptA === null || ed.ptB === null) }
 
 /** 편집 상태(북마크/A-B)를 녹음 항목에 저장 — 다시 열어도 그대로 */
@@ -195,7 +197,7 @@ export function openEditor(item: RecItem): void {
   if (ed.audio) { ed.audio.release(); ed.audio = null }
   ed.idx = 0; ed.item = item; ed.ptA = null; ed.ptB = null; ed.loop = 0; ed.bookmarks = item.bookmarks.slice(); ed.dragging = null; view = null
 
-  const audio = createEditorPlayer(item.url, item.peak) // 녹음 레벨 보정 포함
+  const audio = createEditorPlayer(item.url, item.peak, item.dur) // 레벨 보정 · 배속은 앱이 직접(audio/editorPlayer)
   ed.audio = audio
   const updateDur = () => { if (ed.audio !== audio) return; q('ed-dur').textContent = fmtT(isFinite(audio.duration) && audio.duration > 0 ? Math.max(item.dur || 0, Math.round(audio.duration)) : (item.dur || 0)) }
   // webm duration=Infinity 트릭: 끝으로 seek 하면 durationchange 로 실제 길이가 온다
@@ -286,7 +288,7 @@ function setSpeed(v: number, persist = true): void {
   v = clampSpeed(v)
   q('ed-speed-val').textContent = speedLabel(v)
   q<HTMLInputElement>('ed-speed').value = String(v)
-  if (ed.audio) ed.audio.playbackRate = v // 음높이는 그대로(preservesPitch)
+  if (ed.audio) ed.audio.playbackRate = v // 음높이는 그대로
   if (persist && ed.item && ed.item.speed !== v) { const next = patchRec(ed.item, { speed: v }); if (next) ed.item = next }
 }
 /** 값 라벨 탭: 프리셋 순환(core/editRange) */
@@ -357,13 +359,12 @@ async function exportAB(): Promise<void> {
   if (tooLongToCut()) { toast(tr('ed.tooLongCut')); return }
   const item = ed.item
   try {
-    const arrayBuf = await (await fetch(item.url)).arrayBuffer()
-    const decoded = await new OfflineAudioContext(1, 1, 48000).decodeAudioData(arrayBuf) // 디코드용 AudioContext 를 새로 만들지 않는다
-    const sr = decoded.sampleRate, ch = decoded.numberOfChannels
-    const s0 = Math.floor(ed.ptA * sr), s1 = Math.min(decoded.length, Math.floor(ed.ptB * sr)), len = s1 - s0 // B 가 반올림된 dur 를 넘을 수 있다
+    // 모노 — 살아 있는 채널 하나(아이폰 녹음의 둘째 채널은 무음이다). 앱 안 재생과 같은 소리
+    const sr = 48000, mono = await decodeMono(item.url, sr)
+    const s0 = Math.floor(ed.ptA * sr), s1 = Math.min(mono.length, Math.floor(ed.ptB * sr)), len = s1 - s0 // B 가 반올림된 dur 를 넘을 수 있다
     if (len <= 0) { toast(tr('ed.tooShort')); return }
-    const offAC = new OfflineAudioContext(ch, len, sr); const buf = offAC.createBuffer(ch, len, sr)
-    for (let c = 0; c < ch; c++) buf.copyToChannel(decoded.getChannelData(c).slice(s0, s1), c)
+    const offAC = new OfflineAudioContext(1, len, sr); const buf = offAC.createBuffer(1, len, sr)
+    buf.copyToChannel(mono.subarray(s0, s1), 0)
     const src = offAC.createBufferSource(); src.buffer = buf
     // 앱 안 재생과 같은 보정(게인 + 소프트 리미터)
     const g = playbackGain(item.peak)

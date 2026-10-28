@@ -151,6 +151,7 @@ export const EN: Record<TKey, string> = {
   'ed.needAB': 'Set points A and B first',
   'ed.tooLongCut': 'Recordings over 10 minutes can’t be cut',
   'ed.tooShort': 'The section is too short',
+  'ed.speedFallback': 'On iPhone, recordings over 10 minutes may sound uneven at other speeds',
   'ed.aEarlier': 'Move A 0.25 s earlier',
   'ed.aLater': 'Move A 0.25 s later',
   'ed.bEarlier': 'Move B 0.25 s earlier',

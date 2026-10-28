@@ -158,6 +158,7 @@ export const KO = {
   'ed.needAB': 'A, B 지점을 먼저 정해 주세요',
   'ed.tooLongCut': '10분이 넘는 녹음은 구간을 잘라낼 수 없어요',
   'ed.tooShort': '구간이 너무 짧아요',
+  'ed.speedFallback': '10분이 넘는 녹음은 아이폰에서 속도를 바꾸면 소리가 고르지 않을 수 있어요',
   'ed.aEarlier': 'A 0.25초 앞으로',
   'ed.aLater': 'A 0.25초 뒤로',
   'ed.bEarlier': 'B 0.25초 앞으로',

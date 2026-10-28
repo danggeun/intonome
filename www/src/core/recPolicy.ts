@@ -16,3 +16,6 @@ export function warnDaysLeft(ts: number | undefined, keep: boolean | undefined, 
   const d = Math.max(0, Math.floor((ts + REC_TTL - now) / 86400000))
   return d < REC_WARN_DAYS ? d : null
 }
+
+/** 녹음 파일을 통째로 디코드하는 일(구간 WAV 저장 · webm → WAV 변환 · 편집기 배속 재생)의 상한 (s). 10 분 = 48 kHz 스테레오 PCM 약 230 MB — 아이폰 탭이 버티는 선 */
+export const DECODE_MAX_SEC = 600
