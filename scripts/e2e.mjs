@@ -90,11 +90,15 @@ const settled = async (p) => {
 }
 const sizeTap = async (p) => { await p.click('#metro-size-btn'); await settled(p) }
 /** 조건이 참이 될 때까지 폴링 */
-const waitUntil = async (p, fn, ms = 4000, what = 'condition') => {
+const waitUntil = async (p, fn, ms = 4000, what = 'condition', arg = undefined) => {
   const t0 = Date.now()
-  while (Date.now() - t0 < ms) { if (await p.evaluate(fn)) return true; await p.waitForTimeout(100) }
+  while (Date.now() - t0 < ms) { if (await p.evaluate(fn, arg)) return true; await p.waitForTimeout(100) }
   throw new Error('timed out waiting for ' + what)
 }
+/** 마이크 차단 안내가 떠 있을 때만 닫는다 — 없는 버튼에 click 을 걸면 기본 타임아웃 30 s 를 기다렸다 삼킨다 */
+const dismissMicPopup = async (p) => { if (await p.locator('#mic-popup-bg.show').count()) await p.click('#mic-popup-cancel') }
+/** 지금 뜬 토스트의 글이 기대한 값이 될 때까지 — 고정 sleep 뒤 한 번 읽으면 바쁜 기계에서 흔들린다 */
+const waitToast = (p, text, ms = 3000) => waitUntil(p, t => document.getElementById('toast')?.textContent === t, ms, `toast "${text}"`, text)
 
 // 튜너
 await scenario('tuner: 440 Hz @A=442 → A4 (라4) −8¢ (in tune at the default ±10)', 'violin_A4.wav', async p => {
@@ -241,7 +245,7 @@ await scenario('rec: recording with the metronome on says the click is muted, an
   await p.click('#rec-hdr-btn'); await sleep(p, 800)
 })
 await scenario('metro: changing the time signature while playing starts the first beat on the left', 'silence_lowfloor.wav', async p => {
-  await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel').catch(() => {})
+  await p.goto(URL_); await sleep(p, 800); await dismissMicPopup(p)
   await toFull(p) // 전용 모드 (13칸 줄이 크게 보인다)
   // 전용 모드에서도 DRONE 창이 본문 폭으로 열린다 (2.5.7 까지 숨은 튜너 카드 기준이라 폭 0)
   await p.click('#drone-btn'); await sleep(p, 300)
@@ -377,7 +381,7 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   await p.click('#metro-play-btn')
 })
 await scenario('metro: full-mode dial — BPM follows the ring, stops at the ends, terms and ticks', 'silence_lowfloor.wav', async p => {
-  await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel').catch(() => {})
+  await p.goto(URL_); await sleep(p, 800); await dismissMicPopup(p)
   await toFull(p)
   // 40~200: 5 마다 눈금(33), 20 마다 숫자(9), 용어 4
   const n = await p.evaluate(() => ({ tick: document.querySelectorAll('#dial-svg .dial-tick').length, num: document.querySelectorAll('#dial-svg .dial-num').length, name: document.querySelectorAll('#dial-svg .dial-name').length, beats: document.getElementById('sweep-beats') }))
@@ -532,7 +536,7 @@ const LAYOUT_MATRIX = [
   ['iPhone 15', 393, 852, 59, 46], ['Pixel', 412, 915, 36, 30], ['iPhone Pro Max', 430, 932, 59, 46], ['Tablet', 768, 1024, 24, 20],
 ]
 for (const [name, w, h, top, bot] of LAYOUT_MATRIX) await scenario(`layout: full mode ${name} ${w}×${h} — no scroll or overflow, text keeps its rendered size`, 'silence_lowfloor.wav', async p => {
-  await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel').catch(() => {})
+  await p.goto(URL_); await sleep(p, 800); await dismissMicPopup(p)
   await p.addStyleTag({ content: `#app{padding-top:${top}px!important;padding-bottom:${bot}px!important}` })
   await toFull(p) // 넓은 화면은 버튼 한 번, 폰은 펼친 뒤 위로 밀기
   const r = await p.evaluate(() => {
@@ -1038,14 +1042,21 @@ await scenario('rec: keep — always offered while auto-delete is on, the countd
 await scenario('editor: A/B/loop/bookmark flows', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#rec-hdr-btn'); await sleep(p, 2200); await p.click('#rec-hdr-btn'); await sleep(p, 800)
-  await p.click('#menu-btn'); await p.click('[data-action="edit"][data-idx="0"]'); await sleep(p, 1500)
-  await p.click('#ed-b-btn'); await sleep(p, 100) // A 없이 B → 토스트
-  assert.equal(await p.evaluate(() => document.getElementById('toast').textContent), '먼저 A 지점을 정해 주세요')
-  await p.click('#ed-play-btn'); await sleep(p, 600); await p.click('#ed-a-btn'); await sleep(p, 500); await p.click('#ed-b-btn'); await sleep(p, 100)
-  assert.equal(await p.evaluate(() => document.getElementById('ed-ab-range').style.display), 'block')
+  await p.click('#menu-btn'); await p.click('[data-action="edit"][data-idx="0"]')
+  await waitUntil(p, () => !document.getElementById('ed-play-btn').disabled, 5000, 'editor ready')
+  await p.click('#ed-b-btn') // A 없이 B → 토스트
+  await waitToast(p, '먼저 A 지점을 정해 주세요')
+  // 재생 위치가 실제로 움직인 뒤에 A, A 에서 더 간 뒤에 B — 고정 sleep 은 바쁜 기계에서 A·B 가 같은 자리가 됐다
+  const pos = () => p.evaluate(() => window.__tt.editor().audio.currentTime)
+  await p.click('#ed-play-btn'); await waitUntil(p, () => window.__tt.editor().audio.currentTime > 0.3, 5000, 'playing')
+  await p.click('#ed-a-btn'); const a = await pos()
+  await waitUntil(p, a => window.__tt.editor().audio.currentTime > a + 0.3, 5000, 'past A', a); await p.click('#ed-b-btn')
+  await waitUntil(p, () => document.getElementById('ed-ab-range').style.display === 'block', 2000, 'A-B range')
   await p.click('#ed-loop-btn'); assert.equal(await p.evaluate(() => document.querySelector('#ed-loop-btn span').textContent), '켜짐')
-  await p.click('#ed-bm-add-btn'); await sleep(p, 100); await p.click('#ed-bm-add-btn'); await sleep(p, 100)
-  assert.equal(await p.evaluate(() => document.getElementById('toast').textContent), '이미 근처에 북마크가 있어요')
+  // 멈춘 자리에서 두 번 — 재생 중 두 번 누르면 바쁜 기계에서 0.3 s 를 넘겨 둘 다 들어간다
+  await p.click('#ed-play-btn'); await waitUntil(p, () => window.__tt.editor().audio.paused, 2000, 'paused')
+  await p.click('#ed-bm-add-btn'); await sleep(p, 100); await p.click('#ed-bm-add-btn')
+  await waitToast(p, '이미 근처에 북마크가 있어요')
   assert.equal(await p.evaluate(() => document.querySelectorAll('#ed-bm-ticks > div').length), 1)
   await p.click('#ed-a-btn'); assert.equal(await p.evaluate(() => document.getElementById('ed-ab-range').style.display), 'none')
   await p.evaluate(() => { document.getElementById('ed-speed').value = '0.75'; document.getElementById('ed-speed').dispatchEvent(new Event('input')) })
@@ -1212,14 +1223,20 @@ await scenario('ios: first launch shows a start button — mic closed until tapp
   await waitNote(p, t => t.note === '라')
 }, { userAgent: IOS_UA })
 await scenario('lifecycle: hidden while the mic is opening → not left open in the background, reopens on return', 'violin_A4.wav', async p => {
+  // getUserMedia 를 테스트가 붙잡았다 놓는다 — 30 ms 를 재고 숨기던 옛 방식은 기계 속도에 따라 '여는 중' 을 지나쳐 버렸다
+  await p.addInitScript(() => {
+    const real = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices)
+    navigator.mediaDevices.getUserMedia = c => window.__gumHold ? new Promise((res, rej) => { window.__gumRelease = () => real(c).then(res, rej) }) : real(c)
+  })
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
-  // 숨김 → 마이크 놓음 → 보임(재개 시작) → 재개가 끝나기 전에 다시 숨김 → 보임
+  // 숨김 → 마이크 놓음 → 보임(재개 시작, getUserMedia 대기 중) → 그 사이 다시 숨김 → 대기가 풀림 → 보임
   await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')) })
   await waitUntil(p, () => !window.__tt.stats().micOpen, 3000, '숨기면 마이크를 놓는다')
-  await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')) })
-  await sleep(p, 30) // getUserMedia 를 기다리는 창
+  await p.evaluate(() => { window.__gumHold = true; Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')) })
+  await waitUntil(p, () => typeof window.__gumRelease === 'function', 3000, 'getUserMedia 대기')
   await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')) })
-  await sleep(p, 1500)
+  await p.evaluate(() => { window.__gumHold = false; window.__gumRelease() })
+  await sleep(p, 800)
   assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), false, '숨겨진 채로는 열려 있지 않다')
   await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')) })
   await waitUntil(p, () => window.__tt.stats().micOpen, 5000, '돌아오면 다시 연다')
@@ -1544,18 +1561,17 @@ await scenario('perf: worker frame p95 stays under budget (12 ms) over 10 s', 'v
 
 await scenario('lifecycle: inactivity watch closes the mic without the practice timer running', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 1500); assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true)
-  // 15분을 기다릴 수 없으니 lastActivityMs 를 과거로 돌리고 감시 주기(30 s)를 기다린다 — 무음 파일이면 활동이 갱신되지 않는다
-  await p.evaluate(() => { window.__tt.backdate(16 * 60 * 1000) })
-  await sleep(p, 31000)
-  assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), false, 'mic closed by inactivity watch')
-  assert.equal(await p.evaluate(() => document.getElementById('tuner-card').classList.contains('tap-hint')), true, '시작 버튼으로 다시 켠다')
+  // 15분을 기다릴 수 없으니 lastActivityMs 를 과거로 돌리고 감시를 한 번 돌린다(30 s 주기를 기다리지 않는다) — 무음 파일이면 활동이 갱신되지 않는다
+  await p.evaluate(() => { window.__tt.backdate(16 * 60 * 1000); window.__tt.inactivityCheck() })
+  await waitUntil(p, () => !window.__tt.stats().micOpen, 3000, 'mic closed by inactivity watch')
+  await waitUntil(p, () => document.getElementById('tuner-card').classList.contains('tap-hint'), 3000, '시작 버튼으로 다시 켠다')
   assert.equal(await p.evaluate(() => document.getElementById('tuner-start-sub').textContent), '15분 동안 조용해서 마이크를 껐어요', '왜 꺼졌는지가 버튼 아래 남는다 (토스트는 2.5 s 뒤 사라진다)')
 })
 await scenario('lifecycle: recording keeps the mic open past the inactivity limit (a quiet stretch in a lesson)', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 1500); assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true)
   await p.click('#rec-hdr-btn'); await sleep(p, 500)
-  await p.evaluate(() => { window.__tt.backdate(16 * 60 * 1000) })
-  await sleep(p, 31000)
+  await p.evaluate(() => { window.__tt.backdate(16 * 60 * 1000); window.__tt.inactivityCheck() })
+  await sleep(p, 500)
   assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true, '녹음 중엔 무활동 종료가 없다 (2.5.7 까지 녹음이 끊겼다)')
   assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true, '녹음도 계속된다')
   await p.click('#rec-hdr-btn'); await sleep(p, 800)
@@ -1597,7 +1613,8 @@ await scenario('lifecycle: turning the mic back on after a long session doesn’
   await sleep(p, 300)
   await p.click('#tuner-start-btn'); await sleep(p, 1200)
   assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true, 'mic opened')
-  await sleep(p, 35000) // 감시 주기 30 s 를 한 번 넘긴다
+  await p.evaluate(() => window.__tt.inactivityCheck()) // 감시가 한 번 돈다 — 옛 활동 시각이 남아 있으면 여기서 꺼진다
+  await sleep(p, 500)
   assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true, '켠 시각 기준이라 바로 꺼지지 않는다')
 })
 await scenario('sw update: new version is applied only when idle (prompt mode, no stale-chunk window)', 'silence_lowfloor.wav', async p => {

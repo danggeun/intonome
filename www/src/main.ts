@@ -106,7 +106,11 @@ let inactInt: ReturnType<typeof setInterval> | null = null
 function stopInactivityWatch(): void { if (inactInt) clearInterval(inactInt); inactInt = null }
 // 열 때 활동 시각을 새로 잡는다 — 안 하면 15분 넘게 켜둔 뒤 마이크를 (다시) 켜는 순간 바로 종료된다
 // 녹음 중엔 쉬지 않는다 — 활동 기준이 '음이 표시된 프레임' 이라 선생님 설명 15 분에 녹음이 끊겼다(2.5.7 까지)
-onMic('afterOpen', () => { tunerStore.set({ lastActivityMs: Date.now() }); stopInactivityWatch(); inactInt = setInterval(() => { if (sessionStore.get().recording) { tunerStore.set({ lastActivityMs: Date.now() }); return } if (Date.now() - tunerStore.get().lastActivityMs > CFG.inactiveMs) { toast(t('mic.idleOff')); closeMic(); showTapHint(tryOpenMic, 'mic.idleOffSub') } }, 30 * 1000) })
+function checkInactivity(): void {
+  if (sessionStore.get().recording) { tunerStore.set({ lastActivityMs: Date.now() }); return }
+  if (Date.now() - tunerStore.get().lastActivityMs > CFG.inactiveMs) { toast(t('mic.idleOff')); closeMic(); showTapHint(tryOpenMic, 'mic.idleOffSub') }
+}
+onMic('afterOpen', () => { tunerStore.set({ lastActivityMs: Date.now() }); stopInactivityWatch(); inactInt = setInterval(checkInactivity, 30 * 1000) })
 settingsStore.select(s => s.wakeLock, syncWake)
 // 숨김: 마이크를 놓고 메트로놈·드론을 멈춘다(복귀 시 자동 재개 안 함). 녹음 중이면 마이크는 둔다
 // 복귀: 컨텍스트 재개 + wake lock 재획득 + 놓았던 마이크를 다시 연다(못 열면 탭 안내)
@@ -240,6 +244,8 @@ if (!isNative() && 'serviceWorker' in navigator) {
   ac: () => A.ac,
   /** 테스트용: 마지막 활동 시각을 과거로 (무활동 감시 검증) */
   backdate: (ms: number) => tunerStore.set({ lastActivityMs: Date.now() - ms }),
+  /** 테스트용: 무활동 감시의 30 s 주기를 기다리지 않고 지금 한 번 돈다(감시가 켜져 있을 때만 — 실제 타이머와 같은 조건) */
+  inactivityCheck: () => { if (inactInt) checkInactivity() },
   /** 테스트용: 녹음 중인 파일의 시작 시각을 과거로 (60 분 상한 검증) */
   recBackdate: backdateRecFile,
   editor: editorDiag,
