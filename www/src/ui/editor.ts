@@ -10,6 +10,7 @@ import { softClipCurve } from '../core/softclip.ts'
 import { recListStore, type RecItem } from '../state/index.ts'
 import { patchRec } from '../audio/recorder.ts'
 import { createEditorPlayer, type EditorPlayer } from '../audio/editorPlayer.ts'
+import { viewRange as viewOf, frac as fracIn, timeAt, zoomWindow, clampA, clampB, loopStart as loopStartOf, clampSpeed, speedLabel, nextPreset, type TimeWindow } from '../core/editRange.ts'
 import { q, on, reflow, setOn, PLAY_GLYPH, PAUSE_GLYPH } from './dom.ts'
 import { displayName, downloadRec, handOff, WAV_RESCUE_MAX_SEC } from './recList.ts'
 import { toast } from './toast.ts'
@@ -30,27 +31,21 @@ interface EdState {
 const ed: EdState = { idx: -1, item: null, audio: null, ptA: null, ptB: null, loop: 0, bookmarks: [], dragging: null, readyTimeout: null, handlers: null }
 
 // 시간 ↔ 트랙 위치 매핑. 기본은 전체, '구간 확대' 면 [A−2 s, B+2 s] 창
-let view: { t0: number; t1: number } | null = null
-const ZOOM_PAD = 2
-function viewRange(): { t0: number; t1: number } { const d = dur(); return view && view.t1 > view.t0 ? view : { t0: 0, t1: d || 1 } }
-/** 시간 → 0..1 (창 밖은 가장자리에 붙음) */
-function frac(t: number): number { const { t0, t1 } = viewRange(); return Math.max(0, Math.min(1, (t - t0) / (t1 - t0))) }
+let view: TimeWindow | null = null
+const viewRange = (): TimeWindow => viewOf(view, dur())
+const frac = (t: number): number => fracIn(t, viewRange())
 const pct = (t: number, _d?: number) => (frac(t) * 100).toFixed(3) + '%'
 function setZoom(on: boolean): void {
-  const d = dur()
-  view = on && ed.ptA !== null && ed.ptB !== null && d ? { t0: Math.max(0, ed.ptA - ZOOM_PAD), t1: Math.min(d, ed.ptB + ZOOM_PAD) } : null
+  view = on ? zoomWindow(ed.ptA, ed.ptB, dur()) : null
   setOn(q('ed-zoom-btn'), !!view); q('ed-zoom-btn').textContent = tr(view ? 'ed.showAll' : 'ed.zoom')
   updateHandles(); renderBmTicks(); if (ed.audio) setPosUI(ed.audio.currentTime); requestWave()
 }
 function updateZoomBtn(): void { const ok = ed.ptA !== null && ed.ptB !== null; q('ed-zoom-btn').classList.toggle('dim', !ok); if (!ok && view) setZoom(false) }
 // Chromium 은 MediaRecorder webm 의 duration 을 끝까지 seek 하기 전까지 Infinity 로 본다(crbug 642012) → item.dur 폴백
 const dur = () => (ed.audio && isFinite(ed.audio.duration) && ed.audio.duration > 0) ? ed.audio.duration : (ed.item?.dur ?? 0)
-const PREROLL_SEC = 1
-/** 반복 시작점: 프리롤이면 A−1 s (0 아래로는 안 감) */
-const loopStart = () => ed.ptA === null ? 0 : (ed.loop === 2 ? Math.max(0, ed.ptA - PREROLL_SEC) : ed.ptA)
+const loopStart = () => loopStartOf(ed.ptA, ed.loop)
 // 편집기의 정지는 위치를 유지하는 일시정지 ❚❚. 글리프 크기는 .playing 클래스로 CSS 가 맞춘다
 function setPlayGlyph(playing: boolean): void { const b = q('ed-play-btn'); b.textContent = playing ? PAUSE_GLYPH : PLAY_GLYPH; b.classList.toggle('playing', playing) }
-const SPEED_PRESETS = [1.0, 0.5, 0.7, 0.85]
 
 function setPosUI(t: number): void {
   const d = dur(); if (!d) return
@@ -74,7 +69,7 @@ function loopTick(): void {
 }
 function startLoopWatch(): void { if (loopRaf == null) loopRaf = requestAnimationFrame(loopTick) }
 /** 포인터 x → 시간 (현재 창 기준) */
-function tFromClient(clientX: number): number { const r = q('ed-track').getBoundingClientRect(); const f = Math.max(0, Math.min(1, (clientX - r.left) / r.width)); const { t0, t1 } = viewRange(); return t0 + f * (t1 - t0) }
+function tFromClient(clientX: number): number { const r = q('ed-track').getBoundingClientRect(); return timeAt((clientX - r.left) / r.width, viewRange()) }
 
 function updateHandles(): void {
   const d = dur(); if (!d) return
@@ -102,8 +97,8 @@ const resetLoopBtn = () => { ed.loop = 0; updateLoopBtn() }
 /** A/B 지점을 ±0.25 s 미세 조정 — 재생 중 찍으면 반응 지연만큼 늦는 것을 보정 */
 function nudge(which: 'a' | 'b', d: number): void {
   const len = dur(); if (!len) return
-  if (which === 'a' && ed.ptA !== null) ed.ptA = Math.max(0, Math.min(ed.ptB !== null ? ed.ptB - 0.1 : len, ed.ptA + d))
-  if (which === 'b' && ed.ptB !== null) ed.ptB = Math.max(ed.ptA !== null ? ed.ptA + 0.1 : 0, Math.min(len, ed.ptB + d))
+  if (which === 'a' && ed.ptA !== null) ed.ptA = clampA(ed.ptA + d, ed.ptB, len)
+  if (which === 'b' && ed.ptB !== null) ed.ptB = clampB(ed.ptB + d, ed.ptA, len)
   updateHandles(); if (ed.ptA !== null) updateABtn(); if (ed.ptB !== null) updateBBtn(); persistEdit()
 }
 /** 10 분이 넘는 녹음은 구간 저장이 안 된다(디코드 메모리) — 열 때부터 흐리게, 눌러야 알게 하지 않는다 */
@@ -185,8 +180,8 @@ function initDrag(): void {
     const d = dur(); if (!ed.dragging || !ed.audio || !d) return
     const t = tFromClient(clientX)
     if (ed.dragging === 'pos') { const c = Math.max(0, Math.min(d, t)); ed.audio.currentTime = c; setPosUI(c) }
-    else if (ed.dragging === 'a') { ed.ptA = Math.max(0, Math.min(ed.ptB !== null ? ed.ptB - 0.1 : d, t)); updateHandles(); updateABtn(); checkExportBtn() }
-    else if (ed.dragging === 'b') { ed.ptB = Math.max(ed.ptA !== null ? ed.ptA + 0.1 : 0, Math.min(d, t)); updateHandles(); updateBBtn(); checkExportBtn() }
+    else if (ed.dragging === 'a') { ed.ptA = clampA(t, ed.ptB, d); updateHandles(); updateABtn(); checkExportBtn() }
+    else if (ed.dragging === 'b') { ed.ptB = clampB(t, ed.ptA, d); updateHandles(); updateBBtn(); checkExportBtn() }
   }
   const end = () => { const was = ed.dragging; if (was) dragEndedAt = Date.now(); ed.dragging = null; if (ed.audio && dur()) setPosUI(ed.audio.currentTime); if (was === 'a' || was === 'b') persistEdit() }
   ed.handlers = { mm: e => move(e.clientX), mu: end, tm: e => { if (ed.dragging) move(e.touches[0]!.clientX) }, te: end }
@@ -288,18 +283,14 @@ function togglePlay(): void {
   } else { a.pause(); a.stopped(); setPlayGlyph(false) }
 }
 function setSpeed(v: number, persist = true): void {
-  v = Math.max(0.5, Math.min(1.5, Math.round(v * 100) / 100))
-  q('ed-speed-val').textContent = (Number.isInteger(v * 10) ? v.toFixed(1) : v.toFixed(2)) + '×'
+  v = clampSpeed(v)
+  q('ed-speed-val').textContent = speedLabel(v)
   q<HTMLInputElement>('ed-speed').value = String(v)
   if (ed.audio) ed.audio.playbackRate = v // 음높이는 그대로(preservesPitch)
   if (persist && ed.item && ed.item.speed !== v) { const next = patchRec(ed.item, { speed: v }); if (next) ed.item = next }
 }
-/** 값 라벨 탭: 1.0 → 0.5 → 0.7 → 0.85 → 1.0 순환 (활 든 손으로 슬라이더 대신 한 번씩 탭) */
-function cycleSpeed(): void {
-  const cur = ed.audio?.playbackRate ?? 1
-  const i = SPEED_PRESETS.findIndex(p => Math.abs(p - cur) < 0.01)
-  setSpeed(SPEED_PRESETS[(i + 1) % SPEED_PRESETS.length]!)
-}
+/** 값 라벨 탭: 프리셋 순환(core/editRange) */
+function cycleSpeed(): void { setSpeed(nextPreset(ed.audio?.playbackRate ?? 1)) }
 function toggleA(): void {
   if (ed.ptA !== null) {
     ed.ptA = null; ed.ptB = null
