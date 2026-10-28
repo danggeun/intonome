@@ -19,6 +19,12 @@ describe('readout: the number people read', () => {
     for (let i = 0; i < 40; i++) n = r.push(69, -30 + i, true) // 프레임당 1 ¢
     expect(Math.abs(n - 9)).toBeLessThanOrEqual(4)
   })
+  test('after a note change the first clean measurement sets the number — the values shown while the window still held the old note do not stick', () => {
+    const r = createReadout(P)
+    r.push(69, 0, true)
+    expect(r.push(70, 13, false)).toBe(13); expect(r.push(70, 13.4, false)).toBe(13) // 음이 바뀌는 동안(새 측정 아님)
+    expect(r.push(70, 14.3, true)).toBe(14) // 1.5 ¢ 데드밴드 안이어도 첫 새 측정이 숫자를 정한다
+  })
   test('held frames do not enter the average; a note change starts over', () => {
     const r = createReadout(P)
     for (let i = 0; i < 16; i++) r.push(69, 10, true)

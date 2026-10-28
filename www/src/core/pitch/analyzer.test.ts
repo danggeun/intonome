@@ -358,3 +358,33 @@ describe('scales: a slurred semitone step reads the new note\'s own offset', () 
     for (const f of late) { expect(f.midi).toBe(m1); expect(Math.abs(f.read - c1), `t=${f.t.toFixed(3)} read=${f.read}`).toBeLessThanOrEqual(2) }
   })
 })
+
+describe('right after a note change the number reads the new note, not a mix with the old one still ringing', () => {
+  const sr48 = 48000, W = 4096
+  /** 활로 켜는 음 + 끝난 뒤 ring s 동안 울림(줄·방) — 다음 음이 시작돼도 앞 음이 남아 있다 */
+  function slur(notes: Array<{ hz: number; dur: number }>, ring: number): Float32Array {
+    const T = notes.reduce((s, x) => s + x.dur, 0), n = Math.round((T + 0.5) * sr48), x = new Float32Array(n)
+    let t0 = 0
+    for (const nt of notes) {
+      const a0 = Math.round(t0 * sr48); let ph = 0
+      for (let i = a0; i < n; i++) {
+        const t = (i - a0) / sr48, env = Math.min(1, t / 0.03) * (t < nt.dur ? 1 : Math.exp(-(t - nt.dur) / ring))
+        if (t > nt.dur && env < 1e-4) break
+        ph += 2 * Math.PI * nt.hz / sr48
+        let s = 0; for (let h = 1; h <= 8; h++) s += Math.sin(ph * h) * Math.pow(h, -1.1) * (h % 2 ? 1 : 0.79)
+        x[i]! += 0.25 * s * env
+      }
+      t0 += nt.dur
+    }
+    return x
+  }
+  test('E4 → F4 played 30 cents sharp over the ringing E: no green in the first frames, the first number within 20 cents', () => {
+    const x = slur([{ hz: 440 * Math.pow(2, -5 / 12), dur: 0.8 }, { hz: 440 * Math.pow(2, (-4 + 0.3) / 12), dur: 0.8 }], 0.15)
+    const a = createAnalyzer({ sampleRate: sr48, windowSize: W, hzMin: 29, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: 10 })
+    const F = []; for (let e = W; e <= x.length; e += 1024) F.push(a.process(x.subarray(e - W, e)))
+    const i0 = F.findIndex(f => f.hz > 0 && f.midi === 65)
+    expect(i0).toBeGreaterThan(0)
+    expect(F.slice(i0, i0 + 2).some(f => f.inTune)).toBe(false) // 2.5.8 까지: 3 ¢ · 10 ¢ 초록
+    expect(Math.abs(F[i0]!.readCents - 30)).toBeLessThanOrEqual(20)
+  })
+})

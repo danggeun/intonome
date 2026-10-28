@@ -4,10 +4,11 @@
  */
 import { createYinFast } from './yinFast.ts'
 import { createSpectrum } from './spectrum.ts'
-import { createTracker, DEFAULT_TRACKER, type TrackerParams } from './tracker.ts'
+import { createTracker, DEFAULT_TRACKER, type TrackerParams, type TrackOut } from './tracker.ts'
 import { createDetector, DEFAULT_DETECTOR, type DetectorParams } from '../playing/detector.ts'
 import { createReadout, type ReadoutParams } from './readout.ts'
 import { isClickPitch } from '../metro/clickPitch.ts'
+import { TRACE_SETTLE } from '../trace.ts'
 
 export interface AnalyzerParams {
   sampleRate: number
@@ -62,7 +63,12 @@ const DEFAULT_READOUT: Omit<ReadoutParams, 'windowFrames'> = { deadband: 1.5, tr
 
 export function createAnalyzer(p: AnalyzerParams): Analyzer {
   const N = p.windowSize ?? 4096, sr = p.sampleRate
-  const yin = createYinFast(N, { threshold: p.yinThreshold ?? 0.10, hzMin: p.hzMin ?? 29, hzMax: p.hzMax ?? 4200 })
+  const yinOpts = { threshold: p.yinThreshold ?? 0.10, hzMin: p.hzMin ?? 29, hzMax: p.hzMax ?? 4200 }
+  const yin = createYinFast(N, yinOpts)
+  /** 창의 최근 절반 — 음이 바뀐 직후 두 프레임만 잰다(settlingRead). 앞 절반에 남은 이전 음을 덜 본다 */
+  const yinRecent = createYinFast(N >> 1, yinOpts)
+  /** 음이름이 다른 음에서 바뀐 뒤 지난 새 측정 수(무음에서 새로 뜬 음·기준음 변경으로 바뀐 이름은 셈하지 않는다)와 그동안 마지막으로 잰 숫자 값 */
+  let shownMidi = -1, sinceChange = Infinity, settleRead = NaN
   const spec = createSpectrum(N)
   const tracker = createTracker({ ...DEFAULT_TRACKER, ...p.tracker })
   const det = createDetector({ ...DEFAULT_DETECTOR, ...p.detector })
@@ -84,14 +90,15 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
       }
     },
     getSettings() { return { ...s } },
-    reset() { tracker.reset(); det.reset(); read.reset() },
+    reset() { tracker.reset(); det.reset(); read.reset(); shownMidi = -1; sinceChange = Infinity; settleRead = NaN },
     process(buf, muted = false) {
       let e = 0; for (let i = 0; i < N; i++) e += buf[i]! * buf[i]!
       const rms = Math.sqrt(e / N), rmsOk = rms >= s.rmsMin
       if (!rmsOk) { // 게이트 아래: 트래커/감지기에 무효 프레임을 알린다
         const t = tracker.push(-1, 0, false, s.smoothing); const playing = det.push({ conf: 0, rmsOk: false, harmonics: 0, flatness: 1 })
         const f = EMPTY(rms); f.playing = playing
-        if (t.hz > 0) { fill(f, t.hz, t.midi, false); f.held = t.held } else read.reset()
+        const readAs = settleValue(t, null, muted)
+        if (t.hz > 0) { fill(f, t.hz, t.midi, false, readAs); f.held = t.held } else read.reset()
         return f
       }
       const y = yin.process(buf, sr)
@@ -113,16 +120,38 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
       // 트래커의 음이름 격자는 A=440 기준이라 refHz 로 정규화해 넣는다 (안 하면 |오프셋| > 50 ¢ 에서 이웃 반음으로 라벨링)
       const t = tracker.push(rawHz / refK(), clickRead ? 0 : dispConf, true, s.smoothing, muted)
       const f: Frame = { rawHz, conf: y.conf, rms, harmonics, flatness, hz: -1, midi: -1, cents: 0, readCents: 0, inTune: false, playing, held: t.held }
-      if (t.hz > 0) fill(f, t.hz, t.midi, t.held === 0 && !t.settling); else read.reset() // 음이 바뀐 직후 프레임은 숫자의 평균에 넣지 않는다 (이전 음이 섞였다)
+      // 음이 바뀐 직후 프레임은 숫자의 평균에 넣지 않는다 (이전 음이 섞였다). 처음 두 프레임의 숫자는 창의 최근 절반에서 잰 값 — 아래 settleValue
+      const readAs = settleValue(t, buf, muted)
+      if (t.hz > 0) fill(f, t.hz, t.midi, t.held === 0 && !t.settling, readAs); else read.reset()
       return f
     },
   }
   function refK(): number { return s.refHz / 440 }
   /** hzNorm 은 440 격자로 정규화된 값. 표시 주파수는 되돌리고, cents 는 정규화 공간에서 계산하면 곧 refHz 기준이다.
    * cents 는 반올림하지 않는다 — 트레이스가 1 ¢(≈ 3 px) 격자에 걸려 계단처럼 보였다. 숫자와 맞음 판정은 읽는 값(readCents)으로 */
-  function fill(f: Frame, hzNorm: number, midi: number, fresh: boolean): void {
+  function fill(f: Frame, hzNorm: number, midi: number, fresh: boolean, readAs = NaN): void {
     const ref440 = 440 * Math.pow(2, (midi - 69) / 12)
     f.hz = hzNorm * refK(); f.midi = midi; f.cents = 1200 * Math.log2(hzNorm / ref440)
-    f.readCents = read.push(midi, f.cents, fresh); f.inTune = Math.abs(f.readCents) <= s.tolCents
+    f.readCents = read.push(midi, Number.isNaN(readAs) ? f.cents : readAs, fresh); f.inTune = Math.abs(f.readCents) <= s.tolCents
+  }
+  /** 음이 다른 음으로 바뀐 직후 두 프레임(TRACE_SETTLE — 트래커의 중앙값에 이전 음이 섞인 프레임) 동안 숫자(와 초록)에 쓸 값: 창의 최근 절반에서 잰 cents.
+   * 그 음의 반음 안이 아니면 NaN(평소 값). 중앙값은 셋 중 이전 음 쪽 값을 고르고 창의 앞 절반엔 이전 음이 남아 있어,
+   * 틀린 음에 첫 숫자가 '맞음' 으로 뜨곤 했다(실제 연습 녹음: 음이 바뀐 69번 중 6번). 셋째 프레임부터는 중앙값이 새 음만 본다.
+   * 선·바늘(f.cents)은 그대로 — 선은 이 두 프레임을 그리지 않는다 */
+  /** 이 프레임의 숫자를 settlingRead 로 낼지 — 다른 음에서 바뀐 뒤 새 측정 TRACE_SETTLE 개 동안. 유지(held) 프레임은 새로 재지 않고 마지막 값을,
+   * 클릭이 섞인 창(muted)은 짧은 창이 클릭을 두 배로 보므로 재지 않는다. 해당 없으면 NaN(평소 값) */
+  function settleValue(t: TrackOut, buf: Float32Array | Float64Array | null, muted: boolean): number {
+    if (t.hz <= 0) { shownMidi = -1; sinceChange = Infinity; settleRead = NaN; return NaN }
+    if (t.midi !== shownMidi) { sinceChange = shownMidi >= 0 && t.settling ? 0 : Infinity; shownMidi = t.midi; settleRead = NaN }
+    else if (t.held === 0) sinceChange++
+    if (sinceChange >= TRACE_SETTLE) return NaN
+    if (t.held === 0 && buf && !muted) settleRead = settlingRead(buf, t.midi)
+    return settleRead
+  }
+  function settlingRead(buf: Float32Array | Float64Array, midi: number): number {
+    const r = yinRecent.process(buf.subarray(N - (N >> 1)), sr)
+    if (r.hz <= 0) return NaN // 짧은 창으로 못 잰 저음(48 kHz 에서 47 Hz 아래) 등 — 평소 값
+    const c = 1200 * Math.log2(r.hz / refK() / (440 * Math.pow(2, (midi - 69) / 12)))
+    return Math.abs(c) <= 50 ? c : NaN
   }
 }

@@ -31,6 +31,7 @@ export function createReadout(p: ReadoutParams): Readout {
     push(m, cents, fresh) {
       if (m < 0) { reset(); return 0 }
       if (m !== midi) { buf.length = 0; midi = m; shown = Math.round(cents) } // 새 음: 평균을 버리고 바로
+      const first = fresh && buf.length === 0 // 이 음의 첫 새 측정 — 그 전 숫자(음이 바뀌는 동안의 값)는 임시라 데드밴드로 붙들지 않는다
       if (fresh) { buf.push(cents); if (buf.length > p.windowFrames) buf.shift() }
       if (buf.length >= p.trendFrames) {
         const last = buf.slice(-p.trendFrames), side = Math.sign(last[0]! - shown)
@@ -40,7 +41,7 @@ export function createReadout(p: ReadoutParams): Readout {
         }
       }
       const mm = buf.length ? tri(buf) : cents
-      if (Math.abs(mm - shown) >= p.deadband) shown = Math.round(mm)
+      if (first || Math.abs(mm - shown) >= p.deadband) shown = Math.round(mm)
       return shown
     },
   }

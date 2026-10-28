@@ -3,7 +3,7 @@
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
 ## [2.6.0] - 2026-10-28
-Slow and fast playback in the editor no longer stutters or drops sound on iPhone (recordings up to 10 minutes), and iPhone recordings play in both ears. Underneath, the code and its checks are reorganised so that a change is checked by the tests that cover it — with no change to how the tuner, the metronome or anything else behaves.
+Slow and fast playback in the editor no longer stutters or drops sound on iPhone (recordings up to 10 minutes), iPhone recordings play in both ears, and right after a note change the tuner's number and green read the new note. Underneath, the code and its checks are reorganised so that a change is checked by the tests that cover it — with no other change to how the tuner, the metronome or anything else behaves.
 
 Editor
 - Speeds other than 1.0× are played by the app itself. On iPhone, 0.5–0.85× stuttered and 1.25–1.5× dropped pieces of sound: WebKit (every iPhone browser and the home-screen app) mishandles the playback rate of an audio element that goes through Web Audio, and recordings go that way for their level correction (most did before; from this version all do, see below). The editor now decodes the recording once and stretches it in time on the audio thread (WSOLA, pitch kept). 1.0× still plays the audio element. Changing the speed while playing continues from the same spot; A–B looping, bookmarks and seeking work the same at every speed; pause and resume don't click
@@ -12,6 +12,9 @@ Editor
 - iPhone recordings sound in both ears. WebKit records the mono microphone as two channels with a silent second one, so with earphones only the left side sounded. Playback in the list and the editor now sends the first channel to both sides — also for recordings loud enough to need no level correction, which used to skip that path — and the A–B WAV is saved as one channel with the live sound. The recording file itself is unchanged
 - If playback is stopped by something other than the editor (the system pausing the audio, a play the browser refuses), the play button shows ▶ again; it used to stay on ❚❚. A pause tapped while a start is still pending is no longer undone 50 ms later
 
+Tuner
+- Right after the note name changes, the cents number and the green read the new note. For the first two frames (about 43 ms) the analysis window still holds the previous note and the median of the last three readings picks the value nearest it, so the first number was often a mix of the two notes — on a real practice recording 6 of 69 note changes lit green for a moment on a note played 13 cents or more off. Those two frames now take the number from the newest half of the window, and the first clean measurement sets the number even inside the 1.5-cent step that otherwise keeps it calm. On that recording: wrong green 6 → 2, first-number error (median) 10 → 6 cents; in synthetic fast scales the number is right for more of each note (16ths at 100 bpm: 67 → 91 % of the time). The note name, the needle and the pitch trace are unchanged, and so is the benchmark. The number now often corrects once by 1–3 cents about 0.1 s after a note appears
+
 Under the hood (no change in behaviour)
 - Messages from audio, storage and platform code reach the screen through one channel instead of separate callbacks wired by hand
 - The rules for letting go of the microphone when the app is hidden or the editor opens are a small pure module with unit tests; the editor plays through an editor player instead of a raw audio element; the editor's time, A–B and speed arithmetic, the metronome card's stages and drag rules (the stage rule was written twice) and the first-run guide's bubble placement are tested pure modules; exports only where something imports them
@@ -19,7 +22,7 @@ Under the hood (no change in behaviour)
 - `npm run affected` lists the checks a change needs from the files it touches (unit tests that import them, e2e scenarios by area, the benchmark, screenshots) and `--run` runs them
 - The benchmark uses the app's analyzer by default and its report changes only when a result changes, so its diff is the comparison
 - CI: the e2e shards run in the Playwright image, so no system packages are installed per shard; the build no longer waits for the type check and unit tests; a unit test keeps the image tag equal to the locked Playwright version
-- Tests: 52 new unit tests (time stretch, live channel, editor arithmetic, card stages, guide placement, mic release rules, the notice channel, the affected-checks table, the CI image) and 2 new e2e (other speeds through the stretch, the A–B WAV)
+- Tests: 54 new unit tests (time stretch, live channel, editor arithmetic, card stages, guide placement, mic release rules, the notice channel, the affected-checks table, the CI image, the number after a note change) and 2 new e2e (other speeds through the stretch, the A–B WAV)
 
 ## [2.5.8] - 2026-10-27
 A pass over everything a review of 2.5.7 turned up — things that worked wrongly, things that were awkward, and small polish — without changing how the tuner reads or the metronome sounds.
