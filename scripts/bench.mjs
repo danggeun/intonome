@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // 튜너 벤치마크 — test-assets/signals/*.wav 를 알고리즘 어댑터에 흘려 지표를 낸다.
-// 사용: node scripts/bench.mjs [--adapters v1,v1skip4] [--out test-assets/bench/result.md] [--json out.json]
+// 사용: node scripts/bench.mjs [--adapters v2,v1] [--out test-assets/bench/result.md] [--json out.json]
+// latest.md 에는 결정적인 지표만 쓴다(날짜·처리 시간은 화면에만) — 분석기를 바꾸고 `git diff test-assets/bench/latest.md` 가 비면 결과가 같다
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -113,21 +114,24 @@ function summarize(rows) {
   return { centsBiasAbs: median(by('centsBias').map(Math.abs)), centsP90: median(by('centsP90')), missingPct: median(by('missingPct')), harmPct: median(by('harmPct')), falseNotePct: median(by('falseNotePct')), lockMs: median(by('lockMs')), playF1: median(by('playF1')), timeErrPct: median(by('timeErrPct')), msP95: pct(by('msP95'), .95) }
 }
 
-const names = (typeof args.adapters === 'string' ? args.adapters : 'v1').split(',')
+const names = (typeof args.adapters === 'string' ? args.adapters : 'v2').split(',') // 기본은 앱이 쓰는 v2 — v1 은 옛 HTML 판 비교용
 const files = readdirSync(SIG).filter(n => n.endsWith('.wav')).sort().map(n => join(SIG, n))
-let md = `# 튜너 벤치마크\n\n생성: ${new Date().toISOString().slice(0, 10)} · 신호 ${files.length}개 · hop ${HOP} · 정상상태 판정 온셋+${STEADY_SKIP}s\n\n`
-md += `지표: bias=정상상태 cents 오차 중앙값(부호), p90=|오차| 90퍼센타일, miss=정상상태인데 표시 없음 %(분모=정상상태 프레임 전체), harm=배음 관계 오류 %(×2·÷2·÷3·÷4… 전부. 같은 분모. 이 프레임은 센트 통계에서 제외), false=비연주 구간에 새로 측정한 음을 표시한 %(소리가 끝난 뒤 마지막 음을 잠시 유지하는 것은 설계라 제외), lock=온셋→올바른 음이름 3프레임 연속 (ms, 중앙값), F1=연주감지, fPlay=비연주 구간을 연주로 본 %, tErr=연주시간 계산 오차 %((FP+FN)/실제), ms=프레임 처리시간 p95\n\n`
+let md = `# 튜너 벤치마크\n\n신호 ${files.length}개 · hop ${HOP} · 정상상태 판정 온셋+${STEADY_SKIP}s\n\n`
+md += `지표: bias=정상상태 cents 오차 중앙값(부호), p90=|오차| 90퍼센타일, miss=정상상태인데 표시 없음 %(분모=정상상태 프레임 전체), harm=배음 관계 오류 %(×2·÷2·÷3·÷4… 전부. 같은 분모. 이 프레임은 센트 통계에서 제외), false=비연주 구간에 새로 측정한 음을 표시한 %(소리가 끝난 뒤 마지막 음을 잠시 유지하는 것은 설계라 제외), lock=온셋→올바른 음이름 3프레임 연속 (ms, 중앙값), F1=연주감지, fPlay=비연주 구간을 연주로 본 %, tErr=연주시간 계산 오차 %((FP+FN)/실제)\n\n`
 const all = {}
+const timing = []
 for (const name of names) {
   const rows = files.map(p => runFile(ADAPTERS[name], p))
   all[name] = rows
   const s = summarize(rows)
-  md += `## ${name}\n\n**요약(종류별 중앙값의 중앙값)**: |bias| ${f(s.centsBiasAbs)}¢ · p90 ${f(s.centsP90)}¢ · miss ${f(s.missingPct)}% · harm ${f(s.harmPct)}% · false ${f(s.falseNotePct)}% · lock ${f(s.lockMs)} ms · F1 ${f(s.playF1)} · tErr ${f(s.timeErrPct)}% · ${f(s.msP95)} ms\n\n`
-  md += `| 파일 | 종류 | bias¢ | p90¢ | miss% | harm% | false% | lock ms | F1 | fPlay% | tErr% | ms |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n`
-  for (const r of rows) md += `| ${r.file} | ${r.kind} | ${f(r.centsBias)} | ${f(r.centsP90)} | ${f(r.missingPct)} | ${f(r.harmPct)} | ${f(r.falseNotePct)} | ${f(r.lockMs)} | ${f(r.playF1)} | ${f(r.falsePlayPct)} | ${f(r.timeErrPct)} | ${f(r.msP95)} |\n`
+  md += `## ${name}\n\n**요약(종류별 중앙값의 중앙값)**: |bias| ${f(s.centsBiasAbs)}¢ · p90 ${f(s.centsP90)}¢ · miss ${f(s.missingPct)}% · harm ${f(s.harmPct)}% · false ${f(s.falseNotePct)}% · lock ${f(s.lockMs)} ms · F1 ${f(s.playF1)} · tErr ${f(s.timeErrPct)}%\n\n`
+  md += `| 파일 | 종류 | bias¢ | p90¢ | miss% | harm% | false% | lock ms | F1 | fPlay% | tErr% |\n|---|---|---|---|---|---|---|---|---|---|---|\n`
+  for (const r of rows) md += `| ${r.file} | ${r.kind} | ${f(r.centsBias)} | ${f(r.centsP90)} | ${f(r.missingPct)} | ${f(r.harmPct)} | ${f(r.falseNotePct)} | ${f(r.lockMs)} | ${f(r.playF1)} | ${f(r.falsePlayPct)} | ${f(r.timeErrPct)} |\n`
   md += '\n'
+  timing.push(`${name}: 프레임 처리 p95 ${f(s.msP95)} ms (파일별 최대 ${f(Math.max(...rows.map(r => r.msP95)))} ms)`)
 }
 const out = typeof args.out === 'string' ? args.out : join(ROOT, 'test-assets', 'bench', 'latest.md')
 mkdirSync(dirname(out), { recursive: true }); writeFileSync(out, md)
 if (typeof args.json === 'string') writeFileSync(args.json, JSON.stringify(all, null, 1))
 console.log(md)
+console.log(timing.join('\n'))
