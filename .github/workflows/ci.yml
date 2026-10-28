@@ -22,10 +22,10 @@ jobs:
       - run: npm run check
 
   build:
+    # check 와 나란히 — 빌드는 타입 검사·단위 결과를 쓰지 않는다. e2e 가 check 끝을 기다리지 않고 바로 시작한다
     name: build (pages + capacitor base)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    needs: check
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -38,8 +38,13 @@ jobs:
 
   e2e-shard:
     # 105 개 시나리오를 한 러너에서 돌리면 25 분을 넘긴다(느린 러너) — 3 묶음으로 나눠 병렬로
+    # Playwright 공식 이미지 — 브라우저와 시스템 라이브러리가 들어 있어 샤드마다 apt 설치(install-deps)를 하지 않는다.
+    # 태그는 package-lock 의 playwright 버전과 같아야 한다(브라우저 리비전이 버전에 묶여 있다) — scripts/ci-image.test.mjs 가 지킨다
     name: e2e shard ${{ matrix.shard }}
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001
     timeout-minutes: 30
     needs: build
     strategy:
@@ -54,14 +59,6 @@ jobs:
       - uses: actions/download-artifact@v7
         with: { name: dist-capacitor, path: dist }
       - run: test -f dist/index.html # 아티팩트가 다른 곳에 풀리면 serve 가 디렉터리 목록을 내놓고 e2e 가 전부 실패한다 — 여기서 바로 멈춘다
-      - uses: actions/cache@v5
-        id: pw
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - if: steps.pw.outputs.cache-hit != 'true'
-        run: npx playwright install chromium
-      - run: npx playwright install-deps chromium
       - run: node scripts/e2e.mjs --dist dist --shard ${{ matrix.shard }}
 
   e2e:

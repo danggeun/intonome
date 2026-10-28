@@ -38,6 +38,7 @@ export function plan(files) {
   const p = files.map(f => f.split('\\').join('/'))
   const unitAll = p.some(f => /^(vite\.config\.js|package(-lock)?\.json|tsconfig\.json)$/.test(f))
   const unit = unitAll ? 'all' : p.filter(f => /^(www\/src\/.*\.ts|scripts\/(.*\.test|lib\/.*)\.mjs)$/.test(f)) // vitest related 가 이 파일들을 import 하는 테스트를 찾는다
+  if (unit !== 'all' && p.includes('.github/workflows/ci.yml')) unit.push('scripts/ci-image.test.mjs') // 이미지 태그 = 잠긴 playwright 버전
   let e2eAll = false, bench = false, shots = false
   const parts = new Set()
   for (const f of p) {
