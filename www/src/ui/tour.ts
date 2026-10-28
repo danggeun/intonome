@@ -10,6 +10,8 @@ import { q, on } from './dom.ts'
 import { t, type TKey } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
 import { isPhoneLayout, setStatusBarTheme } from '../platform/index.ts'
+import { stageOf, type Stage } from '../core/metro/card.ts'
+import { placeBubble } from '../core/tourPlace.ts'
 import { overlayOpen, closeSettings } from './menu.ts'
 import { isEditorOpen } from './editor.ts'
 import { skipDroneHint } from './drone.ts'
@@ -32,7 +34,7 @@ interface Step {
 }
 
 const reduced = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches
-const metroState = (): 'c' | 'e' | 'f' => { const { collapsed, full } = metroStore.get(); return full ? 'f' : collapsed && isPhoneLayout() ? 'c' : 'e' }
+const metroState = (): Stage => { const { collapsed, full } = metroStore.get(); return stageOf(collapsed, full, isPhoneLayout()) }
 /** 안내가 건드릴 수 있는 설정 — 떠날 때 들어올 때 값으로 */
 const KEEP = ['refHz', 'bpm', 'timeSig', 'subDiv', 'metroVol'] as const
 type Kept = Pick<Settings, typeof KEEP[number]>
@@ -285,26 +287,15 @@ function layout(force = false): void {
     Object.assign(L.pulse.style, { left: px + 'px', top: pr.top + pr.height / 2 + 'px', display: '' })
   }
   else L.pulse.style.display = 'none'
-  // 말풍선: 구멍 아래 → 위 → 옆(넓은 화면의 세로로 긴 메트로놈) → 그래도 없으면 구멍 안 위쪽(폰의 펼침2 메트로놈)
-  const M = 12, G = 16, top0 = insets.top + M, bot0 = vh - insets.bottom - M
-  let x: number, y: number, place: 'below' | 'above' | 'left' | 'right' | 'none' = 'below'
-  const cx = h ? h.left + h.width / 2 : vw / 2
+  // 말풍선 자리는 core/tourPlace.ts 가 정한다
   const gap = L.hint.hidden ? 0 : L.hint.offsetHeight + 8 // 첫 장: × 말풍선이 밝힌 곳을 가리지 않게 그만큼 아래로
-  const clampY = (v: number): number => Math.max(top0, Math.min(bot0 - ch, v))
-  const clampX = (v: number): number => Math.round(Math.max(G, Math.min(vw - G - cw, v)))
-  if (!h) { y = vh * 0.5 - ch / 2; x = clampX(vw / 2 - cw / 2); place = 'none' }
-  else if (bot0 - (h.bottom + M + gap) >= ch) { y = h.bottom + M + gap; x = clampX(cx - cw / 2) }
-  else if (h.top - M - top0 >= ch) { y = h.top - M - ch; x = clampX(cx - cw / 2); place = 'above' }
-  else if (h.left - M - G >= cw) { y = clampY(h.top); x = Math.round(h.left - M - cw); place = 'left' }
-  else if (vw - G - (h.right + M) >= cw) { y = clampY(h.top); x = Math.round(h.right + M); place = 'right' }
-  else { y = pr ? Math.min(bot0, h.bottom - M) - ch : Math.max(top0, h.top + M); x = clampX(cx - cw / 2); place = 'none' } // 화면을 다 쓰는 메트로놈: 밀 곳(위 헤더)·다이얼을 가리지 않게 아래쪽 안에
-  y = Math.round(clampY(y))
+  const { x, y, place, caret } = placeBubble({ hole: h, vw, vh, insetTop: insets.top, insetBottom: insets.bottom, cw, ch, hintGap: gap, hasPulse: !!pr })
   Object.assign(L.card.style, { left: x + 'px', top: y + 'px' })
   L.card.classList.toggle('up', place === 'above')
   L.card.classList.toggle('side-l', place === 'left'); L.card.classList.toggle('side-r', place === 'right')
   L.caret.style.display = place === 'none' ? 'none' : ''
-  if (place === 'left' || place === 'right') { L.caret.style.left = ''; L.caret.style.top = Math.round(Math.max(22, Math.min(ch - 22, (h!.top + 28) - y))) + 'px' }
-  else { L.caret.style.top = ''; L.caret.style.left = Math.round(Math.max(22, Math.min(cw - 22, cx - x))) + 'px' }
+  if (caret.side) { L.caret.style.left = ''; L.caret.style.top = caret.at + 'px' }
+  else { L.caret.style.top = ''; L.caret.style.left = caret.at + 'px' }
 }
 
 /** 자리를 매 프레임 잰다 — 메트로놈 카드가 커지는 동안·화면을 돌리는 동안에도 구멍이 따라간다. 바뀐 게 없으면 아무것도 안 한다 */

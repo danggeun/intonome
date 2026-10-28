@@ -11,6 +11,7 @@ import { attachVDrag } from './swipeStep.ts'
 import { t } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
 import { beatDurS, isBeatStart, sweepX, ledIndex, hitIndex } from '../core/metro/sweep.ts'
+import { stageOf, stageChange, sizeBtnTarget, dragTarget, dragProgress, dragCommits, stepCommits, type Stage } from '../core/metro/card.ts'
 import { q, qsa, on, reflow, setOn } from './dom.ts'
 import { toast } from './toast.ts'
 import { dragTick } from './dragTick.ts'
@@ -132,10 +133,7 @@ function attachDrag(el: HTMLElement): void {
 }
 
 /** 지금 실제로 접혀 보이는가 — 넓은 화면·전용 모드에서는 collapsed 값과 무관하게 펼쳐져 있다 */
-function isCollapsedNow(): boolean {
-  const { collapsed, full } = metroStore.get()
-  return isPhoneLayout() && collapsed && !full
-}
+function isCollapsedNow(): boolean { return stateNow() === 'c' }
 function applyCollapse(): void {
   const effective = isCollapsedNow()
   q('metro-body-wrap').classList.toggle('collapsed', effective)
@@ -232,24 +230,16 @@ export function mountMetro(): void {
 }
 
 // ── 카드 끌기: 손가락을 따라 카드 높이가 바뀌고, 놓으면 다음 단계로 넘어가거나 제자리로 돌아간다 (폰 세로 배치) ──
-// 위로 끌면 접힘 → 펼침 → 펼침2, 아래로 끌면 반대. 넓은 화면·동작 줄이기에서는 40 px 밀면 한 단계(손을 따라오지 않는다)
-type St = 'c' | 'e' | 'f'
-const UP: Record<St, St | null> = { c: 'e', e: 'f', f: null }
-const DOWN: Record<St, St | null> = { f: 'e', e: 'c', c: null }
-const COMMIT_P = 0.3, COMMIT_VEL = 0.35, STEP_PX = 40
+// 단계·목적지·넘어가는 조건은 core/metro/card.ts. 넓은 화면·동작 줄이기에서는 40 px 밀면 한 단계(손을 따라오지 않는다)
+type St = Stage
 type Drag = { live: boolean; dir: -1 | 1; from: St; to: St; h0: number; h1: number; t0: number; gap: number; p: number }
 let drag: Drag | null = null
 let handoff: { t: number; m: number; mb: string } | null = null
 let wrapTimer: ReturnType<typeof setTimeout> | null = null
 
-/** 보이는 단계 — 넓은 화면에는 접힘이 없다(collapsed 가 켜져 있어도 펼쳐져 보인다) */
-function stateNow(): St { const { collapsed, full } = metroStore.get(); return full ? 'f' : collapsed && isPhoneLayout() ? 'c' : 'e' }
-function go(st: St): void { metroStore.set(st === 'f' ? { full: true } : st === 'e' ? { full: false, collapsed: false } : { collapsed: true }) }
-/** 크기 버튼의 목적지: 펼침2 → 펼침, 폰은 접힘 ⇄ 펼침, 넓은 화면은 펼침 → 펼침2 */
-function sizeBtnTo(): St {
-  const st = stateNow()
-  return st === 'f' ? 'e' : !isPhoneLayout() ? 'f' : st === 'c' ? 'e' : 'c'
-}
+function stateNow(): St { const { collapsed, full } = metroStore.get(); return stageOf(collapsed, full, isPhoneLayout()) }
+function go(st: St): void { metroStore.set(stageChange(st)) }
+const sizeBtnTo = (): St => sizeBtnTarget(stateNow(), isPhoneLayout())
 const liveDrag = (): boolean => isPhoneLayout() && !matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** 상태 st 일 때의 카드 높이 — 클래스를 잠깐 바꿔 재고 되돌린다(그리기 전이라 화면에 안 나온다) */
@@ -272,8 +262,8 @@ function clearWrap(): void {
 }
 
 function dragStart(dir: -1 | 1): boolean {
-  const from = stateNow(), to = dir < 0 ? UP[from] : DOWN[from]
-  if (!to || (to === 'c' && !isPhoneLayout())) return false
+  const from = stateNow(), to = dragTarget(from, dir, isPhoneLayout())
+  if (!to) return false
   if (!liveDrag()) { drag = { live: false, dir, from, to, h0: 0, h1: 0, t0: 0, gap: 0, p: 0 }; return true }
   const card = q('metro-card'), tuner = q('tuner-card')
   clearAnim(tuner); clearAnim(card); if (wrapTimer) clearWrap() // 이전 전환이 남아 있으면 끝난 상태에서 시작
@@ -287,16 +277,15 @@ function dragStart(dir: -1 | 1): boolean {
 }
 function dragMove(dy: number): void {
   const d = drag; if (!d || !d.live) return
-  const h = Math.min(Math.max(d.h0, d.h1), Math.max(Math.min(d.h0, d.h1), d.h0 - dy)) // 카드는 아래에 붙어 있어 손이 위로 가면 커진다
-  d.p = (h - d.h0) / ((d.h1 - d.h0) || 1)
+  const { h, p } = dragProgress(d.h0, d.h1, dy); d.p = p
   q('metro-card').style.height = h + 'px'
   // 튜너가 0 이 돼도 카드 사이 gap 은 남는다 — 펼침2 쪽으로 간 만큼 음수 margin 으로 접는다
   if (d.from === 'f' || d.to === 'f') q('tuner-card').style.marginBottom = -d.gap * (d.to === 'f' ? d.p : 1 - d.p) + 'px'
 }
 function dragEnd(dy: number, vy: number): void {
   const d = drag; drag = null; if (!d) return
-  if (!d.live) { if (dy * d.dir >= STEP_PX) go(d.to); return }
-  const commit = d.p >= COMMIT_P || (vy * d.dir > COMMIT_VEL && d.p > 0.03) // 멀리 끌었거나, 그 방향으로 튕겼거나
+  if (!d.live) { if (stepCommits(dy, d.dir)) go(d.to); return }
+  const commit = dragCommits(d.p, vy, d.dir)
   const card = q('metro-card'), tuner = q('tuner-card'), wrap = q('metro-body-wrap'), clip = q('metro-body-clip')
   const cur = card.offsetHeight
   if (d.from === 'f' || d.to === 'f') {

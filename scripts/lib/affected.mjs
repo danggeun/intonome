@@ -12,8 +12,8 @@ const AREAS = [
   { e2e: ['rec', 'recording', 'playback', 'editor', 'ux'],
     files: [/^www\/src\/audio\/recorder\.ts$/, /^www\/src\/persist\/recordingsDb\.ts$/, /^www\/src\/ui\/(recList|recHeader)\.ts$/, /^www\/src\/core\/(recPolicy|container|wav|peaks)\.ts$/] },
   { e2e: ['editor', 'ux', 'playback', 'keys'],
-    files: [/^www\/src\/ui\/editor(\/|\.ts$)/, /^www\/src\/audio\/(playback|player|stretchPlayer)\.ts$/, /^www\/src\/core\/(playbackGain|softclip|stretch|segments)\.ts$/] },
-  { e2e: ['first-run'], files: [/^www\/src\/(ui|persist)\/tour\.ts$/] },
+    files: [/^www\/src\/ui\/editor\.ts$/, /^www\/src\/audio\/(playback|editorPlayer)\.ts$/, /^www\/src\/core\/(playbackGain|softclip|editRange)\.ts$/] },
+  { e2e: ['first-run'], files: [/^www\/src\/(ui|persist)\/tour\.ts$/, /^www\/src\/core\/(tourPlace|metro\/card)\.ts$/] },
   { e2e: ['settings', 'theme', 'first launch', 'i18n', 'first-run'], files: [/^www\/src\/state\//, /^www\/src\/persist\/(settings|legacy)\.ts$/] },
   { e2e: ['i18n', 'first launch', 'settings: note names'], shots: true, files: [/^www\/src\/core\/i18n\//, /^www\/src\/ui\/lang\.ts$/] },
   { e2e: ['theme'], shots: true, files: [/^www\/src\/ui\/theme\.ts$/] },
@@ -22,7 +22,7 @@ const AREAS = [
   { e2e: ['permission', 'i18n: English mic popup', 'metro: works without mic'], files: [/^www\/src\/ui\/micPopup\.ts$/] },
   { e2e: ['launch'], files: [/^www\/src\/ui\/launch\.ts$/] },
   { e2e: ['ref drum', 'drag ticks'], files: [/^www\/src\/ui\/refDrum\.ts$/] },
-  { e2e: ['lifecycle', 'mic off', 'ios'], files: [/^www\/src\/core\/lifecycle\.ts$/] },
+  { e2e: ['lifecycle', 'mic off', 'ios'], files: [/^www\/src\/core\/micLease\.ts$/] },
   { e2e: ['layout', 'theme', 'i18n', 'metro', 'timer', 'ux'], shots: true, files: [/^www\/index\.html$/, /^www\/src\/style\.css$/, /^www\/src\/fonts/] },
 ]
 /** 여기 걸리면 e2e 전부(+ 스크린샷): 앱 전체가 기대는 곳 */
