@@ -6,6 +6,7 @@ import { metroStore, sessionStore, settingsStore, CFG, type SubDiv, type TimeSig
 import { totalTicks as _totalTicks, type Pattern } from '../core/metro/sequencer.ts'
 import { getContext, micOpen, muteAnalysis, resetArrival, audioSupported, suspendIfIdle, output, outputLatency } from './engine.ts'
 import { t } from '../core/i18n/index.ts'
+import { notice } from '../core/notice.ts'
 import metroWorkletUrl from './metro.worklet.ts?worker&url'
 
 let node: AudioWorkletNode | null = null
@@ -49,13 +50,11 @@ export function startMetro(): StartResult {
   metroStore.set({ playing: true })
   resetArrival()
   ensureNode().then(n => { if (metroStore.get().playing) { n.port.postMessage({ type: 'pattern', pattern: pattern() }); n.port.postMessage({ type: 'start' }) } })
-    .catch(() => { metroStore.set({ playing: false }); toastFn?.(t('audio.cantStart')) })
+    .catch(() => { metroStore.set({ playing: false }); notice(t('audio.cantStart')) })
   return { ok: true }
 }
 export function stopMetro(): void { metroStore.set({ playing: false }); node?.port.postMessage({ type: 'stop' }); setTimeout(suspendIfIdle, 300) } // 마지막 클릭 꼬리가 끝난 뒤
 export function toggleMetro(): StartResult { return metroStore.get().playing ? (stopMetro(), { ok: true }) : startMetro() }
-let toastFn: ((m: string) => void) | null = null
-export function onMetroError(fn: (m: string) => void): void { toastFn = fn }
 
 function pushPattern(): void { node?.port.postMessage({ type: 'pattern', pattern: pattern() }) }
 /** 클릭 간격이 바뀌는 변경(BPM) — 도착 보정의 옛 후보는 옛 간격에서 '다음 클릭'에 잠긴 값일 수 있어 버린다(적용 중인 보정은 새 합의까지 둔다). 음량·기준음·녹음 무음은 간격이 그대로라 건드리지 않는다 */

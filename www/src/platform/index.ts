@@ -1,5 +1,6 @@
 /** 플랫폼 분기 (웹 / iOS 웹 / Capacitor Android). 나머지 코드는 이 모듈의 함수만 호출한다 */
 import { t } from '../core/i18n/index.ts'
+import { notice, noticeListening } from '../core/notice.ts'
 declare global { interface Window { Capacitor?: unknown } }
 
 export const isNative = (): boolean => typeof window !== 'undefined' && !!window.Capacitor
@@ -49,13 +50,12 @@ export function onBackButton(handler: () => boolean): void {
 // 화면 켜짐 유지
 let wakeLock: WakeLockSentinel | null = null, wakeGen = 0
 const WAKE_WARNED_KEY = 'intonome_wake_warned_v1'
-let wakeWarned = false, wakeWarn: ((m: string) => void) | null = null
-export function onWakeLockUnsupported(fn: (m: string) => void): void { wakeWarn = fn }
+let wakeWarned = false
 /** iOS 웹은 첫 요청에 DOM 탭(transient activation)이 필요 — 탭 핸들러에서 await 전에 부른다. 실패는 삼킨다(다음 syncWake 에서 재시도) */
 export async function acquireWakeLock(): Promise<void> {
   if (wakeLock && !wakeLock.released) return // 이미 쥐고 있으면 다시 요청하지 않는다 — 앞의 센티널이 샌다
   if (!('wakeLock' in navigator)) { // 설치당 한 번만 — 매 실행 같은 토스트가 떴다
-    if (!wakeWarned && wakeWarn) { wakeWarned = true; let shown = false; try { shown = localStorage.getItem(WAKE_WARNED_KEY) === '1' } catch { /* 저장 불가면 세션당 한 번 */ } if (!shown) { wakeWarn(t('set.wakeUnsupported')); try { localStorage.setItem(WAKE_WARNED_KEY, '1') } catch { /* 위와 같음 */ } } } // 실제로 보여 준 뒤에만 기록
+    if (!wakeWarned && noticeListening()) { wakeWarned = true; let shown = false; try { shown = localStorage.getItem(WAKE_WARNED_KEY) === '1' } catch { /* 저장 불가면 세션당 한 번 */ } if (!shown) { notice(t('set.wakeUnsupported')); try { localStorage.setItem(WAKE_WARNED_KEY, '1') } catch { /* 위와 같음 */ } } } // 실제로 보여 준 뒤에만 기록
     return
   }
   const gen = ++wakeGen
@@ -128,9 +128,9 @@ export function sanitizeFileName(name: string): string {
   const cleaned = name.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').replace(/\.{2,}/g, '.').trim().replace(/^\.+/, '')
   return (cleaned || 'recording').slice(0, 120)
 }
-let sharing = false, onShareProgress: (() => void) | null = null
-/** 안드로이드 앱에서 큰 파일을 공유 시트에 넘기기 전 "준비 중" 안내를 띄울 곳 */
-export function setShareProgress(fn: () => void): void { onShareProgress = fn }
+let sharing = false
+/** 안드로이드 앱에서 큰 파일을 공유 시트에 넘기기 전 "준비 중" 안내 */
+const shareProgress = (): void => notice(t('rec.preparingShare'), 6000)
 const toBase64 = (b: Blob) => new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] ?? ''); r.onerror = () => rej(r.error); r.readAsDataURL(b) })
 /** 파일을 사용자에게 건넨다. 웹: 다운로드, iOS: 공유 시트, Android 앱: 캐시에 쓰고 공유 시트(WebView 의 <a download> 는 동작하지 않는다) */
 export async function saveFile(blob: Blob, name: string): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -155,13 +155,13 @@ export async function saveFile(blob: Blob, name: string): Promise<{ ok: true } |
       return { ok: true }
     }
     // 한 번에 하나만 — 긴 파일(60 분 ≈ 115 MB)은 쓰는 데 10 s 넘게 걸리는데, 그 사이 다시 누르면 앞 파일을 지우며 썼다
-    if (sharing) { onShareProgress?.(); return { ok: true } } // 토스트가 사라진 뒤 다시 누르면 '준비 중' 을 다시 보여 준다
+    if (sharing) { shareProgress(); return { ok: true } } // 토스트가 사라진 뒤 다시 누르면 '준비 중' 을 다시 보여 준다
     sharing = true
     try {
       const [{ Filesystem, Directory }, { Share }] = await Promise.all([import('@capacitor/filesystem'), import('@capacitor/share')])
       const safe = sanitizeFileName(name)
       const CHUNK = 1024 * 1024; const path = 'intonome/' + safe
-      if (blob.size > 4 * CHUNK) onShareProgress?.() // 몇 초 걸리면 "준비 중" 안내
+      if (blob.size > 4 * CHUNK) shareProgress() // 몇 초 걸리면 "준비 중" 안내
       // 이전 공유 파일 정리 — 캐시에 쌓이지 않게
       await Filesystem.rmdir({ path: 'intonome', directory: Directory.Cache, recursive: true }).catch(() => {})
       await Filesystem.mkdir({ path: 'intonome', directory: Directory.Cache, recursive: true }).catch(() => {})

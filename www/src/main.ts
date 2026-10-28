@@ -5,24 +5,24 @@
 import './fonts.css'
 import './style.css'
 import { settingsStore, tunerStore, metroStore, refToneStore, droneStore, CFG } from './state/index.ts'
-import { loadSettings, startSettingsAutosave, onPersistError } from './persist/settings.ts'
+import { loadSettings, startSettingsAutosave } from './persist/settings.ts'
 import { isNewInstall, tourPending, markTourDone } from './persist/tour.ts'
-import { openRecDb, onDbError } from './persist/recordingsDb.ts'
+import { openRecDb } from './persist/recordingsDb.ts'
 import { clearLegacyStorage } from './persist/legacy.ts'
-import { openMic, closeMic, onMic, A, resumeIfRunning, onEngineFatal, setIdleCheck, onContextState, isPermissionError, isOpening, cancelOpen, untilOpenSettled } from './audio/engine.ts'
+import { openMic, closeMic, onMic, A, resumeIfRunning, setIdleCheck, onContextState, isPermissionError, isOpening, cancelOpen, untilOpenSettled } from './audio/engine.ts'
 import { startAnalysis, lastFrameMs, metroCalibMs } from './audio/analysis.ts'
 import { playbackActive, playbackDiag, onPlaybackChange } from './audio/playback.ts'
-import { restoreRecordings, recoverInProgress, onRecorderError, backdateRecFile } from './audio/recorder.ts'
-import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton, onWakeLockUnsupported, setShareProgress } from './platform/index.ts'
+import { restoreRecordings, recoverInProgress, backdateRecFile } from './audio/recorder.ts'
+import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton } from './platform/index.ts'
 import { q, qsa, on, setOn } from './ui/dom.ts'
 import { toast } from './ui/toast.ts'
 import { mountTuner, showTapHint, hideTapHint, setHistSec, histDiag, retheme, setMicOpener, showMicOff } from './ui/tuner.ts'
 import { mountTheme, onThemeChange } from './ui/theme.ts'
 import { mountLang } from './ui/lang.ts'
 import { t } from './core/i18n/index.ts'
+import { onNotice } from './core/notice.ts'
 import { mountRefDrum } from './ui/refDrum.ts'
 import { mountMetro } from './ui/metro.ts'
-import { onMetroError } from './audio/metronome.ts'
 import { mountRefPanel } from './ui/refPanel.ts'
 import { mountDrone, dronePopOpen, closeDronePop } from './ui/drone.ts'
 import { stopDrone, stopRefNote } from './audio/refTone.ts'
@@ -87,7 +87,7 @@ mountMicPopup(tryOpenMic); onMicRetryFailed(() => toast(t('mic.retryFailed'), 50
 mountRecHeader(() => tryOpenMic(true)) // REC 가 마이크를 켠다 — 직접 누른 것이므로 차단이면 안내
 setMicOpener(() => startInGesture()) // 꺼진 채 남은 튜너의 시작 버튼 (정의는 아래 — 누를 때 부른다)
 const droneOn = (): boolean => droneStore.get().pitchClass !== null
-onEngineFatal(toast); onMetroError(toast); onRecorderError(toast); onPersistError(toast); onDbError(toast); onWakeLockUnsupported(toast); setShareProgress(() => toast(t('rec.preparingShare'), 6000))
+onNotice(toast) // audio·persist·platform 이 알리는 한 줄은 모두 토스트로
 // 녹음 재생도 유휴가 아니다 — 재생이 보정 게인 그래프를 타면 컨텍스트가 잠들 때 무음이 된다
 setIdleCheck(() => !metroStore.get().playing && !refToneStore.get().active && !droneOn() && !playbackActive())
 startAnalysis()

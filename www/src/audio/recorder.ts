@@ -4,6 +4,7 @@ import { dbSave, dbDelete, dbPatchMeta, dbLoadAll, dbLastExpired, dbChunkAdd, db
 import { computePeaks, peakOf } from '../core/peaks.ts'
 import { containerOf, extFromMime, type RecContainer } from '../core/container.ts'
 import { t } from '../core/i18n/index.ts'
+import { notice } from '../core/notice.ts'
 import { isIOS, isSafari } from '../platform/index.ts'
 import { A, onMic } from './engine.ts'
 
@@ -56,12 +57,12 @@ function startFile(t0: number, base: string, part = 1): RecResult {
   const parts: Blob[] = []
   let liveFrom = 0 // 조각마다 그 사이의 실시간 피크를 같이 저장한다 — 복구 때 파형과 재생 보정 피크가 된다
   rec.ondataavailable = e => { if (e.data.size > 0) { parts.push(e.data); const live = myPeaks.slice(liveFrom); liveFrom = myPeaks.length; void dbChunkAdd({ session: t0, t: Date.now(), mime: rec.mimeType, blob: e.data, live }) } }
-  rec.onerror = () => { errorFn?.(t('rec.errSaved')); if (recorder === rec) stopRec() }
+  rec.onerror = () => { notice(t('rec.errSaved')); if (recorder === rec) stopRec() }
   // 파형·피크·확장자는 부가 정보 — 실패해도 녹음은 저장한다. blob 을 못 만들 때만 포기
   rec.onstop = async () => {
     let blob: Blob
     try { blob = new Blob(parts, { type: rec.mimeType || 'audio/mp4' }) }
-    catch { parts.length = 0; errorFn?.(t('rec.saveFailed')); return }
+    catch { parts.length = 0; notice(t('rec.saveFailed')); return }
     parts.length = 0 // 60분 녹음 ≈ 115 MB 가 두 벌 남지 않게
     const name = part > 1 ? `${base}_${part}` : uniqueName(base)
     // 파형용 peaks 는 정규화돼 절대 레벨이 사라진다 → 재생 보정용 원시 피크를 따로 남긴다
@@ -69,7 +70,7 @@ function startFile(t0: number, base: string, part = 1): RecResult {
     try {
       peak = myPeaks.length ? peakOf(myPeaks) : undefined
       peaks = myPeaks.length ? computePeaks([Float32Array.from(myPeaks)], 600) : undefined
-    } catch { peak = undefined; peaks = undefined; errorFn?.(t('rec.noWaveform')) }
+    } catch { peak = undefined; peaks = undefined; notice(t('rec.noWaveform')) }
     // 확장자는 mimeType 이 아니라 파일 앞부분 바이트로 정한다 — 빈 mimeType·예상 밖 값 대비
     let ext: RecContainer
     try { ext = containerOf(new Uint8Array(await blob.slice(0, 16).arrayBuffer().catch(() => new ArrayBuffer(0))), rec.mimeType) }
@@ -78,7 +79,7 @@ function startFile(t0: number, base: string, part = 1): RecResult {
     // 목록에는 먼저 넣고 id 는 저장이 끝난 뒤 붙인다 — 큰 파일은 저장에 1~3 s 걸려 "녹음 완료" 뒤 메뉴를 열면 항목이 없었다
     const st = recListStore.get(); recListStore.set({ items: [item, ...st.items], rev: st.rev + 1 })
     const id = await dbSave({ name: item.name, dur: item.dur, blob: item.blob, mime: item.mime, ts: item.ts }, { bookmarks: [], ab: null, peaks, ext, peak }).catch(() => null)
-    if (id == null) errorFn?.(t('rec.sessionOnly'), 10000) // 용량 부족·프라이빗 모드 등 — 앱을 닫으면 사라진다. 다운로드할 시간을 준다
+    if (id == null) notice(t('rec.sessionOnly'), 10000) // 용량 부족·프라이빗 모드 등 — 앱을 닫으면 사라진다. 다운로드할 시간을 준다
     else void dbChunksClear(t0)
     attachId(item, id)
   }
@@ -94,8 +95,8 @@ function rollover(): void {
   if (!recorder || recorder.state === 'inactive') return
   recorder.stop(); stopPeakCapture()
   const r = startFile(Date.now(), fileBase, filePart + 1)
-  if (r.ok) errorFn?.(t('rec.rolledOver'), 6000)
-  else { errorFn?.(r.error); stopRec() }
+  if (r.ok) notice(t('rec.rolledOver'), 6000)
+  else { notice(r.error); stopRec() }
 }
 export function stopRec(): void {
   if (recorder && recorder.state !== 'inactive') recorder.stop()
@@ -158,8 +159,6 @@ export function patchRec(item: RecItem, patch: Partial<Pick<RecItem, 'name' | 'b
   recListStore.set({ items, rev: 'name' in patch ? st.rev + 1 : st.rev })
   return next
 }
-let errorFn: ((m: string, ms?: number) => void) | null = null
-export function onRecorderError(fn: (m: string, ms?: number) => void): void { errorFn = fn }
 /** 앱 시작 시 IndexedDB 에서 복원. 30 일이 지나 지운 개수를 돌려준다 */
 export async function restoreRecordings(): Promise<number> {
   const rows = await dbLoadAll().catch(() => [])

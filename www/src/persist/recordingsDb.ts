@@ -6,6 +6,7 @@ export const LEGACY_REC_DBS = ['gopractice_rec', 'tempotune_rec'] // 옛 이름(
 export const REC_DB_VERSION = 4 // v3: meta 분리, v4: chunks
 import { REC_TTL, expires } from '../core/recPolicy.ts'
 import { t } from '../core/i18n/index.ts'
+import { notice } from '../core/notice.ts'
 import { settingsStore } from '../state/index.ts'
 export { REC_TTL }
 
@@ -16,8 +17,6 @@ export interface RecMeta { id: number; name?: string; bookmarks: number[]; ab: A
 export interface RecFull extends RecRow { bookmarks: number[]; ab: AB | null; peaks?: Float32Array; speed?: number; ext?: 'm4a' | 'webm'; peak?: number; keep?: boolean }
 
 let db: IDBDatabase | null = null
-let metaError: ((m: string) => void) | null = null
-export function onDbError(fn: (m: string) => void): void { metaError = fn }
 const req = <T>(r: IDBRequest<T>): Promise<T> => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) })
 
 export function openRecDb(): Promise<IDBDatabase> {
@@ -53,7 +52,7 @@ const store = (name: string, mode: IDBTransactionMode) => db!.transaction(name, 
 export async function dbSave(row: RecRow, meta: Omit<RecMeta, 'id'>): Promise<number | null> {
   if (!db) return null
   const id = (await req(store(REC_STORE, 'readwrite').add(row))) as number
-  await req(store(META_STORE, 'readwrite').put({ id, ...meta })).catch(() => { metaError?.(t('rec.metaFailed')) })
+  await req(store(META_STORE, 'readwrite').put({ id, ...meta })).catch(() => { notice(t('rec.metaFailed')) })
   return id
 }
 /** 두 스토어에서 지우고 결과를 기다린다 — 실패를 모르면 다음 로드에서 되살아난다 */
@@ -71,7 +70,7 @@ export async function dbPatchMeta(id: number | null | undefined, patch: Partial<
   try {
     const s = store(META_STORE, 'readwrite'); const cur = ((await req(s.get(id))) as RecMeta | undefined) ?? { id, bookmarks: [], ab: null }
     await req(s.put({ ...cur, ...patch, id }))
-  } catch { metaError?.(t('rec.metaFailed')) }
+  } catch { notice(t('rec.metaFailed')) }
 }
 /** 마지막 dbLoadAll 이 TTL 로 지운 개수 — 시작 때 "n개를 지웠어요" 로 알린다(2.5.7 까지는 말없이 사라졌다) */
 let expiredLast = 0

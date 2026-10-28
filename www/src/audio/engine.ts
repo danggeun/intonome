@@ -5,6 +5,7 @@
 import { tunerStore, settingsStore } from '../state/index.ts'
 import { isNative } from '../platform/index.ts'
 import { t as tr } from '../core/i18n/index.ts'
+import { notice } from '../core/notice.ts'
 import type { WorkerIn, WorkerOut } from './messages.ts'
 import type { AnalyzerSettings } from '../core/pitch/analyzer.ts'
 import { softClipCurve } from '../core/softclip.ts'
@@ -32,8 +33,6 @@ const stateListeners: Array<(s: AudioContextState | 'interrupted') => void> = []
 export function onContextState(fn: (s: AudioContextState | 'interrupted') => void): void { stateListeners.push(fn) }
 let frameHandler: ((m: WorkerOut) => void) | null = null
 export function onWorkerMessage(fn: (m: WorkerOut) => void): void { frameHandler = fn }
-let onFatal: ((msg: string) => void) | null = null
-export function onEngineFatal(fn: (msg: string) => void): void { onFatal = fn }
 
 const ACCtor = (): typeof AudioContext => (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)
 
@@ -139,11 +138,11 @@ export async function openMic(): Promise<MicResult> {
     if (stale()) throw new Error('busy')
     // 세션마다 워커를 캡처 — 종료 직전 큐에 남은 이전 세션 프레임이 새 세션에 섞이지 않게
     w.onmessage = (e: MessageEvent<WorkerOut>) => { if (A.worker === w) frameHandler?.(e.data) }
-    w.onerror = () => { if (A.worker === w) { closeMic(); onFatal?.(tr('mic.errWorkerCrash')) } }
+    w.onerror = () => { if (A.worker === w) { closeMic(); notice(tr('mic.errWorkerCrash')) } }
     A.captureNode.port.postMessage({ type: 'port', port: ch.port2 }, [ch.port2])
     A.micSource = ac.createMediaStreamSource(stream); A.micSource.connect(A.captureNode)
     // 장치가 빠지거나 다른 앱이 마이크를 가져가면 (track ended) 정리 — 자기 스트림일 때만 (이전 세션의 늦은 ended 가 새 세션을 닫지 않게)
-    stream.getAudioTracks()[0]?.addEventListener('ended', () => { if (A.micStream === stream) { closeMic(); onFatal?.(tr('mic.errEnded')) } })
+    stream.getAudioTracks()[0]?.addEventListener('ended', () => { if (A.micStream === stream) { closeMic(); notice(tr('mic.errEnded')) } })
     if (toneForAnalysis !== null) sendToWorker({ type: 'tone', hz: toneForAnalysis, at: ac.currentTime }) // 이미 울리는 앱 음: 지금부터 잘라낸다
     tunerStore.set({ micReady: true, running: true, sampleRate: ac.sampleRate }) // 샘플레이트는 트레이스 창을 초 단위로 유지하는 데 쓰인다
     opening = false

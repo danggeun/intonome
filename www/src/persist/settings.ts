@@ -1,6 +1,7 @@
 /** 설정 영속화 (localStorage). 스키마 v2 + v1 마이그레이션 */
 import { settingsStore, RMS_LEVELS, V1_RMS_LEVELS, V201_RMS_LEVELS, SMOOTH_LEVELS, V246_SMOOTH_LEVELS, CFG, type Settings, type SubDiv, type TimeSig } from '../state/index.ts'
 import { t } from '../core/i18n/index.ts'
+import { notice } from '../core/notice.ts'
 
 export const SETTINGS_KEY = 'intonome_settings_v1'
 export const LEGACY_SETTINGS_KEYS = ['gopractice_settings_v1', 'gp_mic_intro', 'tempotune_settings_v1', 'tempotune_legacy_cleared_v1'] // 옛 이름(Go practice · TempoTune) 키 — persist/legacy.ts 가 지운다
@@ -93,12 +94,11 @@ export function loadSettings(): void {
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
-let warned = false, persistError: ((m: string) => void) | null = null
-export function onPersistError(fn: (m: string) => void): void { persistError = fn }
+let warned = false
 function writeNow(): void {
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
   const d: StoredV3 = { v: 3, ...settingsStore.get() }
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(d)) } catch { if (!warned) { warned = true; persistError?.(t('set.saveFailed')) } }
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(d)) } catch { if (!warned) { warned = true; notice(t('set.saveFailed')) } }
 }
 export function startSettingsAutosave(): void {
   settingsStore.subscribe(() => { if (saveTimer) clearTimeout(saveTimer); saveTimer = setTimeout(writeNow, 300) }) // BPM 드래그 중 연속 쓰기 방지
