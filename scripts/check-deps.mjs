@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 모듈 경계 검사. 의존성 없이 import 문을 정규식으로 본다.
-// 규칙: core → (core만) / state → (state,core) / persist → (state,core) / platform → (core — 화면 문구 core/i18n 만)
+// 규칙: core → (core만) / state → (state,core) / persist → (state,core) / platform → (core — 화면 문구 core/i18n · 알림 core/notice)
 //       audio → (core,state,persist,platform,audio) / ui → (core,state,audio,platform,ui)  ui 는 audio 의 "명령"만 — 상태는 store 로
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname, relative, sep } from 'node:path'

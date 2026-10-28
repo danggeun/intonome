@@ -4,18 +4,19 @@
 
 ```
 www/src/
-  main.ts      Wiring: connects modules, startup sequence, service worker, diagnostics hook window.__tt
+  main.ts      Wiring: connects modules, startup sequence, app lifecycle (hide/return, editor, idle watch; what to let go on hide or when the editor opens is decided by core/micLease), service worker, diagnostics hook window.__tt
   ui/          DOM bindings per card: tuner, refDrum, refPanel (Play A), drone, metro, dial, swipeBack, swipeStep, menu, settings, timer,
                micPopup, recHeader, recList, editor, toast, theme, lang, tour (first-run guide). mount*() binds the DOM and subscribes to stores
   audio/       Web Audio adapters: engine (single AudioContext, mic session), analysis (+worker), capture.worklet,
-               metronome (+metro.worklet), refTone (Play A and drone), recorder, playback, messages
+               metronome (+metro.worklet), refTone (Play A and drone), recorder, playback (output route for recordings),
+               editorPlayer (what the editor plays through), stretchPlayer (+stretch.worklet), decode, messages
   state/       Stores per domain (settings / tuner / metro / refTone / drone / session / recList). Source of the types
   persist/     Settings and the first-run guide flag in localStorage, recordings in IndexedDB
   platform/    Web / Capacitor branches (status bar, wake lock, full screen, file saving, back button)
   core/        Pure logic, no browser APIs, all unit-tested:
-               pitch/(fft, yinFast, spectrum, tracker, analyzer) · playing/detector · metro/(sequencer, arrival, sweep, dial)
+               pitch/(fft, yinFast, spectrum, tracker, readout, analyzer) · playing/detector · metro/(sequencer, arrival, sweep, dial, clickPitch, card)
                i18n/(ko, en), drone, note, wav, peaks, format, recPolicy, hist, trace, hzReadout, softclip, playbackGain, container,
-               yin (reference only, not bundled)
+               notice, micLease, editRange, tourPlace, stretch, mono, yin (reference only, not bundled)
 ```
 
 Dependency rules (`scripts/check-deps.mjs`, part of `npm run check`):
@@ -25,11 +26,13 @@ Dependency rules (`scripts/check-deps.mjs`, part of `npm run check`):
 | core | core |
 | state | state, core |
 | persist | persist, state, core |
-| platform | platform, core (on-screen text only) |
+| platform | platform, core (on-screen text and the notice channel) |
 | audio | audio, core, state, persist, platform |
 | ui | ui, core, state, audio (commands only), platform |
 
 `ui` never reads `audio` state directly: `ui → audio (command) → store → ui (subscription)`.
+Messages from `audio`, `persist` and `platform` for the user (errors, notices) go through one channel, `core/notice`; `main.ts` connects it to the toast.
+Arithmetic that can be tested without a browser lives in `core`: the editor's time window, A–B limits and speed steps (`editRange`), the metronome card's stages and drag rules (`metro/card`), the first-run guide's bubble placement (`tourPlace`) and, for main.ts, the rules for letting go of the mic when the app is hidden or the editor opens (`micLease`). A few UI helpers keep their own tests next to them (`ui/dragTick`, `ui/swipeBack`, `ui/toast`).
 No framework. A store is `createStore(initial)` with `get / set / select`. Styles use only the tokens on `:root` in `style.css`.
 
 ## 2. Audio pipeline
@@ -48,12 +51,14 @@ mic ─ getUserMedia ─▶ AudioWorkletNode (capture.worklet)        audio thre
                   tunerStore.set(...) → ui/tuner renders only the latest value on rAF
 ```
 
-- One `AudioContext` (engine.ts). It is suspended when idle (no mic, metronome, Play A or drone). Mic sessions are identified by `micGen`.
+- One `AudioContext` (engine.ts). It is suspended when idle (no mic, metronome, Play A, drone or recording playback). Mic sessions are identified by `micGen`.
 - Everything the app plays (metronome, Play A, drone) goes through one soft limiter, `output()` in engine.ts.
 - Play A and the drone are the same sound (a triangle wave at the same level and fade) and never sound together. The app knows their frequency f exactly, and whatever the phone speaker and the room add to them lands only on whole multiples of f. While one sounds, the worker cuts f and every multiple up to 8 kHz out of the mic signal (a narrow notch at each, as wide in Hz as the one at f) and low-passes at 5 kHz before analysis (`core/drone.ts`, 0.3 s to settle). A window where what is left is under 12 % of what was cut is analyzed as silence, so the tuner shows nothing and the practice timer doesn't count it. A played note whose partials all land on multiples of f (the same note or an octave above, in tune within about 3 cents) is cut with it. So the worker first checks whether the tone reaches the mic at all (`createToneProbe`): it measures the tone's partials at their exact frequencies and phase, and when they stay under a tenth of the sensitivity threshold for four frames (earphones) it analyzes the uncut signal instead. It starts from "heard", so a player sounding the same note when the tone starts only keeps the cut. Once uncut, a component at the tone's partials whose level and phase hold within 1 % for six frames (the tone reaching the mic — a bowed note never holds that still) brings the cut back and clears the display; a `devicechange` (earphones plugged or unplugged) brings it back at once and holds the tuner silent while the notches settle again.
 - The sample rate is not forced. No SharedArrayBuffer (COOP/COEP can't be set on Pages or in Capacitor).
 - The metronome runs in its own worklet (metro.worklet + core/metro/sequencer). The tempo number is the beat of the time signature (the dotted quarter in 6/8); the volume slider is a square taper applied when the click is rendered. Each click sits exactly between two notes of the current reference pitch (core/metro/clickPitch, near 1800 / 1100 / 750 Hz), so a note played less than 30 cents off is never the click's pitch. Click times (including output latency) are sent to the worker; in a window that overlaps a click, the tuner ignores the frame only if it reads the click's pitch (any octave), and a change to another note needs 3 frames instead of 2. Nothing else is dropped, so the tuner keeps reading at any tempo and subdivision; the playing detector follows the same rule, so practice time counts under any tempo too.
 - Recording uses MediaRecorder: mp4 (AAC) first on iOS and Safari, webm/opus elsewhere. Chunks go to IndexedDB every 10 s, and an unfinished recording is recovered on the next launch.
+- Recordings play (list and editor) through one route, `routeOut` in playback.ts: the first channel (at other speeds the decoded louder channel, `core/mono`) → correction gain and soft limiter (only when the recording's peak needs it) → both speakers. One channel because iOS records the mono microphone as two channels with a silent second one (WebKit 259193); the A–B WAV is cut from the louder channel as one channel.
+- The editor plays through `editorPlayer`: at 1.0× an `<audio>` element on that route; at any other speed `stretchPlayer`, which decodes the recording once (up to 10 minutes, `DECODE_MAX_SEC` in core/recPolicy) and stretches it on the audio thread (`stretch.worklet` running `core/stretch`, WSOLA: 42.7 ms Hann frames at half overlap, ±10 ms search, pitch kept). iOS mishandles `playbackRate` on a media element connected to Web Audio (choppy when slow, dropped sound when fast), and every recording is connected for the route above. Changing speed while playing hands the position over; a jump while playing cross-fades over 21 ms; pause and resume ramp over one 128-sample block. Recordings are decoded one at a time (`oneAtATime` in decode.ts). Longer recordings, a browser without AudioWorklet or a failed decode use the element's own rate.
 
 ## 3. Data
 
@@ -96,12 +101,13 @@ Builds: `npm run build` (base `/intonome/`, Pages) · `npm run build:cap` (base 
 | Layer | Tool |
 |---|---|
 | Pure logic | Vitest `*.test.ts`, `scripts/*.test.mjs` |
-| Tuner benchmark | `npm run bench`: synthetic signals: bias, p90, octave errors, lock latency, F1. Changes to the tuner or detector must not regress |
+| Tuner benchmark | `npm run bench`: synthetic signals: bias, p90, octave errors, lock latency, F1. Changes to the tuner or detector must not regress. `test-assets/bench/latest.md` changes only when a result changes (timing goes to the console), so `git diff` of it is the comparison |
 | Browser integration | `npm run e2e`: headless Chromium with WAV files as a fake mic. `--only <regex>` |
 | Visual regression | `npm run shots`: 18 screens (dark, light, English) compared with `test-assets/screens/baseline/` via pixelmatch |
 | Module boundaries | `scripts/check-deps.mjs` |
+| Which checks a change needs | `npm run affected` (table in `scripts/lib/affected.mjs`: changed files → unit tests via `vitest related`, e2e scenarios by name, benchmark, screenshots); `--run` runs them |
 
-CI (`ci.yml`): check → build → e2e; screenshots run separately. `deploy-pages.yml` deploys only when CI is green on main.
+CI (`ci.yml`): check and build run side by side; the three e2e shards start after build, inside the Playwright image (its tag must equal the locked `playwright` version — `scripts/ci-image.test.mjs`), and report through one result job `e2e (fake mic WAV)`; screenshots run after check and are only uploaded. `deploy-pages.yml` deploys only when CI is green on main.
 
 ## 7. Android release
 
