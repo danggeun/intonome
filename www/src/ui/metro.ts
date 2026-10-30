@@ -20,19 +20,20 @@ import { isEditorOpen } from './editor.ts'
 
 // LED 줄: 칸 수 고정. 불(.mv)이 한 박에 끝→끝으로 쓸고 가며 박마다 방향이 뒤집힌다. 박 시작 틱은 끝 칸, 분할 틱은 그 위치 칸이 탁
 const HDR_LEDS = 9, FULL_LEDS = 13
-type Row = { leds: HTMLElement[]; n: number }
+/** lit = 쓸고 가는 불(.mv)이 지금 켜진 칸 — 프레임마다 바뀐 두 칸만 만진다 */
+type Row = { leds: HTMLElement[]; n: number; lit: number }
 const rows: Row[] = []
 function buildRow(id: string, n: number): Row {
   const wrap = q(id); wrap.innerHTML = ''
   for (let i = 0; i < n; i++) { const d = document.createElement('div'); d.className = 'led'; wrap.appendChild(d) }
-  return { leds: Array.from(wrap.querySelectorAll<HTMLElement>('.led')), n }
+  return { leds: Array.from(wrap.querySelectorAll<HTMLElement>('.led')), n, lit: -1 }
 }
 function buildBeatVis(): void {
   rows.length = 0
   rows.push(buildRow('beat-vis', HDR_LEDS))
   if (metroStore.get().full) rows.push(buildRow('sweep-leds', FULL_LEDS))
 }
-const clearDots = (): void => { rows.forEach(r => r.leds.forEach(d => { d.className = 'led' })) }
+const clearDots = (): void => { rows.forEach(r => { r.leds.forEach(d => { d.className = 'led' }); r.lit = -1 }) }
 
 let swT0 = 0, swDur = 0, swDir: 1 | -1 = -1, swRaf: number | null = null
 function sweepFrame(): void {
@@ -40,7 +41,8 @@ function sweepFrame(): void {
   const x = sweepX(phase, swDir)
   for (const r of rows) {
     const i = ledIndex(x, r.n)
-    r.leds.forEach((d, k) => d.classList.toggle('mv', k === i))
+    if (i === r.lit) continue
+    r.leds[r.lit]?.classList.remove('mv'); r.leds[i]?.classList.add('mv'); r.lit = i
   }
   swRaf = requestAnimationFrame(sweepFrame)
 }
@@ -54,7 +56,8 @@ function litBeat(tick: number): void {
   for (const r of rows) {
     const i = hitIndex(p, tick, swDir, r.n)
     const d = r.leds[i]; if (!d) continue
-    d.classList.remove('hit-acc', 'hit-beat', 'hit-sub'); void d.offsetWidth; d.classList.add(cls)
+    // 켜진 모양은 정지 값(transition:none)이라 다시 켤 때 레이아웃을 강제할 필요가 없다 — 박마다 강제하던 것이 재생 중 프레임을 먹었다
+    d.classList.remove('hit-acc', 'hit-beat', 'hit-sub'); d.classList.add(cls)
     const t = setTimeout(() => { d.classList.remove(cls); const k = hitTimers.indexOf(t); if (k >= 0) hitTimers.splice(k, 1) }, kind === 'sub' ? 110 : 160)
     hitTimers.push(t) // 정지 시 한꺼번에 지우려고 — 발화하면 스스로 빠진다
   }
@@ -219,10 +222,11 @@ export function mountMetro(): void {
   // 토스트는 메트로놈 카드 위에 띄운다 — 카드 아래쪽(화면 바닥)에 두면 접힌 헤더의 ▶·LED 줄을 덮고, 탭하는 토스트(새 버전 적용)가 ▶ 탭을 가로챘다.
   // 폰 배치에서만: 넓은 배치는 카드가 옆 열이고, 메트로놈만 크게 보는 화면은 카드가 화면 전부라 기본 자리(바닥)
   const anchorToast = (): void => {
-    const { full } = metroStore.get(), root = document.documentElement.style
-    if (!isPhoneLayout() || full) { root.removeProperty('--toast-bottom'); return }
+    // 토스트 자리에만 둔다 — 문서 뿌리(:root)에 두면 카드가 움직이는 매 프레임 문서 전체의 스타일을 다시 계산했다
+    const { full } = metroStore.get(), host = q('toast-host').style
+    if (!isPhoneLayout() || full) { host.removeProperty('--toast-bottom'); return }
     const top = q('metro-card').getBoundingClientRect().top
-    root.setProperty('--toast-bottom', `${Math.max(16, Math.round(window.innerHeight - top + 8))}px`)
+    host.setProperty('--toast-bottom', `${Math.max(16, Math.round(window.innerHeight - top + 8))}px`)
   }
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(anchorToast).observe(q('metro-card'))
   on(window, 'resize', anchorToast); metroStore.select(s => s.full, anchorToast); metroStore.select(s => s.collapsed, anchorToast)
