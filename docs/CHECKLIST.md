@@ -53,6 +53,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Collapsed and playing: the card flashes on the first beat of each bar only (other beats and subdivisions are on the LED row); the tuner header never flashes; expanded and full: no flash
 - [A] Playing never changes the size; the size button goes collapsed ⇄ expanded, and from full one step down to expanded. Full is reached by dragging the card up (on a wide screen, where nothing collapses, the button goes expanded ⇄ full)
 - [A] Dragging the card follows the finger: up grows a step, down shrinks a step; a short drag springs back. With reduced motion a 40 px push moves one step, up or down
+- [A] Moving the card (button or drag, up and down through all three stages) never re-creates the tuner trace's bitmap — the trace is drawn at the bottom of a screen-tall bitmap; the hidden part stays blank and the toast's position is set on the toast, not the page root. [D] On iPhone, dragging the card follows the finger without stutter, with the tuner silent and while playing
 - [A] Volume slider (card and full mode stay in sync) → saved and restored
 - [A] While recording, clicks are silent and beats stay visible; starting a recording with the metronome on says so ("녹음 시작 · 녹음에 섞이지 않게 메트로놈 소리를 껐어요"), and so does starting the metronome during a recording (e2e)
 - [A] Timing: the worklet renders 120 bpm with ≤1-sample jitter over 20 s (OfflineAudioContext e2e)

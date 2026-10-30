@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.6.1] - 2026-10-30
+Moving the metronome card — dragging it or tapping its button — is smooth on iPhone again, and the screen does less work while the tuner listens and the metronome plays. Nothing is drawn differently.
+
+Smoother motion
+- The tuner's trace no longer rebuilds its picture on every frame while the metronome card changes size. Its bitmap (about 1,000 × 1,400 pixels on a 3× phone) was re-created at the new height on each frame of a drag or of the 0.55 s resize; the trace is now drawn at the bottom of one bitmap the height of the screen, and only the visible part is drawn. At iPhone mini size with the CPU slowed 4×, dragging the card while the tuner is silent went from 37–46 frames over 20 ms to 0–2
+- The toast's place above the card is set on the toast instead of the page root, so a resizing card no longer restyles the whole page on every frame (style work while dragging to the metronome-only view: 845 → 159 ms in the same test)
+- The tuner writes its note, octave, cents and Hz only when they change, and while there is no trace it doesn't repaint the same empty picture 43 times a second. The metronome's lights touch only the light that moves and no longer force a layout on every click
+- Tests: 1 new e2e (moving the card through every stage never re-creates the trace bitmap, the hidden part of it stays blank, the toast's position is on the toast)
+
 ## [2.6.0] - 2026-10-28
 Slow and fast playback in the editor no longer stutters or drops sound on iPhone (recordings up to 10 minutes), iPhone recordings play in both ears, and right after a note change the tuner's number and green read the new note. Underneath, the code and its checks are reorganised so that a change is checked by the tests that cover it — with no other change to how the tuner, the metronome or anything else behaves.
 
