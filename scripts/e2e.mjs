@@ -505,6 +505,30 @@ await scenario('metro: full → expanded with the button grows the tuner back al
   assert.ok(await p.evaluate(() => document.getElementById('tuner-card').offsetHeight) > mid.tuner + 100, '튜너가 0 에서 커졌다 ' + mid.tuner)
   assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), false, '펼침에 멈춘다')
 })
+// 카드가 움직이는 동안 튜너 히스토리 비트맵을 다시 만들지 않는다 — 2.6.0 은 높이가 바뀌는 매 프레임 새로 만들어 아이폰에서 끌기가 끊겼다.
+// 토스트 자리 변수도 문서 뿌리가 아니라 토스트에만 — 뿌리에 두면 매 프레임 문서 전체의 스타일을 다시 계산한다
+await scenario('metro: moving the card never recreates the tuner trace bitmap, and the toast anchor lives on the toast host', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라'); await settled(p)
+  await p.evaluate(() => {
+    const c = document.getElementById('tuner-history-cv'); window.__bmp = 0
+    new MutationObserver(r => { window.__bmp += r.length }).observe(c, { attributes: true, attributeFilter: ['width', 'height'] })
+  })
+  await sizeTap(p); await swipeUp(p); await swipeDown(p); await sizeTap(p) // 접힘 → 펼침 → 펼침2 → 펼침 → 접힘
+  assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), true, '접힘으로 돌아왔다')
+  assert.equal(await p.evaluate(() => window.__bmp), 0, '네 번 움직이는 동안 비트맵을 한 번도 새로 만들지 않는다')
+  // 보이는 영역의 바닥에 붙어 있고, 영역보다 작지 않다(늘여 그리지 않는다)
+  const g = await p.evaluate(() => { const v = document.getElementById('tuner-history').getBoundingClientRect(), c = document.getElementById('tuner-history-cv'), r = c.getBoundingClientRect(); return { vb: v.bottom, cb: r.bottom, vh: v.height, ch: r.height, bmp: c.height / devicePixelRatio } })
+  assert.ok(Math.abs(g.vb - g.cb) <= 1 && g.ch >= g.vh - 1 && Math.abs(g.bmp - g.ch) <= 1, '캔버스는 영역 바닥에 붙고 비트맵 = 화면 크기 ' + JSON.stringify(g))
+  // 그린 영역 바로 위 줄(숨은 띠)은 바탕 그대로 — 선 끝이 삐져 쌓이지 않는다
+  const strip = await p.evaluate(() => {
+    const c = document.getElementById('tuner-history-cv'), g = c.getContext('2d'), top = c.height - Math.round(window.__tt.tuner.diag().drawnH * devicePixelRatio)
+    const row = y => Array.from(g.getImageData(0, y, c.width, 1).data).join(',')
+    return { top, same: row(top - 1) === row(0) }
+  })
+  assert.ok(strip.top > 0 && strip.same, '숨은 띠는 바탕만 ' + JSON.stringify(strip))
+  const anchor = await p.evaluate(() => ({ root: document.documentElement.style.getPropertyValue('--toast-bottom'), host: document.getElementById('toast-host').style.getPropertyValue('--toast-bottom') }))
+  assert.equal(anchor.root, '', '문서 뿌리에는 두지 않는다'); assert.match(anchor.host, /^\d+px$/, '토스트 자리는 토스트에 ' + anchor.host)
+})
 // 동작 줄이기: 손을 따라오지 않고 40 px 밀면 한 단계 — 위로도 (펼침2 로 가는 길은 밀기뿐이다)
 await scenario('metro: with reduced motion, pushing the card 40 px moves one step, up to full and back down', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 900)
@@ -659,7 +683,8 @@ await scenario('i18n: English mic popup when the mic is blocked', 'silence_lowfl
 await scenario('theme: light by default → dark persists (applied before first paint), status bar color, tuner canvas, back to light', 'violin_A4.wav', async (p, ctx) => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   const st = () => p.evaluate(() => ({ attr: document.documentElement.dataset.theme ?? null, meta: document.querySelector('meta[name="theme-color"]').content, bg: getComputedStyle(document.body).backgroundColor, card: getComputedStyle(document.getElementById('tuner-card')).backgroundColor }))
-  const canvasPx = () => p.evaluate(() => { const c = document.getElementById('tuner-history'); const d = c.getContext('2d').getImageData(2, 2, 1, 1).data; return d[0] + d[1] + d[2] })
+  // 보이는 영역의 왼쪽 위 근처 — 비트맵은 영역보다 크고 바닥에 붙어 있어 (2,2) 는 숨은 띠다
+  const canvasPx = () => p.evaluate(() => { const c = document.getElementById('tuner-history-cv'), v = document.getElementById('tuner-history'); const y = c.height - Math.round(v.clientHeight * devicePixelRatio) + 4; const d = c.getContext('2d').getImageData(4, y, 1, 1).data; return d[0] + d[1] + d[2] })
   let s = await st(); assert.equal(s.attr, 'light'); assert.equal(s.meta, '#eef0f3'); assert.equal(s.bg, 'rgb(238, 240, 243)'); assert.equal(s.card, 'rgb(255, 255, 255)', '튜너 카드 흰색')
   assert.ok(await canvasPx() > 600, '라이트 캔버스 배경')
   await p.click('#settings-hdr-btn'); await sleep(p, 300)
@@ -1279,8 +1304,9 @@ await scenario('ios: first launch shows a start button — mic closed until tapp
   const before = await p.evaluate(() => ({ hint: document.getElementById('tuner-card').classList.contains('tap-hint'), sub: document.getElementById('tuner-start-sub').textContent, mic: window.__tt.stats().micOpen, btnVisible: getComputedStyle(document.getElementById('tuner-start')).display !== 'none' }))
   assert.deepEqual(before, { hint: true, sub: '마이크 사용을 물어볼게요', mic: false, btnVisible: true }, '탭 전: 시작 버튼 + 부제, 마이크는 닫힘')
   // 마이크 프레임이 없어도 캔버스 비트맵이 보이는 크기와 같아야 한다 — 다르면 ♭♯ 가 늘어나 보인다
-  const cv = await p.evaluate(() => { const c = document.getElementById('tuner-history'); return { bmp: c.height / devicePixelRatio, css: c.getBoundingClientRect().height } })
-  assert.ok(Math.abs(cv.bmp - cv.css) <= 1, '캔버스 비트맵 높이 = 화면 높이 ' + JSON.stringify(cv))
+  const cv = await p.evaluate(() => { const c = document.getElementById('tuner-history-cv'), d = window.__tt.tuner.diag(); return { bmp: c.height / devicePixelRatio, css: c.getBoundingClientRect().height, drawn: d.drawnH, view: document.getElementById('tuner-history').getBoundingClientRect().height } })
+  assert.ok(Math.abs(cv.bmp - cv.css) <= 1, '캔버스 비트맵 = 화면 크기(늘이지 않는다) ' + JSON.stringify(cv))
+  assert.ok(cv.drawn >= cv.view - 0.05 && cv.drawn <= cv.view + 1, '그린 높이 = 보이는 영역 높이 ' + JSON.stringify(cv))
   await p.click('#tuner-start-btn'); await waitUntil(p, () => window.__tt.stats().micOpen, 4000, '탭하면 마이크가 열린다')
   await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('tuner-card').classList.contains('tap-hint')), false, '열리면 버튼이 걷힌다')
@@ -1698,7 +1724,7 @@ const TRACE_FRAMES = (flatten = false) => {
 }
 /** 캔버스에서 '한 행에 이어진 흰 픽셀' 의 최대 개수 — 가로줄이 있으면 수백이 된다 */
 const maxRowRun = p => p.evaluate(() => {
-  const c = document.getElementById('tuner-history')
+  const c = document.getElementById('tuner-history-cv')
   const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height).data
   let best = 0
   for (let y = 0; y < c.height; y++) {
@@ -1790,7 +1816,7 @@ await scenario('tuner trace: an in-tune scale stays connected across note change
   assert.equal(d.skipped, 0, `정확히 짚은 스케일에서는 한 군데도 끊기면 안 된다 (끊김 ${d.skipped})`)
   // 그리고 가운데 근처에 머물러야 한다 — 초록 띠(기본 ±10 ¢)를 넘어 멀리 나가는 픽셀이 거의 없어야
   const spread = await p.evaluate(() => {
-    const c = document.getElementById('tuner-history'), g = c.getContext('2d')
+    const c = document.getElementById('tuner-history-cv'), g = c.getContext('2d')
     const d = g.getImageData(0, 0, c.width, c.height).data
     const cx = c.width / 2; let far = 0, all = 0
     for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {

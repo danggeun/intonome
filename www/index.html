@@ -102,7 +102,8 @@
             <span id="tuner-cents"></span>
           </div>
         </div>
-        <canvas id="tuner-history"></canvas>
+        <!-- 보이는 히스토리 영역. 캔버스는 바닥에 붙어 있고 비트맵은 화면 높이만큼 — 카드가 움직여도 다시 만들지 않는다(ui/tuner) -->
+        <div id="tuner-history"><canvas id="tuner-history-cv"></canvas></div>
       </div>
     </div>
 

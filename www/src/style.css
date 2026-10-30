@@ -180,7 +180,8 @@ button{font-family:inherit;color:inherit;}
 #tuner-hz{font-family:'DM Mono',monospace;font-size:var(--fs-lg);color:var(--tuner-text-1);font-weight:var(--fw-md);white-space:pre;font-variant-numeric:tabular-nums;}
 #tuner-enharmonic{font-family:'DM Mono',monospace;font-size:var(--fs-base);color:var(--tuner-text-3);white-space:nowrap;}
 #tuner-cents{font-family:'DM Mono',monospace;font-size:var(--fs-lg);color:var(--tuner-text-1);font-weight:var(--fw-md);text-align:right;}
-#tuner-history{flex:1;min-height:80px;border-radius:var(--r-sm);background:var(--tuner-bg);display:block;width:100%;border:none;}
+#tuner-history{flex:1;min-height:80px;border-radius:var(--r-sm);background:var(--tuner-bg);display:block;width:100%;border:none;position:relative;overflow:hidden;clip-path:inset(0 round var(--r-sm));} /* clip-path: 합성 레이어인 캔버스도 둥근 모서리로 확실히 자른다(옛 WebKit 은 overflow 만으로 못 자른 적이 있다) */
+#tuner-history-cv{position:absolute;left:0;bottom:0;width:100%;display:block;} /* 높이는 ui/tuner 가 비트맵에 맞춰 — 영역보다 크고 위쪽이 잘린다 */
 
 /* 메트로놈 — 카드 하나, 헤어라인 하나. 강박은 면과 안쪽 링으로 */
 #metro-card{background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--line);overflow:hidden;transition:box-shadow .06s,background .1s;}
