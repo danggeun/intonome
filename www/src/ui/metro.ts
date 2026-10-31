@@ -328,9 +328,9 @@ function syncSizeBtn(): void {
 }
 /** 키보드로 포커스된 버튼인가 — 손가락·마우스로 누른 뒤에는 포커스를 옮기지 않는다(포커스 테가 엉뚱한 데 뜬다) */
 function keyboardFocused(id: string): boolean { const el = q(id); return document.activeElement === el && el.matches(':focus-visible') }
-/** 단계가 바뀌어 그 버튼이 보이게 된 뒤에 포커스 — 크게 버튼은 나타날 때 visibility 가 .08 s 뒤에 바뀐다(CSS). 보일 때까지 프레임마다 보고, 0.6 s 안에 안 보이면 그만둔다 */
+/** 단계가 바뀌어 그 버튼이 보이게 된 뒤에 포커스 — 크게 버튼은 나타날 때 visibility 가 .4 s 뒤에 바뀐다(CSS — 본문과 맞물림). 보일 때까지 프레임마다 보고, 0.9 s 안에 안 보이면 그만둔다 */
 function focusSoon(id: string): void {
   const el = q(id), t0 = performance.now()
-  const tick = (): void => { if (getComputedStyle(el).visibility === 'visible' && el.offsetParent !== null) el.focus(); else if (performance.now() - t0 < 600) requestAnimationFrame(tick) }
+  const tick = (): void => { if (getComputedStyle(el).visibility === 'visible' && el.offsetParent !== null) el.focus(); else if (performance.now() - t0 < 900) requestAnimationFrame(tick) }
   requestAnimationFrame(tick)
 }

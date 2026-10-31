@@ -448,6 +448,18 @@ await scenario('metro: on a phone the expanded header has a "metronome only" but
   assert.equal(await st(), 'e'); assert.equal(await p.evaluate(() => document.activeElement && document.activeElement.id), 'metro-full-btn', '돌아오면 포커스가 크게 버튼으로')
   await sizeTap(p); assert.deepEqual([await st(), await vis('metro-hdr-label'), await vis('metro-full-btn')], ['c', true, false], '접힘: 헤더 ♩96 이 돌아온다')
 })
+// 펼침 본문의 ♩BPM 묶음: '⇕ 드래그' 위 가운데(♩ 이든 ♩. 이든), 세 자리여도 − 버튼과 띄움(2.6.2 는 ♩ 일 때 4.7 px 오른쪽 · 세 자리에서 − 와 10 px)
+for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: expanded at 375px · ${bpm} in ${ts}/${ts === 6 ? 8 : 4} — the note and BPM sit centred over "drag", clear of the − button`, 'silence_lowfloor.wav', async p => {
+  await p.addInitScript(o => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', bpm: o.bpm, timeSig: o.ts })), { bpm, ts })
+  await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
+  const r = await p.evaluate(() => {
+    const g = Array.from(document.querySelectorAll('#metro-bpm-unit .note-glyph')).find(e => getComputedStyle(e).display !== 'none').getBoundingClientRect()
+    const n = document.getElementById('metro-bpm').getBoundingClientRect(), h = document.getElementById('metro-bpm-hint').getBoundingClientRect(), m = document.querySelector('.m-adj').getBoundingClientRect()
+    return { off: Math.abs((g.left + n.right) / 2 - (h.left + h.right) / 2), gapMinus: m.left - n.right, gapNote: n.left - g.right }
+  })
+  assert.ok(r.off <= 1, '음표+숫자 묶음이 드래그 안내 위 가운데 ' + JSON.stringify(r))
+  assert.ok(r.gapMinus >= 16, '− 버튼과 띄움 ' + JSON.stringify(r)); assert.ok(r.gapNote >= 4, '음표와 숫자 사이 틈 ' + JSON.stringify(r))
+}, { viewport: { width: 375, height: 812 } })
 // 좁은 폰(320 px) · 영어 'Volume' · 세 자리 BPM: 펼침의 ▶ 가 카드 안에 남는다(슬라이더가 줄어든다), LED 줄은 제 간격
 await scenario('layout: expanded at 320px in English with BPM 200 — ▶ stays inside the card and the header LEDs keep their spacing', 'silence_lowfloor.wav', async p => {
   await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'en', theme: 'light', bpm: 200 })))
