@@ -834,7 +834,7 @@ await scenario('first launch on a Korean phone: Korean from the first paint; Eng
 }, { fresh: true, locale: 'ko-KR' })
 
 // 처음 안내 (ui/tour.ts) — 새로 설치한 기기에서만, 튜너가 켜진 뒤 한 번. 해 보는 단계는 해 보면 설명이 바뀌고, 안내 중에 켠 것·바꾼 것은 그 단계를 떠날 때 되돌린다
-const tour = p => p.evaluate(() => { const b = document.getElementById('tour'); return { on: !!b && b.classList.contains('in') && !b.classList.contains('hide'), hidden: !!b && b.classList.contains('hide'), title: b?.querySelector('.tour-title')?.textContent ?? '', body: b?.querySelector('.tour-body')?.textContent ?? '', soft: !!b?.querySelector('.tour-next.soft'), key: localStorage.getItem('intonome_tour_v1') } })
+const tour = p => p.evaluate(() => { const b = document.getElementById('tour'); return { on: !!b && b.classList.contains('in') && !b.classList.contains('hide'), hidden: !!b && b.classList.contains('hide'), title: b?.querySelector('.tour-title')?.textContent ?? '', body: (b?.querySelector('.tour-body')?.textContent ?? '').replace(/\u2060/g, ''), soft: !!b?.querySelector('.tour-next.soft'), key: localStorage.getItem('intonome_tour_v1') } })
 const tourNext = async p => { await p.click('#tour .tour-next'); await sleep(p, 450) }
 const waitTour = (p, ms = 6000) => waitUntil(p, () => { const b = document.getElementById('tour'); return !!b && b.classList.contains('in') }, ms, 'first-run guide')
 const themeColor = p => p.evaluate(() => document.querySelector('meta[name="theme-color"]').content)
@@ -939,6 +939,18 @@ await scenario('first-run guide: leaving the metronome step open and playing fol
   assert.deepEqual(await p.evaluate(() => ({ collapsed: document.getElementById('metro-body-wrap').classList.contains('collapsed'), play: document.getElementById('metro-play-hdr-btn').textContent })), { collapsed: true, play: '▶' })
   // 이전으로 돌아가도 다시 처음 상태(위로 밀어 보세요)
   await p.click('#tour .tour-prev'); await sleep(p, 400); assert.equal((await tour(p)).title, '메트로놈은 위로 밀어 보세요')
+}, { fresh: true, locale: 'ko-KR' })
+// 폰: 메트로놈 단계를 버튼만으로도 한 바퀴 — ∧ 로 펼치고, 헤더 왼쪽 위 '메트로놈만 크게' 로 펼침2, ∨ 두 번으로 접힘. 문구가 그 버튼을 말한다
+await scenario('first-run guide: the metronome step also goes round with buttons only — ∧, the top-left "metronome only" button, then ∨ twice', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitTour(p)
+  for (let k = 0; k < 5; k++) await tourNext(p)
+  assert.equal((await tour(p)).title, '메트로놈은 위로 밀어 보세요')
+  await sizeTap(p); let s = await tour(p)
+  assert.equal(s.title, '한 번 더 올려 보세요'); assert.equal(s.body, '메트로놈만 크게 볼 수 있어요. 왼쪽 위 버튼을 눌러도 돼요')
+  await p.click('#metro-full-btn'); await settled(p); s = await tour(p)
+  assert.equal(s.title, '이제 아래로 내려 보세요', '크게 버튼으로도 다음 단계'); assert.match(s.body, /∨를 눌러도 돼요$/)
+  await sizeTap(p); assert.equal((await tour(p)).title, '한 번 더 내려 보세요')
+  await sizeTap(p); assert.equal((await tour(p)).title, '좋아요')
 }, { fresh: true, locale: 'ko-KR' })
 await scenario('first-run guide (wide screen): the bubble sits beside the tall metronome; ∧ goes to the full view and back', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitTour(p)

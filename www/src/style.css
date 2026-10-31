@@ -557,7 +557,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .tour-dots i{width:6px;height:6px;border-radius:3px;background:var(--line-strong);transition:width var(--t-std) var(--ease),background var(--t-std);}
 .tour-dots i.on{width:16px;background:var(--text);}
 .tour-btns{display:flex;gap:var(--s1);align-items:center;}
-.tour-prev{height:var(--h-seg);padding:0 var(--s3);background:transparent;border:none;color:var(--text-2);font-size:var(--fs-base);font-weight:var(--fw-md);cursor:pointer;}
+.tour-prev{height:var(--h-seg);padding:0 var(--s2);white-space:nowrap;flex:none;background:transparent;border:none;color:var(--text-2);font-size:var(--fs-base);font-weight:var(--fw-md);cursor:pointer;}
 .tour-next{height:var(--h-seg);min-width:88px;padding:0 var(--s4);background:var(--surface-2);border:1px solid var(--line-ctl);border-radius:var(--r-md);color:var(--text);font-size:var(--fs-base);font-weight:var(--fw-b);cursor:pointer;transition:background var(--t-std),color var(--t-std),border-color var(--t-std);} /* 앱의 빨강은 '켜짐'·재생 — 안내 버튼은 무채색 */
 .tour-next.soft{background:transparent;border-color:var(--line);color:var(--text-2);font-weight:var(--fw-md);} /* 해 보기 전: 눌러도 넘어가지만, 먼저 해 보라는 뜻 */
 .tour-next.nudge{animation:tour-nudge .45s var(--ease);}
