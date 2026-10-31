@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.6.3] - 2026-10-31
+The expanded metronome on a phone, balanced: the BPM with its note sits in the middle of its space, clear of the − button, and the header's ♩80 hands over to the body's number without a gap.
+
+Metronome (phone, expanded)
+- The note and the number sit centred over "drag". The note's box was as wide as the dotted note, so a plain ♩ left a gap on its left and the pair sat about 5 px to the right. The box now fits the note; switching 4/4 and 6/8 re-centres the pair by a few pixels
+- A little more room between the note and the number (about 0.2 of the digit size instead of 0.15), and between the number and the − + ▶ buttons (up to 18 px instead of 10; a little less on the narrowest phones so the buttons keep their size). With three digits the number no longer sits against the − button
+- Expanding: the header's ♩80 fades while the body's number fades in (0.15–0.4 s), and the "Show metronome only" button appears as the card settles (0.4–0.55 s). Collapsing: the button goes at once and ♩80 comes back while the body is folding away (0.1–0.3 s). The BPM is on screen throughout
+- Tests: 3 new e2e (the note and number centred over "drag", clear of the − button, for 72 in 4/4, 130 in 2/4 and 125 in 6/8)
+
 ## [2.6.2] - 2026-10-31
 On a phone, the expanded metronome now has a button for the metronome-only view. Getting there no longer needs a swipe.
 
