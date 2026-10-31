@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.6.2] - 2026-10-31
+On a phone, the expanded metronome now has a button for the metronome-only view. Getting there no longer needs a swipe.
+
+Metronome
+- In the expanded card on a phone, the header's left slot holds a "Show metronome only" button where ♩80 used to be. Before, the view could only be reached by dragging the card up, and nothing on screen said so; a drag also needs a tap alternative (WCAG 2.2, 2.5.7). The beat dots stay centred. The collapsed and metronome-only views look as before; on wide screens the header button already went there
+- The BPM shows once in the expanded card. The big number in the body, which is the one you drag, now carries the beat note the header label had (♩, or ♩. in 6/8). Collapsed, the header shows ♩80 as before; going between collapsed and expanded swaps the label and the button in place
+- A drag that starts on the new button moves the card and never changes the BPM. With the keyboard, focus moves to the button that takes its place
+- On narrow phones the expanded header's dots keep their spacing (at 320 px wide they touched), and at 320 px with English labels ▶ stays inside the card (the volume slider gets shorter instead)
+- Screen-reader names: the size button says where it goes — "Show metronome only" on wide screens, and "Show tuner too" in the metronome-only view (it said "Collapse metronome", but it goes back to the expanded card)
+- First-run guide: the step about the metronome-only view also mentions the button
+- Tests: 2 new e2e (the button — tap, a drag from it, the 6/8 note, keyboard focus, the label back when collapsed; 320 px in English)
+
 ## [2.6.1] - 2026-10-30
 Moving the metronome card — dragging it or tapping its button — is smooth on iPhone again, and the screen does less work while the tuner listens and the metronome plays. Nothing is drawn differently.
 
