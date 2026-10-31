@@ -70,7 +70,7 @@ const STEPS: Step[] = [
     view: () => ({ title: 'tour.playA', body: 'tour.playABody', gesture: 'tap', pulseAt: () => q('ref-a-btn') }) },
   { key: 'drone', target: () => [q('drone-btn')], pad: 6, radius: 10, open: true,
     view: () => ({ title: 'tour.drone', body: 'tour.droneBody', gesture: 'tap', pulseAt: () => q('drone-btn') }) },
-  // 카드를 끝까지 한 바퀴: 폰은 접힘 → 위로(펼침) → 한 번 더 위로(메트로놈만 크게 — 이건 밀어야만 간다) → 아래로 → 한 번 더 아래로(접힘).
+  // 카드를 끝까지 한 바퀴: 폰은 접힘 → 위로(펼침) → 한 번 더 위로(메트로놈만 크게 — 헤더 왼쪽 버튼으로도) → 아래로 → 한 번 더 아래로(접힘).
   // 넓은 화면은 펼침 → 위로(크게) → 아래로. 밀기 표시는 헤더 가운데(박 점들) — 왼쪽 ♩80 을 밀면 카드가 아니라 빠르기가 바뀐다
   { key: 'metro', target: () => [q('metro-card')], pad: 4, radius: 18, open: true, task: true,
     view: () => {

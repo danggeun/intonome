@@ -153,9 +153,12 @@ export function mountMetro(): void {
   attachDrag(q('metro-bpm-wrap')); attachDrag(q('metro-hdr-label'))
   on(q('metro-play-hdr-btn'), 'click', () => { const r = toggleMetro(); if (!r.ok) toast(r.error) })
   on(q('metro-play-btn'), 'click', () => { const r = toggleMetro(); if (!r.ok) toast(r.error) })
-  // 크기 버튼은 접힘 ⇄ 펼침, 펼침2 에서는 펼침으로. 펼침2 로는 카드를 위로 끌어서 간다 — 손을 따라온다
-  on(q('metro-size-btn'), 'click', () => go(sizeBtnTo()))
-  const ignore = '#metro-hdr-label, #metro-bpm-wrap, #dial, input[type=range], button, .m-seg' // BPM ↕ 드래그 영역도 제외 — 없으면 BPM 내리기가 접힘이 된다
+  // 크기 버튼은 접힘 ⇄ 펼침, 펼침2 에서는 펼침으로. 펼침2 로는 카드를 위로 끌거나(손을 따라온다) 폰의 펼침에서 헤더 왼쪽 '메트로놈만 크게' 버튼으로 간다
+  // (넓은 화면은 크기 버튼이 펼침 → 펼침2). 키보드로 눌렀으면 포커스를 다음 자리의 버튼으로 옮긴다 — 누른 버튼이 사라지므로
+  on(q('metro-size-btn'), 'click', () => { const kb = keyboardFocused('metro-size-btn'), to = sizeBtnTo(); go(to); if (kb && stateNow() === 'e' && isPhoneLayout()) focusSoon('metro-full-btn') })
+  on(q('metro-full-btn'), 'click', () => { const kb = keyboardFocused('metro-full-btn'); go('f'); if (kb) focusSoon('metro-size-btn') })
+  // BPM ↕ 드래그 영역도 제외 — 없으면 BPM 내리기가 접힘이 된다. 크게 버튼은 빼지 않는다: 거기서 시작해 끌면 카드가 움직이고(손을 떼면 클릭은 헤더로 가 버튼은 안 눌린다), 그냥 누르면 버튼
+  const ignore = '#metro-hdr-label, #metro-bpm-wrap, #dial, input[type=range], button:not(#metro-full-btn), .m-seg'
   const drag = { start: dragStart, move: dragMove, end: dragEnd, ignore }
   attachVDrag(q('metro-hdr'), drag)
   attachVDrag(q('metro-body'), drag)
@@ -315,11 +318,19 @@ function dragEnd(dy: number, vy: number): void {
   animHeight(card, cur, after, ['0px', '0px'])
   wrapTimer = setTimeout(clearWrap, 560) // animHeight 가 인라인 높이를 지우는 570 ms 보다 먼저
 }
-/** 버튼 글리프·라벨 = 다음 목적지 (올라가면 ∧, 내려가면 ∨) */
+/** 버튼 글리프·라벨 = 다음 목적지 (올라가면 ∧, 내려가면 ∨). 펼침2 의 ∨ 는 펼침(튜너와 함께)으로 간다 */
 function syncSizeBtn(): void {
   const btn = q('metro-size-btn'), from = stateNow(), to = sizeBtnTo()
   const toExpand = from === 'c', toFull = to === 'f'
   btn.classList.toggle('to-expand', toExpand)
   btn.classList.toggle('to-full', toFull)
-  btn.setAttribute('aria-label', t(toExpand ? 'metro.expand' : toFull ? 'metro.expandMore' : 'metro.collapse'))
+  btn.setAttribute('aria-label', t(toExpand ? 'metro.expand' : toFull ? 'metro.toFull' : from === 'f' ? 'metro.withTuner' : 'metro.collapse'))
+}
+/** 키보드로 포커스된 버튼인가 — 손가락·마우스로 누른 뒤에는 포커스를 옮기지 않는다(포커스 테가 엉뚱한 데 뜬다) */
+function keyboardFocused(id: string): boolean { const el = q(id); return document.activeElement === el && el.matches(':focus-visible') }
+/** 단계가 바뀌어 그 버튼이 보이게 된 뒤에 포커스 — 크게 버튼은 나타날 때 visibility 가 .08 s 뒤에 바뀐다(CSS). 보일 때까지 프레임마다 보고, 0.6 s 안에 안 보이면 그만둔다 */
+function focusSoon(id: string): void {
+  const el = q(id), t0 = performance.now()
+  const tick = (): void => { if (getComputedStyle(el).visibility === 'visible' && el.offsetParent !== null) el.focus(); else if (performance.now() - t0 < 600) requestAnimationFrame(tick) }
+  requestAnimationFrame(tick)
 }
