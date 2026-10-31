@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.6.4] - 2026-10-31
+The first-run guide matches the metronome's buttons.
+
+First-run guide
+- The step that teaches the metronome-only view points at the button by place: "You can also tap the top-left button" (it said "the button on the left")
+- The metronome-only step now also says "You can also tap ∨", like the other metronome steps
+- On narrow phones (320 px) an arrow no longer ends a line on its own with the rest of the phrase on the next line ("∨ / 를 눌러도 돼요" in Korean), and "Back" (이전) no longer breaks onto two lines
+- Tests: 1 new e2e (the metronome step goes all the way round with buttons only: ∧, the top-left button, then ∨ twice)
+
 ## [2.6.3] - 2026-10-31
 The expanded metronome on a phone, balanced: the BPM with its note sits in the middle of its space, clear of the − button, and the header's ♩80 hands over to the body's number without a gap.
 
