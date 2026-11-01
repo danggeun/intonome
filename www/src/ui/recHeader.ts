@@ -14,8 +14,8 @@ export function mountRecHeader(openMic: () => Promise<boolean>): void {
     const r = toggleRec(); if (!r.ok) toast(r.error)
   })
   sessionStore.select(s => s.recording, rec => {
-    // 버튼이 아니라 상태 전이에서: 마이크 자동 종료로 멈춘 경우에도 안내. 메트로놈이 울리던 중이면 소리가 꺼진다는 것도 (클릭이 녹음에 섞이지 않게 — audio/metronome)
-    toast(tr(rec ? (metroStore.get().playing ? 'rec.startedMetroSilent' : 'rec.started') : 'rec.done'))
+    // 시작은 상태 전이에서. 메트로놈이 울리던 중이면 소리가 꺼진다는 것도 (클릭이 녹음에 섞이지 않게 — audio/metronome). '완료' 는 저장이 끝난 뒤 녹음 쪽이 알린다
+    if (rec) toast(tr(metroStore.get().playing ? 'rec.startedMetroSilent' : 'rec.started'))
     q('rec-hdr-btn').classList.toggle('rec-on', rec)
     const t = q('hdr-rec-time'); t.classList.toggle('show', rec); t.textContent = fmt(0)
   })

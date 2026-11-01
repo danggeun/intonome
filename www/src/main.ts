@@ -21,7 +21,7 @@ import { mountTheme, onThemeChange } from './ui/theme.ts'
 import { mountLang } from './ui/lang.ts'
 import { t } from './core/i18n/index.ts'
 import { release, onHide, type Release } from './core/micLease.ts'
-import { onNotice } from './core/notice.ts'
+import { onNotice, notice } from './core/notice.ts'
 import { mountRefDrum } from './ui/refDrum.ts'
 import { mountMetro } from './ui/metro.ts'
 import { mountRefPanel } from './ui/refPanel.ts'
@@ -127,7 +127,7 @@ let micReleasedByHide = false, pendingToast: string | null = null
 on(document, 'visibilitychange', () => {
   if (document.visibilityState !== 'visible') {
     const plan = onHide({ ...micNow(), native: isNative(), metroPlaying: metroStore.get().playing, droneOn: droneOn(), refToneOn: refToneStore.get().active, hasPendingToast: pendingToast !== null })
-    if (plan.stopRec) stopRec()
+    if (plan.stopRec) stopRec('hidden') // '앱이 뒤로 가서 녹음을 저장했어요' 는 저장이 끝난 뒤 녹음 쪽이 알린다(실패면 실패 안내)
     if (plan.stopMetro) stopMetro()
     stopDrone(); stopRefNote() // A 듣기는 마이크를 놓을 때만 꺼져서, 마이크가 닫혀 있거나 녹음 중이면 뒤에서 계속 울렸다(2.5.7 까지)
     if (plan.setPending) pendingToast = t(plan.setPending)
@@ -135,6 +135,9 @@ on(document, 'visibilitychange', () => {
     return
   }
   resumeIfRunning(); syncWake()
+  // 숨긴 채 돌던 것(녹음으로 둔 마이크)이 있으면: 그 사이 전화로 멈춘 컨텍스트는 상태가 다시 바뀌지 않아 아래 리스너가 안 불린다 — 돌아와서도 못 깨우면 안내.
+  // 마이크를 놓고 숨긴 경우는 일부러 재운 컨텍스트라 검사하지 않는다(다시 여는 쪽이 안내한다)
+  if (!micReleasedByHide && somethingRuns()) checkInterruptedSoon()
   if (pendingToast) { toast(pendingToast); pendingToast = null }
   // 다시 열릴 때까지 플래그 유지 — 여는 도중 또 숨겨져 busy 로 끝나도 다음 복귀에서 재시도
   if (micReleasedByHide) tryOpenMic().then(ok => { if (ok) micReleasedByHide = false; else if (document.visibilityState === 'visible' && !A.micStream && !isOpening()) showTapHint(tryOpenMic) }) // isOpening: 다른 호출이 여는 중이면 그 위에 버튼을 띄우지 않는다
@@ -156,21 +159,25 @@ let micReleasedByEditor = false
 }
 // 전화·다른 앱 오디오로 컨텍스트가 멈추면: 보일 때 재개 시도, 그래도 안 되면 메트로놈을 멈추고 알린다
 let interruptedTimer: ReturnType<typeof setTimeout> | null = null
-onContextState(state => {
-  if (state === 'running') { if (interruptedTimer) { clearTimeout(interruptedTimer); interruptedTimer = null } if (A.micStream) hideTapHint(); return } // 늦은 resume 뒤에 남는 시작 버튼을 거둔다
-  if (state === 'closed') return
-  if (!metroStore.get().playing && !droneOn() && !tunerStore.get().running) return // 유휴 suspend 는 정상
-  if (tunerStore.get().playing) tunerStore.set({ playing: false }) // 프레임이 끊긴 동안 '연주 중' 이 남아 타이머가 중단 시간을 셌다
-  if (document.visibilityState === 'visible') resumeIfRunning()
+const somethingRuns = (): boolean => metroStore.get().playing || droneOn() || tunerStore.get().running
+function checkInterruptedSoon(): void {
   if (interruptedTimer) clearTimeout(interruptedTimer)
   interruptedTimer = setTimeout(() => {
     interruptedTimer = null
-    if (A.ac && A.ac.state !== 'running' && document.visibilityState === 'visible') {
+    if (A.ac && A.ac.state !== 'running' && document.visibilityState === 'visible' && somethingRuns()) {
       if (droneOn()) stopDrone()
       if (metroStore.get().playing) { stopMetro(); toast(t('audio.interruptedMetro')) }
       else if (tunerStore.get().running) { toast(t('audio.interruptedTap')); showResumeHint() }
     }
   }, 1500)
+}
+onContextState(state => {
+  if (state === 'running') { if (interruptedTimer) { clearTimeout(interruptedTimer); interruptedTimer = null } if (A.micStream) hideTapHint(); return } // 늦은 resume 뒤에 남는 시작 버튼을 거둔다
+  if (state === 'closed') return
+  if (!somethingRuns()) return // 유휴 suspend 는 정상
+  if (tunerStore.get().playing) tunerStore.set({ playing: false }) // 프레임이 끊긴 동안 '연주 중' 이 남아 타이머가 중단 시간을 셌다
+  if (document.visibilityState === 'visible') resumeIfRunning()
+  checkInterruptedSoon()
 })
 // Android 뒤로가기: 열린 화면부터 닫고, 메인이면 앱을 백그라운드로 (종료하지 않음)
 onBackButton(() => {
@@ -249,6 +256,8 @@ if (!isNative() && 'serviceWorker' in navigator) {
   recBackdate: backdateRecFile,
   editor: editorDiag,
   closeMic,
+  /** 테스트용: audio·persist 쪽 안내를 하나 보낸다 (숨김 중 안내 보존 검증) */
+  notice,
   /** 재생 보정 게인 진단 (e2e) */
   playback: playbackDiag,
   tuner: {

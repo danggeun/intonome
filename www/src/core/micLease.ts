@@ -11,12 +11,12 @@ export function release(m: MicNow): Release {
 }
 
 export interface HideNow extends MicNow { native: boolean; metroPlaying: boolean; droneOn: boolean; refToneOn: boolean; hasPendingToast: boolean }
-export type HideToast = 'rec.savedOnHide' | 'app.stoppedOnHide'
+export type HideToast = 'app.stoppedOnHide'
 export interface HidePlan {
   /** Android 앱은 백그라운드 마이크를 무음으로 만든다 — 무음 파일이 되기 전에 녹음을 끝내 저장한다 */
   stopRec: boolean
   stopMetro: boolean
-  /** 돌아왔을 때 띄울 안내를 새로 정한다(null 이면 이미 잡힌 안내를 그대로 둔다) */
+  /** 돌아왔을 때 띄울 안내를 새로 정한다(null 이면 이미 잡힌 안내를 그대로 둔다). 녹음을 끝낸 경우는 저장 결과를 녹음 쪽이 알린다 */
   setPending: HideToast | null
   release: Release
 }
@@ -24,6 +24,6 @@ export interface HidePlan {
 export function onHide(h: HideNow): HidePlan {
   const stopRec = h.native && h.recording
   const sounding = h.metroPlaying || h.droneOn || h.refToneOn
-  const setPending: HideToast | null = stopRec ? 'rec.savedOnHide' : sounding && !h.hasPendingToast ? 'app.stoppedOnHide' : null
+  const setPending: HideToast | null = !stopRec && sounding && !h.hasPendingToast ? 'app.stoppedOnHide' : null
   return { stopRec, stopMetro: h.metroPlaying, setPending, release: release({ ...h, recording: h.recording && !stopRec }) }
 }

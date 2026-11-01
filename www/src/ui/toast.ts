@@ -31,8 +31,24 @@ function drop(s: Slot): void {
   markLatest()
 }
 
+type Held = { msg: string; ms: number; action?: () => void }
+/** 숨김 중에 온 안내를 모은다 — 같은 글(액션 없음)은 하나로, 늦게 온 쪽의 시간으로. 순수 */
+export function holdNotice(held: readonly Held[], h: Held): Held[] {
+  if (!h.action) { const i = held.findIndex(x => x.msg === h.msg && !x.action); if (i >= 0) return held.map((x, k) => k === i ? h : x) }
+  return [...held, h]
+}
+// 숨김 중에는 띄우지 않고 모아 두었다가 돌아오면 띄운다. 숨김 중엔 rAF 가 돌지 않아 보이지도 않은 채 시간만 흘러 사라졌다
+// (안드로이드 앱: 전원 버튼 → 녹음 저장 실패 안내가 뒤에서 사라지고 돌아오면 '저장했어요' 만 보였다)
+let held: Held[] = []
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { // typeof: 단위 테스트(node)가 이 모듈의 순수 함수를 읽는다
+  if (document.visibilityState !== 'visible' || !held.length) return
+  const xs = held; held = []
+  for (const h of xs) toast(h.msg, h.ms, h.action)
+})
+
 /** 토스트. action 이 있으면 토스트를 탭할 때 실행된다 (예: 삭제 실행 취소) */
 export function toast(msg: string, ms = 2500, action?: () => void): void {
+  if (document.visibilityState === 'hidden') { held = holdNotice(held, action ? { msg, ms, action } : { msg, ms }); return }
   // 같은 안내가 연달아 오면 시간만 연장. 액션 토스트는 각각 다른 항목을 되살리므로 제외
   if (!action) {
     const same = slots.find(s => s.msg === msg && !s.actionable)

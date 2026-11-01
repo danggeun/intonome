@@ -3,7 +3,7 @@ import { recListStore, sessionStore, type RecItem } from '../state/index.ts'
 import { dbSave, dbDelete, dbPatchMeta, dbLoadAll, dbLastExpired, dbChunkAdd, dbChunksClear, dbChunksLoad, type ChunkRow } from '../persist/recordingsDb.ts'
 import { computePeaks, peakOf } from '../core/peaks.ts'
 import { containerOf, extFromMime, type RecContainer } from '../core/container.ts'
-import { t } from '../core/i18n/index.ts'
+import { t, type TKey } from '../core/i18n/index.ts'
 import { notice } from '../core/notice.ts'
 import { isIOS, isSafari } from '../platform/index.ts'
 import { A, onMic } from './engine.ts'
@@ -11,6 +11,8 @@ import { A, onMic } from './engine.ts'
 /** 파일 하나의 상한. 이보다 길면 같은 세션이 새 파일로 이어진다 — 조각은 10 s 마다 IndexedDB 에 있지만 blob 을 만들 parts 는 메모리에 쌓인다(256 kbps × 60 min ≈ 115 MB) */
 const MAX_REC_SEC = 60 * 60
 let recorder: MediaRecorder | null = null
+/** 지금 파일이 저장된 뒤 띄울 안내 — 정지 이유에 따라 바뀐다(null = 안 띄움: 60 분 이어 녹음은 따로 알린다) */
+let setEndNotice: ((k: TKey | null) => void) | null = null
 let timerInt: ReturnType<typeof setInterval> | null = null
 
 /** 확장자: 저장 때 파일 내용으로 판정해 둔 값이 우선, 없으면(옛 행) mime 으로 추정 */
@@ -55,14 +57,17 @@ function startFile(t0: number, base: string, part = 1): RecResult {
   let rec: MediaRecorder
   try { rec = new MediaRecorder(A.micStream!, opts) } catch (e) { return { ok: false, error: t('rec.unsupported') + (e instanceof Error ? ` (${e.name})` : '') } }
   const parts: Blob[] = []
+  // '완료' 는 저장이 끝난 뒤에 말한다 — 정지 순간에 말하면 저장이 실패했을 때 '완료' 뒤에 '저장하지 못했어요' 가 따라왔다
+  let endNotice: TKey | null = 'rec.done'
+  let chunkWarned = false
   let liveFrom = 0 // 조각마다 그 사이의 실시간 피크를 같이 저장한다 — 복구 때 파형과 재생 보정 피크가 된다
-  rec.ondataavailable = e => { if (e.data.size > 0) { parts.push(e.data); const live = myPeaks.slice(liveFrom); liveFrom = myPeaks.length; void dbChunkAdd({ session: t0, t: Date.now(), mime: rec.mimeType, blob: e.data, live }) } }
-  rec.onerror = () => { notice(t('rec.errSaved')); if (recorder === rec) stopRec() }
+  rec.ondataavailable = e => { if (e.data.size > 0) { parts.push(e.data); const live = myPeaks.slice(liveFrom); liveFrom = myPeaks.length; void dbChunkAdd({ session: t0, t: Date.now(), mime: rec.mimeType, blob: e.data, live }).then(ok => { if (!ok && !chunkWarned) { chunkWarned = true; notice(t('rec.chunkFailed'), 10000) } }) } } // 조각이 안 써지면(대개 저장 공간) 앱이 죽을 때 복구할 것도 없다 — 한 번 알린다
+  rec.onerror = () => { endNotice = 'rec.errSaved'; if (recorder === rec) stopRec() }
   // 파형·피크·확장자는 부가 정보 — 실패해도 녹음은 저장한다. blob 을 못 만들 때만 포기
   rec.onstop = async () => {
     let blob: Blob
     try { blob = new Blob(parts, { type: rec.mimeType || 'audio/mp4' }) }
-    catch { parts.length = 0; notice(t('rec.saveFailed')); return }
+    catch { parts.length = 0; notice(t('rec.saveFailed'), 10000); return }
     parts.length = 0 // 60분 녹음 ≈ 115 MB 가 두 벌 남지 않게
     const name = part > 1 ? `${base}_${part}` : uniqueName(base)
     // 파형용 peaks 는 정규화돼 절대 레벨이 사라진다 → 재생 보정용 원시 피크를 따로 남긴다
@@ -70,7 +75,7 @@ function startFile(t0: number, base: string, part = 1): RecResult {
     try {
       peak = myPeaks.length ? peakOf(myPeaks) : undefined
       peaks = myPeaks.length ? computePeaks([Float32Array.from(myPeaks)], 600) : undefined
-    } catch { peak = undefined; peaks = undefined; notice(t('rec.noWaveform')) }
+    } catch { peak = undefined; peaks = undefined; notice(t('rec.noWaveform')); endNotice = null } // '저장했지만 파형을…' 이 저장 안내를 겸한다
     // 확장자는 mimeType 이 아니라 파일 앞부분 바이트로 정한다 — 빈 mimeType·예상 밖 값 대비
     let ext: RecContainer
     try { ext = containerOf(new Uint8Array(await blob.slice(0, 16).arrayBuffer().catch(() => new ArrayBuffer(0))), rec.mimeType) }
@@ -80,11 +85,12 @@ function startFile(t0: number, base: string, part = 1): RecResult {
     const st = recListStore.get(); recListStore.set({ items: [item, ...st.items], rev: st.rev + 1 })
     const id = await dbSave({ name: item.name, dur: item.dur, blob: item.blob, mime: item.mime, ts: item.ts }, { bookmarks: [], ab: null, peaks, ext, peak }).catch(() => null)
     if (id == null) notice(t('rec.sessionOnly'), 10000) // 용량 부족·프라이빗 모드 등 — 앱을 닫으면 사라진다. 다운로드할 시간을 준다
-    else void dbChunksClear(t0)
+    else { void dbChunksClear(t0); if (endNotice) notice(t(endNotice)) }
     attachId(item, id)
   }
   try { rec.start(REC_SLICE_MS) } catch (e) { return { ok: false, error: t('rec.startFailed') + (e instanceof Error ? ` (${e.name})` : '') } } // 트랙이 막 죽은 순간 InvalidStateError
   recorder = rec; fileT0 = t0; fileBase = base; filePart = part
+  setEndNotice = k => { endNotice = k }
   const myPeaks = startPeakCapture() // 이 파일의 피크 배열 — 다음 파일이 새 배열을 만들어도 참조 유지
   return { ok: true }
 }
@@ -93,12 +99,14 @@ export function backdateRecFile(ms: number): void { fileT0 -= ms }
 /** 60 분 상한: 지금 파일을 저장하고 같은 세션을 새 파일(_2, _3 …)로 잇는다. 헤더의 시간은 계속 흐른다 */
 function rollover(): void {
   if (!recorder || recorder.state === 'inactive') return
-  recorder.stop(); stopPeakCapture()
+  setEndNotice?.(null); recorder.stop(); stopPeakCapture()
   const r = startFile(Date.now(), fileBase, filePart + 1)
   if (r.ok) notice(t('rec.rolledOver'), 6000)
-  else { notice(r.error); stopRec() }
+  else { setEndNotice?.('rec.done'); notice(r.error); stopRec() } // 다음 파일을 못 열었다 — 지금까지의 파일은 저장된다고 말한다(setEndNotice 는 아직 앞 파일을 가리킨다)
 }
-export function stopRec(): void {
+/** @param why 'hidden' = 앱이 뒤로 가서(안드로이드 앱) — 저장된 뒤의 안내가 그 이유를 말한다 */
+export function stopRec(why?: 'hidden'): void {
+  if (why === 'hidden') setEndNotice?.('rec.savedOnHide')
   if (recorder && recorder.state !== 'inactive') recorder.stop()
   stopPeakCapture() // stop 전에 피크 캡처를 멈춘다 — onstop 은 늦게 온다
   if (timerInt) clearInterval(timerInt); timerInt = null
@@ -122,14 +130,15 @@ function stopPeakCapture(): void { if (peakTimer) clearInterval(peakTimer); peak
 export const indexOf = (item: RecItem): number => recListStore.get().items.indexOf(item)
 /** DB 삭제가 성공한 뒤에만 목록에서 뺀다 — 먼저 빼면 실패 시 다음 실행에서 되살아난다. id 없는 항목은 목록에서만 */
 const deleting = new WeakSet<RecItem>() // DB 응답 대기 중 같은 항목의 연타를 막는다 — 실행 취소 토스트가 둘 뜬다
-export async function deleteRec(item: RecItem): Promise<boolean> {
-  if (deleting.has(item) || !recListStore.get().items.includes(item)) return false
+/** 'busy' = 이미 지우는 중이거나 이미 빠졌다(연타) — 알릴 것 없음 */
+export async function deleteRec(item: RecItem): Promise<'ok' | 'busy' | 'failed'> {
+  if (deleting.has(item) || !recListStore.get().items.includes(item)) return 'busy'
   deleting.add(item)
   try {
-    if (item.id != null && !(await dbDelete(item.id))) return false
+    if (item.id != null && !(await dbDelete(item.id))) return 'failed'
     URL.revokeObjectURL(item.url)
     const st = recListStore.get(); recListStore.set({ items: st.items.filter(i => i !== item), rev: st.rev + 1 })
-    return true
+    return 'ok'
   } finally { deleting.delete(item) }
 }
 /** 삭제 취소용: 항목을 원래 자리에 되돌리고 DB 에 다시 저장 */
@@ -139,6 +148,7 @@ export async function restoreDeleted(item: RecItem, at: number): Promise<void> {
   items.splice(Math.min(at, items.length), 0, back)
   recListStore.set({ items, rev: st.rev + 1 })
   const id = await dbSave({ name: back.name, dur: back.dur, blob: back.blob, mime: back.mime, ts: back.ts }, { bookmarks: back.bookmarks, ab: back.ab, peaks: back.peaks, ext: back.ext, peak: back.peak, keep: back.keep }).catch(() => null)
+  if (id == null) notice(t('rec.sessionOnly'), 10000) // 화면엔 되살아났지만 저장은 안 됐다 — 다음 실행에 없다
   // 그 사이 patchRec 이 객체를 바꿨을 수 있다 → blob 동일성으로 찾는다. 저장되는 동안 다시 지웠으면(id 가 없어 목록에서만 빠졌다) DB 에서도 지운다 — 안 그러면 다음 실행에 유령 행
   attachId(back, id)
 }

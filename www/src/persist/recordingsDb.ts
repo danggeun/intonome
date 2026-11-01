@@ -18,6 +18,12 @@ export interface RecFull extends RecRow { bookmarks: number[]; ab: AB | null; pe
 
 let db: IDBDatabase | null = null
 const req = <T>(r: IDBRequest<T>): Promise<T> => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) })
+/** 트랜잭션이 커밋될 때까지 — 용량 초과(QuotaExceededError)는 요청이 성공한 뒤 커밋에서 abort 로 온다(Chromium). 큰 blob 쓰기는 이걸로 끝을 판단한다 */
+const committed = <T>(r: IDBRequest<T>): Promise<T> => new Promise((res, rej) => {
+  let v: T; const tx = r.transaction!
+  r.onsuccess = () => { v = r.result }; r.onerror = () => rej(r.error)
+  tx.oncomplete = () => res(v); tx.onabort = () => rej(tx.error ?? r.error)
+})
 
 export function openRecDb(): Promise<IDBDatabase> {
   return new Promise((res, rej) => {
@@ -51,7 +57,7 @@ const store = (name: string, mode: IDBTransactionMode) => db!.transaction(name, 
 
 export async function dbSave(row: RecRow, meta: Omit<RecMeta, 'id'>): Promise<number | null> {
   if (!db) return null
-  const id = (await req(store(REC_STORE, 'readwrite').add(row))) as number
+  const id = (await committed(store(REC_STORE, 'readwrite').add(row))) as number
   await req(store(META_STORE, 'readwrite').put({ id, ...meta })).catch(() => { notice(t('rec.metaFailed')) })
   return id
 }
@@ -95,9 +101,10 @@ export async function dbLoadAll(): Promise<RecFull[]> {
 // 녹음 중 조각
 /** live: 이 조각 동안의 실시간 피크(20 개/초) — 복구 때 파형·재생 보정 피크를 만든다. 옛 조각에는 없다 */
 export interface ChunkRow { seq?: number; session: number; t: number; mime: string; blob: Blob; live?: number[] }
-export async function dbChunkAdd(row: ChunkRow): Promise<void> {
-  if (!db) return
-  try { await req(store(CHUNK_STORE, 'readwrite').add(row)) } catch { /* 용량 부족 — 메모리의 조각으로 stop 때 저장된다 */ }
+/** false = 못 썼다(대개 용량 부족 — 메모리의 조각으로 stop 때 저장을 시도한다). 저장소가 없으면 그 안내는 이미 했으니 true */
+export async function dbChunkAdd(row: ChunkRow): Promise<boolean> {
+  if (!db) return true
+  try { await committed(store(CHUNK_STORE, 'readwrite').add(row)); return true } catch { return false }
 }
 export async function dbChunksClear(session: number): Promise<void> {
   if (!db) return

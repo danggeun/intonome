@@ -1074,6 +1074,11 @@ await scenario('rec: two deletes in a row → each undo toast stays alive', 'vio
   assert.equal((await names()).length, 1, '두 번째 실행 취소')
   await p.click('#toast'); await sleep(p, 400) // 남아 있던 첫 번째 토스트
   assert.equal((await names()).length, 2, '첫 번째 실행 취소도 살아 있다')
+  // 같은 삭제를 두 번 빨리 누르면: 지워지고 실행 취소 하나 — '삭제하지 못했어요' 가 같이 뜨지 않는다
+  await sleep(p, 2700) // 위 토스트들이 사라지게
+  await p.dblclick('[data-action="delete"][data-idx="0"]'); await sleep(p, 600)
+  assert.equal((await names()).length, 1)
+  assert.equal(await p.evaluate(() => document.getElementById('toast-host').textContent.includes('삭제하지 못했어요')), false, '연타는 실패가 아니다')
 })
 await scenario('rec: keep — always offered while auto-delete is on, the countdown only in the last 7 days; toggles, persists, hidden when auto-delete is off', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
@@ -1703,6 +1708,25 @@ await scenario('lifecycle: on the web the mic stays open when hidden during a re
   await p.click('#rec-hdr-btn'); await sleep(p, 800)
   assert.equal(await p.evaluate(() => document.querySelectorAll('.rec-item').length), 1, '녹음이 저장됐다')
   assert.equal(await p.evaluate(() => document.getElementById('rec-empty')), null, '안내는 사라진다')
+})
+await scenario('lifecycle: a notice that arrives while hidden is shown on return (not lost behind the screen); "recording saved" comes after the save', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await setVisibility(p, 'hidden')
+  await p.evaluate(() => window.__tt.notice('숨김 중 안내', 2500)); await sleep(p, 3000) // 띄웠다면 이미 사라졌을 시간
+  assert.equal(await p.evaluate(() => document.getElementById('toast-host').textContent.includes('숨김 중 안내')), false, '숨김 중엔 띄우지 않는다')
+  await setVisibility(p, 'visible'); await waitToast(p, '숨김 중 안내')
+  await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 시작')
+  await sleep(p, 1200); await p.click('#rec-hdr-btn')
+  await waitToast(p, '녹음 완료'); assert.equal(await p.evaluate(() => document.querySelectorAll('.rec-item').length), 1)
+})
+await scenario('lifecycle: back after a call stopped the audio while hidden, and it will not resume → the tuner says to tap (it sat silent)', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#rec-hdr-btn'); await sleep(p, 600) // 녹음 중이라 웹은 숨겨도 마이크를 둔다 — 아이폰 웹앱에서 전화가 오는 경우
+  await setVisibility(p, 'hidden')
+  await p.evaluate(async () => { const ac = window.__tt.ac(); ac.resume = () => Promise.resolve(); await ac.suspend() }) // 전화 뒤 깨워지지 않는 컨텍스트
+  await sleep(p, 2000) // 숨김 중의 1.5 s 검사는 보이지 않아 넘어간다
+  await setVisibility(p, 'visible')
+  await waitToast(p, '오디오가 중단됐어요. 화면을 탭하면 다시 시작해요', 4000)
 })
 await scenario('lifecycle: idle → context suspended (audio focus released); metronome start resumes it', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel'); await p.evaluate(() => document.activeElement?.blur())

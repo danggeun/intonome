@@ -286,7 +286,7 @@ function togglePlay(): void {
     setPlayGlyph(true)
     // 첫 play() 가 거절되면 50 ms 뒤 한 번 더 — 그 사이 사용자가 멈췄으면(글리프 ▶) 다시 틀지 않는다
     const wantsPlay = (): boolean => q('ed-play-btn').classList.contains('playing')
-    const tryPlay = () => { if (ed.audio !== a) return /* 편집기가 닫힌 뒤 canplay 가 와도 재생하지 않음 */; const p = a.play(); if (p && p.catch) p.catch(() => { setTimeout(() => { if (ed.audio && ed.audio.paused && wantsPlay()) { const p2 = ed.audio.play(); if (p2 && p2.catch) p2.catch(() => { setPlayGlyph(false) }) } }, 50) }) }
+    const tryPlay = () => { if (ed.audio !== a) return /* 편집기가 닫힌 뒤 canplay 가 와도 재생하지 않음 */; const p = a.play(); if (p && p.catch) p.catch(() => { setTimeout(() => { if (ed.audio && ed.audio.paused && wantsPlay()) { const p2 = ed.audio.play(); if (p2 && p2.catch) p2.catch(() => { a.stopped(); setPlayGlyph(false); toast(tr('common.cantPlay')) }) } }, 50) }) } // 두 번 다 거절되면 ▶ 로 돌리고 알린다 — 눌렀는데 아무 일도 없는 것처럼 보였다
     if (a.readyState < 2) a.addEventListener('canplay', tryPlay, { once: true }); else tryPlay()
   } else { a.pause(); a.stopped(); setPlayGlyph(false) }
 }

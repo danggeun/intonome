@@ -27,9 +27,9 @@ describe('the screen goes to the background', () => {
   test('on the web a recording keeps the mic (a recording must not break)', () => {
     expect(onHide({ ...idle, recording: true })).toEqual({ stopRec: false, stopMetro: false, setPending: null, release: 'keep' })
   })
-  test('in the Android app a recording is saved first, then the mic is let go, and the saved notice wins', () => {
-    expect(onHide({ ...idle, native: true, recording: true, metroPlaying: true, hasPendingToast: true }))
-      .toEqual({ stopRec: true, stopMetro: true, setPending: 'rec.savedOnHide', release: 'close' })
+  test('in the Android app a recording is saved first, then the mic is let go; the recorder says how the save went, so no "stopped" notice', () => {
+    expect(onHide({ ...idle, native: true, recording: true, metroPlaying: true }))
+      .toEqual({ stopRec: true, stopMetro: true, setPending: null, release: 'close' })
   })
   test('hidden while the mic is still opening: the opening is cancelled', () => {
     expect(onHide({ ...idle, micOpen: false, opening: true }).release).toBe('cancel')

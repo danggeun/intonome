@@ -181,9 +181,9 @@ export function mountRecList(openEditor: (item: RecItem) => void, beforeDelete: 
       case 'delete': { // 확인 대신 실행 취소 토스트
         if (!item) break
         beforeDelete(item); stopPlayer(idx)
-        void deleteRec(item).then(ok => {
-          if (ok) toast(tr('rec.deleted') + tr('common.undoSuffix'), 5000, () => { void restoreDeleted(item, idx) })
-          else toast(tr('rec.deleteFailed'))
+        void deleteRec(item).then(r => {
+          if (r === 'ok') toast(tr('rec.deleted') + tr('common.undoSuffix'), 5000, () => { void restoreDeleted(item, idx) })
+          else if (r === 'failed') toast(tr('rec.deleteFailed'))
         })
         break
       }
