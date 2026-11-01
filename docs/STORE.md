@@ -123,6 +123,8 @@ A separate page on Pages would split the source in two, so keep a single file.
 
 Describe the microphone as "processed on device only, not stored (stored on the device only when the user taps record)".
 
-## Screenshots
+## Screenshots and feature graphic
 
-The images in `test-assets/screens/baseline/` are the real screens (`dark_*`, `light_*`, `en_*`). The store needs at least two.
+`npm run store:assets` writes them to `test-assets/store/` (not committed): seven phone screenshots per language at 1080×2160 (`ko_1_tuner` … `ko_7_tuner_light`, `en_…`) and the feature graphic `ko_feature_1024x500` / `en_feature_1024x500`, all PNG without alpha. Upload the Korean set to the Korean listing and the English set to the English one.
+
+Play takes phone screenshots whose longer side is at most twice the shorter (320–3840 px), at least two per listing. The screenshot baselines in `test-assets/screens/baseline/` (780×1688) are for visual checks and do not meet this.

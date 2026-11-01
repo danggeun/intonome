@@ -33,7 +33,8 @@
     "affected": "node scripts/affected.mjs",
     "cap:manifest": "node scripts/cap-manifest.mjs",
     "cap:assets": "capacitor-assets generate --android --iconBackgroundColor #1c1e22 --iconBackgroundColorDark #1c1e22 --splashBackgroundColor #181b21 --splashBackgroundColorDark #181b21 && node scripts/cap-icons.mjs",
-    "icons": "node scripts/gen-icons.mjs && node scripts/gen-splash.mjs"
+    "icons": "node scripts/gen-icons.mjs && node scripts/gen-splash.mjs",
+    "store:assets": "node scripts/store-assets.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
