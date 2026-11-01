@@ -1,5 +1,15 @@
 import { describe, test, expect } from 'vitest'
-import { fmt, fmtT, playedRatio } from './format.ts'
+import { fmt, fmtT, fmtTenths, playedRatio } from './format.ts'
+
+describe('fmtTenths (A and B points)', () => {
+  test('shows tenths so a 0.25 s nudge is visible', () => {
+    expect(fmtTenths(1.25)).toBe('00:01.2')
+    expect(fmtTenths(1.5)).toBe('00:01.5')
+    expect(fmtTenths(1.2)).toBe('00:01.2') // 1.2 × 10 is 11.999… in floating point
+    expect(fmtTenths(75.95)).toBe('01:15.9')
+  })
+  test('bad values read 00:00.0', () => { expect(fmtTenths(-1)).toBe('00:00.0'); expect(fmtTenths(NaN)).toBe('00:00.0') })
+})
 
 describe('fmt', () => {
   test('zero seconds', () => expect(fmt(0)).toBe('00:00'))

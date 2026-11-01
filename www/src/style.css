@@ -454,10 +454,10 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #ed-pos-hit{position:absolute;inset:-16px -22px;} /* 손잡이 2 px → 누르는 폭 46 */
 #ed-ab-times{display:none;justify-content:space-between;margin-top:var(--s3);}
 /* 시각은 검정, A/B 글자만 빨강 */
-#ed-a-time,#ed-b-time{font-family:'DM Mono',monospace;font-size:var(--fs-sm);color:var(--text);font-weight:var(--fw-md);cursor:pointer;padding:8px 2px;margin:-8px 0;}
+#ed-a-time,#ed-b-time{font-family:'DM Mono',monospace;font-size:var(--fs-sm);color:var(--text);font-weight:var(--fw-md);cursor:pointer;padding:8px 2px;margin:-8px 0;white-space:nowrap;} /* 0.1 초까지(A 00:01.5) 320 px 에서도 한 줄 */
 #ed-a-time::first-letter,#ed-b-time::first-letter{color:var(--accent);font-weight:var(--fw-b);}
 .ed-ab-time-group{display:inline-flex;align-items:center;gap:0;}
-.ed-nudge{width:44px;height:44px;margin:-12px -8px;background:none;border:none;color:var(--text-2);font-family:'DM Mono',monospace;font-size:var(--fs-lg);line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+.ed-nudge{width:44px;height:44px;margin:-12px -10px;background:none;border:none;color:var(--text-2);font-family:'DM Mono',monospace;font-size:var(--fs-lg);line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
 #ed-transport{display:flex;align-items:center;gap:var(--s2);padding:var(--s4);margin:var(--s3) var(--s5) var(--s4);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);flex-shrink:0;}
 #ed-play-btn{width:var(--h-tall);height:var(--h-tall);background:var(--accent-fill);border:none;border-radius:50%;color:var(--on-accent);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding-left:3px;}
 #ed-play-btn.playing{font-size:var(--fs-base);letter-spacing:-.05em;padding-left:0;}

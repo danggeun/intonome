@@ -1,5 +1,17 @@
 import { describe, test, expect } from 'vitest'
-import { histLenFor } from './hist.ts'
+import { histLenFor, rowsShown } from './hist.ts'
+
+describe('rowsShown — a short trace area shows only the latest frames instead of squashing them', () => {
+  const n = histLenFor(44100, 4) // 172 frames
+  test('the usual phone sizes draw the whole window', () => {
+    expect(rowsShown(n, 496)).toBe(n) // 390×844 collapsed
+    expect(rowsShown(n, 276)).toBe(n) // 390×844 expanded
+  })
+  test('a small iPhone with the metronome expanded (~100 px) draws the last 80 frames, about 1.9 s', () => {
+    expect(rowsShown(n, 100)).toBe(80)
+  })
+  test('never fewer than two frames (a line needs two points)', () => expect(rowsShown(n, 0)).toBe(2))
+})
 
 describe('histLenFor', () => {
   test('the window is the same number of seconds at any sample rate', () => {

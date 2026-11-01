@@ -4,7 +4,7 @@
  */
 import { octaveOf, noteLabel } from '../core/note.ts'
 import { calmHz, fmtHz } from '../core/hzReadout.ts'
-import { histLenFor } from '../core/hist.ts'
+import { histLenFor, rowsShown } from '../core/hist.ts'
 import { buildSegments, keepInTrace } from '../core/trace.ts'
 import { CFG, settingsStore, tunerStore } from '../state/index.ts'
 import { q } from './dom.ts'
@@ -85,6 +85,7 @@ let bmpH = 0      // 비트맵 높이(CSS px)
 let drawnH = 0    // 지난 그리기의 보이는 높이 — 줄면 위로 밀려난 띠를 바탕색으로 지운다(안 보이지만 비트맵을 읽는 쪽에 옛 선이 남지 않게)
 /** 그리는 높이는 보이는 높이를 올림 — 반올림하면 소수 높이의 맨 위 한 줄이 그린 영역 밖(바탕만 있는 줄)이 보인다 */
 const coverPx = (h: number): number => Math.ceil(h - 0.05)
+
 function viewSize(): { W: number; H: number } {
   if (viewKnown) return { W: viewW, H: viewH }
   const v = q('tuner-history'), r = v.getBoundingClientRect(); return { W: v.offsetWidth, H: coverPx(r.height) } // ResizeObserver 가 없거나 아직 안 왔을 때만
@@ -123,7 +124,9 @@ function drawHistory(inTune: boolean): void {
   c.beginPath(); c.rect(0, 0, W, H); c.clip() // 선의 둥근 끝이 위로 삐져 숨은 띠에 쌓이지 않게 — 예전엔 비트맵 끝이 잘라 줬다
   c.fillStyle = stageBg; c.fillRect(0, 0, W, H)
   if (inTune) { c.fillStyle = `rgba(${okRgb},.07)`; c.fillRect(0, 0, W, H) }
-  const ppc = (W / 2) / 50, N = hist.length, rH = H / N
+  const from = hist.length - rowsShown(hist.length, H)
+  const hs = from ? hist.slice(from) : hist, hm = from ? histMidi.slice(from) : histMidi
+  const ppc = (W / 2) / 50, N = hs.length, rH = H / N
   lastSkipped = 0
   // 띠는 '영역' — 트레이스보다 뒤로. 옅게: 늘 깔린 진한 초록(화면의 10 %)은 '초록 = 맞음' 을 묻는다. 맞았다는 신호는 음이름·테·바탕이 맡는다
   c.fillStyle = `rgba(${okRgb},.16)`; c.fillRect(W / 2 - tol * ppc, 0, tol * 2 * ppc, H)
@@ -139,15 +142,15 @@ function drawHistory(inTune: boolean): void {
   const grad = c.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, `rgba(${inkRgb},.22)`); grad.addColorStop(1, `rgb(${inkRgb})`)
   c.strokeStyle = grad
   // 무엇을 잇고 무엇을 버릴지는 core/trace.ts 가 정한다. 이어지는 선분은 한 경로로 긋는다
-  const { segs, breaks } = buildSegments(hist, histMidi)
+  const { segs, breaks } = buildSegments(hs, hm)
   lastSkipped = breaks
   const px = (v: number) => W / 2 + Math.max(-50, Math.min(50, v)) * ppc, py = (i: number) => (i + .5) * rH
   let open = false, prevEnd = -1
   for (const [i, j] of segs) {
-    if (!open || i !== prevEnd) { if (open) c.stroke(); c.beginPath(); c.moveTo(px(hist[i]!), py(i)); open = true }
+    if (!open || i !== prevEnd) { if (open) c.stroke(); c.beginPath(); c.moveTo(px(hs[i]!), py(i)); open = true }
     // 건너뛴 프레임을 사이에 둔 이음(음이 바뀐 자리)은 위아래로 접하는 S자 곡선 — 앞 음 자리에서 새 음 자리로 펜처럼 넘어간다
-    if (j - i > 1) { const ym = (py(i) + py(j)) / 2; c.bezierCurveTo(px(hist[i]!), ym, px(hist[j]!), ym, px(hist[j]!), py(j)) }
-    else c.lineTo(px(hist[j]!), py(j))
+    if (j - i > 1) { const ym = (py(i) + py(j)) / 2; c.bezierCurveTo(px(hs[i]!), ym, px(hs[j]!), ym, px(hs[j]!), py(j)) }
+    else c.lineTo(px(hs[j]!), py(j))
     prevEnd = j
   }
   if (open) c.stroke()

@@ -1152,6 +1152,18 @@ await scenario('editor: A/B/loop/bookmark flows', 'violin_A4.wav', async p => {
 })
 
 // 1.0× 가 아닌 속도는 앱이 직접 늘인다(아이폰 WebKit 의 <audio> 배속이 Web Audio 에 연결되면 깨진다) — 같은 코드가 크로미움에서도 돈다
+await scenario('editor: A and B read to a tenth of a second and stay on one line at 320 px; a nudge moves the tenths', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#rec-hdr-btn'); await sleep(p, 5500); await p.click('#rec-hdr-btn'); await sleep(p, 800)
+  await p.click('#menu-btn'); await p.click('[data-action="edit"][data-idx="0"]'); await sleep(p, 800)
+  await p.evaluate(() => { window.__tt.editor().audio.currentTime = 1.25 }); await p.click('#ed-a-btn')
+  await p.evaluate(() => { window.__tt.editor().audio.currentTime = 4.75 }); await p.click('#ed-b-btn'); await sleep(p, 200)
+  assert.deepEqual(await p.evaluate(() => [document.getElementById('ed-a-time').textContent, document.getElementById('ed-b-time').textContent]), ['A 00:01.2', 'B 00:04.7'])
+  await p.click('#ed-a-nudge-r'); await sleep(p, 100)
+  assert.equal(await p.evaluate(() => document.getElementById('ed-a-time').textContent), 'A 00:01.5', '‹ › 0.25 초가 글자에 보인다')
+  const h = await p.evaluate(() => ['ed-a-time', 'ed-b-time'].map(id => document.getElementById(id).getBoundingClientRect().height))
+  assert.ok(h.every(x => x < 40), '한 줄: ' + h)
+}, { viewport: { width: 320, height: 640 } })
 await scenario('editor: other speeds play through the app time stretch — speed, hand-over while playing, A-B loop, end', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#rec-hdr-btn'); await sleep(p, 3200); await p.click('#rec-hdr-btn'); await sleep(p, 800)

@@ -2,7 +2,7 @@
  * 녹음 편집 페이지 — 재생/시크, 속도, A-B 구간·반복, 북마크, 파형, A-B WAV 저장.
  * 북마크·A-B·속도·파형 피크는 녹음 항목과 함께 IndexedDB 에 저장된다.
  */
-import { fmtT } from '../core/format.ts'
+import { fmtT, fmtTenths } from '../core/format.ts'
 import { bufToWav } from '../core/wav.ts'
 import { computePeaks } from '../core/peaks.ts'
 import { playbackGain } from '../core/playbackGain.ts'
@@ -77,9 +77,9 @@ function updateHandles(): void {
   const d = dur(); if (!d) return
   if (ed.ptA !== null) {
     const aH = q('ed-a-handle'); aH.style.display = 'block'; aH.style.left = pct(ed.ptA, d)
-    q('ed-ab-times').style.display = 'flex'; q('ed-a-time').textContent = 'A ' + fmtT(ed.ptA)
+    q('ed-ab-times').style.display = 'flex'; q('ed-a-time').textContent = 'A ' + fmtTenths(ed.ptA)
   }
-  if (ed.ptB !== null) { const bH = q('ed-b-handle'); bH.style.display = 'block'; bH.style.left = pct(ed.ptB, d); q('ed-b-time').textContent = 'B ' + fmtT(ed.ptB) }
+  if (ed.ptB !== null) { const bH = q('ed-b-handle'); bH.style.display = 'block'; bH.style.left = pct(ed.ptB, d); q('ed-b-time').textContent = 'B ' + fmtTenths(ed.ptB) }
   if (ed.ptA !== null && ed.ptB !== null) { const r = q('ed-ab-range'); r.style.display = 'block'; r.style.left = pct(ed.ptA); r.style.width = ((frac(ed.ptB) - frac(ed.ptA)) * 100).toFixed(3) + '%' }
   updateZoomBtn()
   requestWave()

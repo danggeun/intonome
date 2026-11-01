@@ -9,7 +9,7 @@ import { settingsStore, tunerStore, metroStore, refToneStore, droneStore, type S
 import { q, on } from './dom.ts'
 import { t, type TKey } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
-import { isPhoneLayout, setStatusBarTheme } from '../platform/index.ts'
+import { isPhoneLayout, setStatusBarTheme, isNative } from '../platform/index.ts'
 import { stageOf, type Stage } from '../core/metro/card.ts'
 import { placeBubble } from '../core/tourPlace.ts'
 import { overlayOpen, closeSettings } from './menu.ts'
@@ -84,7 +84,7 @@ const STEPS: Step[] = [
       return { title: 'tour.metroMore', body: 'tour.metroMoreBody', gesture: 'swipeUp', pulseAt: hdr }
     } },
   { key: 'rec', target: () => [q('rec-hdr-btn')], pad: 6, radius: 10,
-    view: () => ({ title: 'tour.rec', body: 'tour.recBody', gesture: 'none' }) },
+    view: () => ({ title: 'tour.rec', body: isNative() ? 'tour.recBodyNative' : 'tour.recBody', gesture: 'none' }) }, // 안드로이드 앱만 숨기면 녹음이 끝난다(백그라운드 마이크가 무음이 된다)
   { key: 'menu', target: () => [q('menu-btn'), q('hdr-timer')], pad: 4, radius: 12, // 타이머가 돌고 있으면 헤더의 타이머 막대도 메뉴로 간다
     view: () => ({ title: 'tour.menu', body: 'tour.menuBody', gesture: 'none' }) },
   { key: 'gear', target: () => [q('settings-hdr-btn')], pad: 4, radius: 12,
