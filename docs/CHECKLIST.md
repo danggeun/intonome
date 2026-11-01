@@ -84,7 +84,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Newest one open, the rest behind "Show N older recordings"
 - [A] Play/pause, seek, only one plays at a time
 - [D] iPhone with earphones: a recording sounds in both ears (list and editor)
-- [A] Delete removes it from the list and IndexedDB; undo within 5 s
+- [A] Delete removes it from the list and IndexedDB; undo within 5 s; a double tap deletes once without a failure notice
 - [A] List survives a restart; items older than 30 days are deleted (can be turned off); last-7-days notice with "Keep"
 - [A] An unfinished recording (app killed) is recovered on the next launch
 - [A] Download: browser download on the web; Filesystem + share sheet in the Android app. [D] Check the share sheet on a device
@@ -94,7 +94,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Play/pause, tap or drag the track to seek
 - [A] Speed 0.5–1.5×, remembered per recording. Other than 1.0× the app stretches the sound itself: the position moves at the chosen speed (also a speed changed while the recording is being prepared), changing speed while playing continues from the same spot, A–B looping and the end work the same (e2e); the output is 1/speed as long and a 440 Hz tone keeps its pitch within 1 ¢ and its level within 3 % at 0.5, 0.7, 0.85, 1.25 and 1.5× (a chord within 10 % at 0.5×) (unit tests)
 - [D] iPhone: 0.5 / 0.7 / 0.85 / 1.25× play without stutter or dropped sound; changing speed while playing continues smoothly; a recording close to 10 minutes plays at 0.5× on an older iPhone without the tab reloading (it holds about 345 MB while preparing); a recording over 10 minutes says other speeds may sound uneven
-- [A] Set A → set B (after A only) → loop off / on / from 1 s before; drag handles or nudge ±0.25 s
+- [A] A and B show tenths of a second. Set A → set B (after A only) → loop off / on / from 1 s before; drag handles or nudge ±0.25 s
 - [A] Works when webm reports an infinite duration (Android MediaRecorder)
 - [A] Bookmarks: add (no duplicates within 0.3 s), jump, delete
 - [A] Save A–B → one-channel WAV at the in-app level, A to B long (e2e); the live channel is the louder one (unit test)
@@ -113,10 +113,13 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Offline: the service worker precache lets the tuner run after a reload without network; fonts are self-hosted
 - [A] If the context is stopped from outside (iOS "interrupted"), it resumes on return; if it can't within 1.5 s, the metronome stops with a notice
 - [A] App update: a new service worker is applied only when idle (no mic session in use, metronome, drone, recording or editor)
-- [D] Android app going to the background saves an in-progress recording
+- [D] Android app going to the background saves an in-progress recording and ends it (no background recording); "saved" shows on return only if the save worked
+- [A] A notice that arrives while the app is hidden is shown on return; "Recording saved" shows after the save, not at stop
+- [A] Back after the audio was stopped while hidden during a recording and it won't resume → the tuner shows the tap hint
+- [D] iPhone home-screen app: force-close during a recording → the next launch recovers it and it plays
 - [A] Idle (mic off, metronome stopped, no Play A or drone) suspends the context and releases audio focus
 - [A] getUserMedia errors become actionable messages (no mic / another app / HTTPS required)
-- [A] No silent failures: settings save, recording storage, edit info and wake lock problems all show a toast
+- [A] No silent failures: settings save, recording storage (also storage filling up during a recording, and an undone delete that can't be stored again), edit info and wake lock problems all show a toast
 - [A] Worker frame p95 < 12 ms in headless Chromium. [D] Check real phones with `window.__tt.stats()`
 - [D] Android back button: editor → settings → menu → mic popup → drone picker, then background on the main screen
 - [D] Phone calls during and after use, Bluetooth headphone latency

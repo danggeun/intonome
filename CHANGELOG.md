@@ -2,6 +2,39 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.6.5] - 2026-11-02
+Notices say what actually happened: a recording is called saved once it is saved, and notices that arrive while the app is hidden wait for you. Plus the other things a pass over real use turned up, and the Play listing images.
+
+Recording
+- "Recording saved" shows once the recording is stored, and a save counts as done only when the storage has committed it (a full storage can refuse it at that point). It showed the moment you tapped stop, so a save that then failed read "saved" followed by "couldn't save". The same for the notice after an error during a recording, and when the next file can't be started at the 60-minute mark the notice says the first one was saved
+- Android app: going to the background (power button, another app, a call) still ends and saves the recording, and "The app went to the background, so the recording was saved" now shows only when the save worked; if it failed, that is what you see
+- If storage fills up during a recording, it says so once while you record ("Storage is nearly full, so this recording may not be saved"). The 10-second safety copies failed silently, so a crash left nothing to recover
+- An undone delete that can't be stored again says so (it came back on screen but was gone on the next launch)
+- Tapping Delete twice quickly no longer shows "Couldn't delete" next to the undo
+
+Notices
+- A notice that arrives while the app is hidden is shown when you come back. It used to time out unseen
+
+Interruptions
+- Back after a call stopped the audio while the app was hidden with a recording going, when the audio won't start again: the tuner shows the tap-to-restart hint. Before, the screen sat silent with no hint while the recording's time kept running
+
+Tuner
+- When the trace area is short (a small iPhone with the metronome expanded, about 100 px) it shows the last 2 seconds or so instead of squeezing all 4 into it, which turned vibrato into a flat spring. At least 1.25 px per frame; the usual phone sizes are unchanged
+
+Editor
+- A and B show tenths of a second (00:01.6), so the 0.25 s nudges are visible
+- If playback is refused twice, the play button goes back to ▶ and says it can't play (it went back without a word)
+
+Wording
+- First-run guide in the Android app: the REC step says that turning the screen off or switching apps saves what you have and stops
+- Settings › Keep screen on: with it off, the metronome and drone stop when the screen turns off
+- English: no dashes in on-screen sentences, and "You can also tap ∧" keeps the arrow on the same line
+
+Store
+- `npm run store:assets` makes the Play listing images from the running app: phone screenshots at 1080×2160 in Korean and English (tuner, metronome, metronome only, drone over a scale, editor, menu, light) and the 1024×500 feature graphic, as PNG without alpha. Play does not take the 780×1688 screenshot baselines (the longer side may be at most twice the shorter)
+
+Tests: 8 new unit tests (notices held while hidden, trace rows, tenths) and 3 new e2e (a notice while hidden and "recording saved" after the save; back after an interrupted call; A and B to a tenth on one line at 320 px), with a check added to 1 (a double delete)
+
 ## [2.6.4] - 2026-10-31
 The first-run guide matches the metronome's buttons.
 
