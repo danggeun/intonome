@@ -195,6 +195,7 @@ export const EN: Record<TKey, string> = {
   'set.tour': 'App guide',
   'set.tourDesc': 'See the guide from your first launch again',
   'set.tourBtn': 'Show again',
+  'set.about': 'About',
   'set.privacy': 'Privacy policy',
   'set.licenses': 'Open source licenses',
   'set.contact': 'Contact',

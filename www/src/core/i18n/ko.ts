@@ -203,6 +203,7 @@ export const KO = {
   'set.tour': '사용 안내',
   'set.tourDesc': '처음 실행할 때 본 안내를 다시 볼 수 있어요',
   'set.tourBtn': '다시 보기',
+  'set.about': '앱 정보',
   'set.privacy': '개인정보처리방침',
   'set.licenses': '오픈소스 라이선스',
   'set.contact': '문의',

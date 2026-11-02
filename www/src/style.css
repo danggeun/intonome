@@ -395,8 +395,11 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 /* 설정 페이지 */
 #settings-wordmark{display:block;width:108px;height:auto;margin:var(--s6) auto 0;fill:var(--text);} /* 한 줄 워드마크(resources/wordmark.svg 와 같은 윤곽) */ /* 글자 윤곽을 패스로 넣은 워드마크(Bricolage Grotesque): 폰트 파일을 싣지 않는다 */
 #settings-version{font-family:'DM Mono',monospace;font-size:var(--fs-xs);color:var(--text-3);text-align:center;padding-top:var(--s2);}
-#settings-links{display:flex;justify-content:center;align-items:center;gap:var(--s2);flex-wrap:wrap;font-size:var(--fs-sm);color:var(--text-3);padding-top:var(--s3);}
-#settings-links a,#settings-links button{color:var(--text-2);background:none;border:none;font:inherit;font-size:var(--fs-sm);line-height:20px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:12px 4px;margin:-12px 0;} /* 44 px 히트, 보이는 크기는 글자만 */
+.about-list{display:flex;flex-direction:column;border:1px solid var(--line-ctl);border-radius:var(--r-md);overflow:hidden;} /* 앱 정보 — 설정 카드 안의 목록(step-row 와 같은 테두리) */
+.about-link{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);height:var(--h-seg);padding:0 var(--s3) 0 var(--s4);background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--text);font-family:inherit;font-size:var(--fs-base);font-weight:var(--fw-md);text-decoration:none;text-align:left;cursor:pointer;width:100%;transition:background .1s;}
+.about-link:last-child{border-bottom:none;}
+.about-link:active{background:var(--sel);}
+.about-link .nav-glyph{color:var(--text-3);flex-shrink:0;}
 #licenses-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:61;opacity:0;pointer-events:none;visibility:hidden;transition:opacity var(--t-std),visibility 0s var(--t-std);overflow-y:auto;}
 #licenses-page.open{opacity:1;pointer-events:all;visibility:visible;transition:opacity var(--t-std),visibility 0s;}
 #licenses-inner{min-height:100%;display:flex;flex-direction:column;padding:var(--page-top) var(--s5) calc(var(--s6) + env(safe-area-inset-bottom,0px));max-width:480px;margin:0 auto;}
