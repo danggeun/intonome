@@ -35,7 +35,7 @@ describe('double bass below E1 — 5-string B0, C extension, a loose E string', 
 
 describe('analyzer: reference pitch (refHz) correction', () => {
   // 리뷰에서 잡은 결함: 트래커 격자가 A=440 이라 |오프셋| > 50 ¢ (바로크 415, 466) 에서 이웃 반음으로 라벨링됐다
-  test.each([[442, 442], [440, 440], [432, 432], [425, 425], [415, 415], [466, 466], [410, 410]])('refHz=%i 에서 그 주파수는 라4 0 ¢', (ref, hz) => {
+  test.each([[442, 442], [440, 440], [432, 432], [425, 425], [415, 415], [466, 466], [410, 410]])('at refHz=%i that frequency reads A4 at 0 ¢', (ref, hz) => {
     const f = settle(ref, hz)
     expect(f.midi).toBe(69); expect(Math.abs(f.cents)).toBeLessThanOrEqual(2); expect(f.inTune).toBe(true)
     expect(Math.abs(1200 * Math.log2(f.hz / hz))).toBeLessThan(3) // 표시 주파수는 실제 값으로 되돌려진다

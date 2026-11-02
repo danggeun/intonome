@@ -101,7 +101,7 @@ const dismissMicPopup = async (p) => { if (await p.locator('#mic-popup-bg.show')
 const waitToast = (p, text, ms = 3000) => waitUntil(p, t => document.getElementById('toast')?.textContent === t, ms, `toast "${text}"`, text)
 
 // 튜너
-await scenario('tuner: 440 Hz @A=442 → A4 (라4) −8¢ (in tune at the default ±10)', 'violin_A4.wav', async p => {
+await scenario('tuner: 440 Hz @A=442 → A4 (Korean "라4") −8¢ (in tune at the default ±10)', 'violin_A4.wav', async p => {
   await p.goto(URL_); const t = await waitNote(p, t => t.note === '라' && /^-(7|8|9) ¢$/.test(t.cents))
   assert.equal(t.oct, '4'); assert.equal(t.inTune, true)
   await sleep(p, 300); assert.equal((await tunerText(p)).note, '라')
@@ -109,12 +109,12 @@ await scenario('tuner: 440 Hz @A=442 → A4 (라4) −8¢ (in tune at the defaul
   const hz = await p.evaluate(() => document.getElementById('tuner-hz').textContent)
   assert.match(hz, /^ 4(39|40|41)\.\d Hz$/, 'hz readout: ' + JSON.stringify(hz)); assert.equal(hz.length, 9)
 })
-await scenario('tuner: cello C2 → 도2 (Hz readout keeps its width with two digits)', 'cello_C2.wav', async p => {
+await scenario('tuner: cello C2 → Korean "도2" (Hz readout keeps its width with two digits)', 'cello_C2.wav', async p => {
   await p.goto(URL_); const t = await waitNote(p, t => t.note === '도'); assert.equal(t.oct, '2')
   await sleep(p, 250); const hz = await p.evaluate(() => document.getElementById('tuner-hz').textContent)
   assert.match(hz, /^  6[456]\.\d Hz$/, 'hz readout: ' + JSON.stringify(hz)); assert.equal(hz.length, 9, 'Hz 자리가 움직이면 안 된다')
 })
-await scenario('tuner: C♯ (도♯) shows ♯ + D♭ (레♭) enharmonic', 'violin_scale_Amaj.wav', async p => {
+await scenario('tuner: C♯ (Korean "도♯") shows ♯ + D♭ ("레♭") enharmonic', 'violin_scale_Amaj.wav', async p => {
   await p.goto(URL_); const t = await waitNote(p, t => t.acc === '♯', 8000)
   const enh = await p.evaluate(() => document.getElementById('tuner-enharmonic').textContent); assert.match(enh, /^[A-G]♯\/[A-G]♭$/, '보조 줄 = 다른 체계 하나 + 그쪽 이명동음: ' + enh)
 })
@@ -137,7 +137,7 @@ await scenario('ref drum: drag to 440 → 0¢', 'violin_A4.wav', async p => {
   await waitNote(p, t => /^(\+1|-1|0) ¢$/.test(t.cents) || t.cents === '0 ¢')
 })
 
-await scenario('ref drum: A=415 (baroque) → 440 Hz input reads A♯4 (라♯4) ≈ 0¢, not A +100¢', 'violin_A4.wav', async p => {
+await scenario('ref drum: A=415 (baroque) → 440 Hz input reads A♯4 (Korean "라♯4") ≈ 0¢, not A +100¢', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   const box = await p.locator('#ref-drum-outer').boundingBox()
   await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await p.mouse.down(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 28 * 27, { steps: 20 }); await p.mouse.up()
@@ -146,7 +146,7 @@ await scenario('ref drum: A=415 (baroque) → 440 Hz input reads A♯4 (라♯4)
   const t = await waitNote(p, t => t.note === '라' && t.acc === '♯' && /^(\+?[0-3]|-[0-3]) ¢$/.test(t.cents), 5000)
   assert.equal(t.oct, '4')
 })
-await scenario('settings: note names C D E — tuner shows A with 라 as secondary; ref buttons relabel', 'violin_A4.wav', async p => {
+await scenario('settings: note names C D E — tuner shows A with Korean "라" as secondary; ref buttons relabel', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   // v2.3.2 M1: 헤더 ⚙ 로 설정에 바로 (메뉴를 거치지 않는다). M2: 닫기는 메뉴와 같은 X
   await p.click('#settings-hdr-btn'); await sleep(p, 400)
@@ -1527,7 +1527,7 @@ await scenario('Play A with earphones (the tone never reaches the mic): the same
   assert.ok(near.length >= 0.8 * la.length, la.map(t => t.cents).join(' '))
   await p.click('#ref-a-btn')
 })
-await scenario('drone and Play A sound without the mic (single AudioContext); A 듣기 does not ask for the mic', 'silence_lowfloor.wav', async p => {
+await scenario('drone and Play A sound without the mic (single AudioContext); Play A does not ask for the mic', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel')
   await p.click('#drone-btn'); await p.click('#drone-pop .drone-note-btn[data-pc="9"]'); await sleep(p, 200)
   assert.equal(await p.evaluate(() => document.getElementById('drone-btn').classList.contains('on')), true, 'drone on without mic')

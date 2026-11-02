@@ -59,7 +59,7 @@ describe('double-stop interpretation', () => {
     ['E4', 'A4'], ['G4', 'C5'],                 // 완전4도
     ['D4', 'D5'], ['A4', 'A5'],                 // 옥타브
   ]
-  test.each(PAIRS)('%s + %s → 연주하지 않은 음을 내지 않는다', (a, b) => {
+  test.each(PAIRS)('%s + %s → never shows a note that was not played', (a, b) => {
     const sp = createSpectrum(WN)
     const w = frame(a, b)
     sp.update(w, SR)

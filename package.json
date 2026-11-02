@@ -19,7 +19,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:cap": "cross-env BASE=/ vite build",
-    "cap:sync": "npm run build:cap && npx cap sync android && node scripts/cap-manifest.mjs",
+    "cap:sync": "npm run build:cap && npx cap sync android && node scripts/cap-manifest.mjs && node scripts/cap-signing.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:signals": "node scripts/gen-signals.mjs",
@@ -34,7 +34,9 @@
     "cap:manifest": "node scripts/cap-manifest.mjs",
     "cap:assets": "capacitor-assets generate --android --iconBackgroundColor #1c1e22 --iconBackgroundColorDark #1c1e22 --splashBackgroundColor #181b21 --splashBackgroundColorDark #181b21 && node scripts/cap-icons.mjs",
     "icons": "node scripts/gen-icons.mjs && node scripts/gen-splash.mjs",
-    "store:assets": "node scripts/store-assets.mjs"
+    "store:assets": "node scripts/store-assets.mjs",
+    "keygen": "node scripts/keygen.mjs",
+    "aab": "node scripts/aab.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

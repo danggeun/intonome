@@ -54,3 +54,20 @@ describe('no hard-coded Korean on screen', () => {
     expect(stringLiterals(src).map(s => s.text)).toEqual(['나', '라', '마'])
   })
 })
+
+describe('test names are English', () => {
+  // 공개 저장소 규칙: 테스트 이름은 영어. 화면의 한국어 표기 자체를 검증하는 이름은 그 표기를 큰따옴표로 싸서 적는다("라4")
+  test('no Korean in unit test and e2e scenario names outside double quotes', () => {
+    const ROOT = join(SRC, '..', '..')
+    const walkTests = d => readdirSync(d).flatMap(n => { const p = join(d, n); return statSync(p).isDirectory() ? walkTests(p) : /\.test\.(ts|mjs)$/.test(p) ? [p] : [] })
+    const files = [...walkTests(SRC), ...walkTests(join(ROOT, 'scripts')), join(ROOT, 'scripts', 'e2e.mjs')]
+    const NAME = /\b(?:test|it|describe|scenario)(?:\.each\([^)]*\))?\((['"`])(.*?)\1/g
+    const bad = []
+    for (const f of files) {
+      readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
+        for (const m of line.matchAll(NAME)) if (HANGUL.test(m[2].replace(/"[^"]*"/g, ''))) bad.push(`${relative(ROOT, f)}:${i + 1} ${m[2].slice(0, 50)}`)
+      })
+    }
+    expect(bad).toEqual([])
+  })
+})

@@ -10,7 +10,7 @@ describe('changed files pick the checks to run', () => {
     expect(p.unit).toEqual(['www/src/core/pitch/tracker.ts'])
     expect(p.bench).toBe(true)
     expect(p.e2e).toMatch(/tuner/)
-    expect(new RegExp(p.e2e).test('tuner: cello C2 → 도2 (Hz readout keeps its width with two digits)')).toBe(true)
+    expect(new RegExp(p.e2e).test('tuner: cello C2 → Korean "도2" (Hz readout keeps its width with two digits)')).toBe(true)
     expect(new RegExp(p.e2e).test('rec: start/stop → list item, persists reload, rename persists, delete')).toBe(false)
   })
   test('the editor: editor and playback scenarios, no benchmark', () => {

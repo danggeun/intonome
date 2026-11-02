@@ -158,11 +158,11 @@ describe('the tuner reads the player over an app tone', () => {
     }
   })
   // 연주 음의 성분이 전부 앱 음의 정수배와 겹치는 자리(같은 음 · 옥타브 · 12도 · 두 옥타브): 정확히 맞으면 함께 잘려 '--', 몇 센트만 벗어나도 읽는다
-  test.each([['unison', 1, 62], ['octave', 2, 74], ['two octaves', 4, 86]] as const)('%s over a 레4 drone: exactly in tune shows --, 5 ¢ off reads', (_, mult, midi) => {
+  test.each([['unison', 1, 62], ['octave', 2, 74], ['two octaves', 4, 86]] as const)('%s over a D4 drone: exactly in tune shows --, 5 ¢ off reads', (_, mult, midi) => {
     expect(read(D4 * mult, D4, 1).gate).toBe(true)
     for (const c of [5, -5, 20]) { const { frame } = read(D4 * mult * Math.pow(2, c / 1200), D4, 1); expect(frame.midi).toBe(midi); expect(Math.abs(frame.cents - c)).toBeLessThanOrEqual(2) }
   })
-  test('Play A: the other strings read while A sounds (레4 · 솔3 · 미5 over A4)', () => {
+  test('Play A: the other strings read while A sounds (D4, G3, E5 over A4)', () => {
     for (const [f, midi] of [[hzOf(-7), 62], [hzOf(-14), 55], [hzOf(7), 76]] as const) expect(read(f, 442, 1).frame.midi).toBe(midi)
   })
 })
@@ -178,7 +178,7 @@ describe('the app tone not reaching the mic (earphones): nothing to cut, so the 
     for (const r of now.reads) expect(Math.abs(r - c)).toBeLessThanOrEqual(1)
     if (c === 0) expect(before.pct, '2.5.3').toBeLessThan(0.2)
   }, 30000)
-  test('drone 레4 with earphones: 레4 and 레5 read (2.5.3 hid both)', () => {
+  test('drone D4 with earphones: D4 and D5 read (2.5.3 hid both)', () => {
     const D4 = droneHz(2, 442)
     for (const [f, midi] of [[D4, 62], [D4 * 2, 74]] as const) {
       const mic = add(quietRoom(3.5), bowed(f, 3.5, { from: 0.8, to: 3.5, seed: midi }))

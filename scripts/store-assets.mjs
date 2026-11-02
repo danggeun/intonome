@@ -127,5 +127,7 @@ for (const lang of ['ko', 'en']) {
   await ctx.close()
 }
 await browser.close()
+// 스토어 아이콘: 512×512, 알파 채널 있는 32-bit PNG (Play 규격) — 앱 아이콘 원본을 RGBA 로
+{ const png = PNG.sync.read(readFileSync(join(ROOT, 'www', 'public', 'icons', 'icon-512.png'))); writeFileSync(join(OUT, 'icon_512.png'), PNG.sync.write(png, { colorType: 6 })); console.log('  icon_512') }
 killServer()
 console.log(`\n${OUT}`)

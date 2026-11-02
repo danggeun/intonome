@@ -115,10 +115,12 @@ CI (`ci.yml`): check and build run side by side; the three e2e shards start afte
 npx cap add android      # once
 npm run icons            # only when the icon sources (resources/icon*.svg, wordmark.svg) change; also makes the iPhone splash images and rewrites the splash-to-app block at the top of index.html
 npm run cap:assets       # launcher icons and splash screens
-npm run cap:sync         # build:cap + cap sync + scripts/cap-manifest.mjs
-npx cap open android
+npm run cap:sync         # build:cap + cap sync + scripts/cap-manifest.mjs + scripts/cap-signing.mjs
+npx cap open android     # debug APK: Build › Build APK(s)
+npm run keygen           # once: upload key → intonome-upload.jks + keystore.properties (gitignored)
+npm run aab              # store build: cap:sync + gradle bundleRelease → android/app/build/outputs/bundle/release/app-release.aab
 ```
 
 `cap-manifest.mjs` sets permissions (RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, INTERNET, VIBRATE for the drag ticks), portrait lock, and `versionName`/`versionCode` (major·10000 + minor·100 + patch) from package.json. Only bump `version` in package.json. Run `npm run cap:sync` right before a signed build.
 
-Signed APK: Android Studio › Build › Generate Signed App Bundle / APK › APK. Keep the keystore outside the repo and back it up (`*.jks` is gitignored).
+`cap-signing.mjs` adds a `signingConfigs.release` to `app/build.gradle` that reads `keystore.properties` from the repo root (file, passwords, alias); without that file the release build type stays unsigned and debug builds are unaffected. `keygen.mjs` makes the upload key with the JDK's `keytool` (found on PATH, `JAVA_HOME`, or Android Studio's `jbr`) and writes `keystore.properties`. Play App Signing holds the app signing key; ours is the upload key — back up the `.jks` and the properties file outside the repo. Listing text, images (`npm run store:assets`) and the console answers: [STORE.md](STORE.md).

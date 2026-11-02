@@ -51,8 +51,13 @@ The source is split into `core / state / audio / persist / platform / ui` layers
 npx cap add android   # once (android/ is generated, not in the repo)
 npm run cap:assets    # launcher icons and splash screens
 npm run cap:sync      # Capacitor build + sync + manifest fixes
-npx cap open android  # Android Studio → Build › Generate Signed App Bundle / APK
+npx cap open android  # Android Studio → Build › Build APK(s) for a debug APK
+npm run keygen        # once: the Play upload key (intonome-upload.jks + keystore.properties, kept out of git)
+npm run aab           # store build → android/app/build/outputs/bundle/release/app-release.aab
+npm run store:assets  # Play listing images → test-assets/store/
 ```
+
+Store listing text and the Play Console answers are in [docs/STORE.md](docs/STORE.md).
 
 Don't change `androidScheme` or `appId` in `capacitor.config.json`: a new origin loses saved recordings and settings, and the store doesn't allow a new `appId`. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#7-android-release).
 
@@ -62,4 +67,4 @@ Mic input and recordings are processed and stored only on the device. Nothing is
 
 ## License
 
-[MIT](LICENSE). The bundled DM Mono font is under the SIL Open Font License. Note icons are drawn from glyphs of the Bravura music font (© Steinberg Media Technologies, SIL Open Font License); see `scripts/gen-note-glyphs.py`. The wordmark (Settings and the banner above) is set in Bricolage Grotesque (SIL Open Font License) and embedded as outlines.
+[MIT](LICENSE). The bundled DM Mono font is under the SIL Open Font License. Note icons are drawn from glyphs of the Bravura music font (© Steinberg Media Technologies, SIL Open Font License); see `scripts/gen-note-glyphs.py`. The wordmark (Settings and the banner above) is set in Bricolage Grotesque (SIL Open Font License) and embedded as outlines. The app shows these notices with the full license texts under Settings › Open source licenses (`www/src/ui/licensesText.ts`).

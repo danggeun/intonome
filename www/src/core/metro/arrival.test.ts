@@ -76,7 +76,7 @@ const shownAfter = (o: ReturnType<typeof pipeline>, t: number) => o.filter(f => 
 
 describe('self-calibrating metronome click arrival (same flow as the app)', () => {
   const { buf, marks } = renderMetro(8)
-  test.each([[0.08], [0.12], [0.20]])('입력 지연 오차 +%s s: 보정 없으면 정박마다 음이 뜨고, 보정하면 수렴 뒤 0 이다', (err) => {
+  test.each([[0.08], [0.12], [0.20]])('input latency error +%s s: without the correction a note shows on every beat; with it, none once it has settled', (err) => {
     const sig = room(buf, 0.1, 0.03 + err) // 앱은 outLat 0.03 만 안다
     // 보정의 효과는 2.5.1 의 시작 조건(3 프레임)에서 본다 — 2.5.7 의 6 프레임은 클릭 한 번(≈ 0.1 s)을 그것만으로도 띄우지 않는다
     const OLD = { acquireFrames: 3, acquireCents: 20, acquireGap: 0 }

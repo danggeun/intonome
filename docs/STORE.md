@@ -1,7 +1,21 @@
 # Store listing
 
-Values to paste into the Play Console. Edit them here and copy them over; this file is the source, not the console.
+Values to paste into the Play Console, in the order the console asks for them. Edit them here and copy them over; this file is the source, not the console. `scripts/store.test.mjs` checks the lengths and that the URLs match the app.
 The app is Korean-first, so there is a Korean listing (default) and an English one.
+
+## App details (Dashboard › App details)
+
+| Field | Value |
+|---|---|
+| App name | see below (per language) |
+| Default language | Korean (ko-KR); add English (en-US) |
+| App or game | App |
+| Free or paid | Free |
+| Category | Music & Audio |
+| Tags | Tuner, Metronome, Music practice (pick from the console's list) |
+| Contact email | `intonome.app@gmail.com` (shown publicly on the listing) |
+| Website | https://danggeun.github.io/intonome/ |
+| Privacy policy | https://github.com/danggeun/intonome/blob/main/PRIVACY.md |
 
 ## App name (30 characters)
 
@@ -103,28 +117,51 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 · Everything works without an internet connection
 ```
 
+## Graphics
+
+`npm run store:assets` writes everything to `test-assets/store/` (not committed):
+
+| Asset | File(s) | Play requirement |
+|---|---|---|
+| App icon | `icon_512.png` | 512 × 512, 32-bit PNG with alpha, ≤ 1 MB |
+| Feature graphic | `ko_feature_1024x500.png` / `en_feature_1024x500.png` | 1024 × 500 PNG or JPEG, no alpha. Required |
+| Phone screenshots | `ko_1_tuner` … `ko_7_tuner_light`, `en_…` (1080 × 2160) | 2–8 per listing, 320–3840 px, longer side ≤ 2 × shorter, PNG/JPEG without alpha |
+| 7-inch / 10-inch tablet screenshots | not provided | optional; without them the listing just isn't featured on tablets |
+
+Upload the Korean set to the Korean (default) listing and the English set to the English one. The screenshot baselines in `test-assets/screens/baseline/` (780 × 1688) are for visual checks and do not meet the 2:1 rule.
+
 ## Privacy policy URL
 
 ```
 https://github.com/danggeun/intonome/blob/main/PRIVACY.md
 ```
 
-**Required for Play review.** The app uses the microphone permission and is rejected without it.
-GitHub renders the Markdown, so this URL works as is (the repository must be public).
-A separate page on Pages would split the source in two, so keep a single file.
+**Required for Play review.** The app uses the microphone permission and is rejected without it. The same link is in the app (Settings › Privacy policy), which the User Data policy also requires for apps with sensitive permissions. GitHub renders the Markdown, so this URL works as is (the repository must be public). A separate page on Pages would split the source in two, so keep a single file.
 
-## Data safety form (Play Console)
+## App content (Policy › App content) — answers
 
-| Question | Answer |
-|---|---|
-| Does the app collect or share data? | **No** |
-| Is data encrypted in transit? | Not applicable (nothing is transmitted) |
-| Can users request deletion? | They delete it in the app (no server copy) |
+| Declaration | Answer | Why |
+|---|---|---|
+| Privacy policy | the URL above | — |
+| Ads | **No**, the app contains no ads | no ad SDK, nothing promoted |
+| App access | **All functionality is available without special access** | no login, no account |
+| Content rating (IARC) | Category **Utility, Productivity, Communication, or Other**; answer **No** to every question (violence, sexuality, language, controlled substances, gambling, user interaction/sharing location/personal info, digital purchases) | the app has none of these. Expected rating: Everyone / 3+ |
+| Target audience and content | Age groups **13–15, 16–17, 18 and over**; "Does your app unintentionally appeal to children?" → **No** | not designed for children (plain tool UI, no characters or games). Selecting under 13 puts the app under the Families policy, which it is not built for |
+| News app | No | — |
+| COVID-19 contact tracing / status | No | — |
+| Data safety | **Does your app collect or share any of the required user data types? → No** | Mic input is analysed on the device and discarded; recordings are stored only on the device (IndexedDB) and never transmitted. Play's definition of "collect" is sending data off the device; on-device-only processing is exempt. "Share" (Download/Share button) is a user-initiated action the user expects, which Play exempts as well (double-check the console's current wording when filling the form). Nothing is encrypted in transit because nothing is transmitted; users delete recordings in the app |
+| Advertising ID | **No**, the app does not use the advertising ID | no ads or analytics SDK; Capacitor adds no `AD_ID` permission |
+| Government app | No | — |
+| Financial features | No financial features | — |
+| Health | No health features | a practice tool, not a health app |
 
-Describe the microphone as "processed on device only, not stored (stored on the device only when the user taps record)".
+The console's separate "Permissions declaration" / sensitive-permission forms cover things like SMS, call log, background location, all-files access, accessibility services, foreground service types and QUERY_ALL_PACKAGES; the microphone is not among them (verify in the console when the app content section is filled in). If anything does ask about the microphone, describe it as: *processed on device only, not stored unless the user taps record; recordings never leave the device unless the user shares them.*
 
-## Screenshots and feature graphic
+## Release
 
-`npm run store:assets` writes them to `test-assets/store/` (not committed): seven phone screenshots per language at 1080×2160 (`ko_1_tuner` … `ko_7_tuner_light`, `en_…`) and the feature graphic `ko_feature_1024x500` / `en_feature_1024x500`, all PNG without alpha. Upload the Korean set to the Korean listing and the English set to the English one.
-
-Play takes phone screenshots whose longer side is at most twice the shorter (320–3840 px), at least two per listing. The screenshot baselines in `test-assets/screens/baseline/` (780×1688) are for visual checks and do not meet this.
+- **Build**: `npm run keygen` once (upload key `intonome-upload.jks` + `keystore.properties`, both outside git — back them up), then `npm run aab` → `android/app/build/outputs/bundle/release/app-release.aab`. versionCode is `major*10000 + minor*100 + patch` (2.7.0 → 20700), set by `scripts/cap-manifest.mjs`; it must grow with every upload.
+- **Play App Signing**: on (mandatory for AAB). The key we make is the *upload* key; Google holds the app signing key. If the upload key is ever lost, request an upload-key reset in the console.
+- **Target / min API**: Capacitor 8 template targets API 36 (Android 16), min API 24 (Android 7.0). Play requires new apps to target 36 from 31 Aug 2026.
+- **Personal developer accounts (created after 13 Nov 2023)**: a closed test with **at least 12 testers opted in continuously for 14 days** must run before applying for production. Create a Closed testing track, add testers by email list (or a Google Group), share the opt-in link, upload the AAB there first. After 14 days, Dashboard › "Apply for production" (three short sections: the test, the app, readiness; review ≤ 7 days usually).
+- **Phones that have the debug APK installed** must uninstall it before installing the Play version (different signing key). Export recordings first (Download/Share) — uninstalling deletes them.
+- **Release notes** (what's new, ≤ 500 characters per language): take the top lines of the CHANGELOG entry.
