@@ -1,14 +1,14 @@
 # Store listing
 
 Values to paste into the Play Console, in the order the console asks for them. Edit them here and copy them over; this file is the source, not the console. `scripts/store.test.mjs` checks the lengths and that the URLs match the app.
-The app is Korean-first, so there is a Korean listing (default) and an English one.
+There is a Korean listing and an English one. **English is the default language**: Play shows the default listing to everyone whose device language has no translation (Japanese, German, …), so the default must be the one more people can read. Korean users still see the Korean listing.
 
 ## App details (Dashboard › App details)
 
 | Field | Value |
 |---|---|
 | App name | see below (per language) |
-| Default language | Korean (ko-KR); add English (en-US) |
+| Default language | English (en-US); add Korean (ko-KR) |
 | App or game | App |
 | Free or paid | Free |
 | Category | Music & Audio |
@@ -29,19 +29,21 @@ Intonome: Tuner & Metronome
 
 ## Short description (80 characters)
 
+The 80 characters that search indexes and that show before "More". Instrument names are what people search for; the one thing other tuners do not have (the pitch trace) is named; the tagline stays on the feature graphic.
+
 ```
-in tune, in time. 현악기 연습용 튜너·메트로놈·드론·녹음. 광고 없음, 오프라인 동작.
+바이올린·비올라·첼로·콘트라베이스 튜너+메트로놈. 비브라토가 보이는 튜너, 드론, 녹음. 광고 없음·오프라인.
 ```
 
 ```
-in tune, in time. String tuner, metronome, drone and recorder. No ads, offline.
+Tuner & metronome for strings that shows your vibrato. Drone, recorder. No ads.
 ```
 
 ## Full description (Korean)
 
 ```
-Intonome 은 현악기 연습에 필요한 것만 담은 도구입니다.
-튜너와 메트로놈이 한 화면에 있고, 드론을 켜 두고 음정을 연습하거나 연습을 녹음해 바로 들어볼 수 있습니다.
+바이올린·비올라·첼로·콘트라베이스 연습을 위한 튜너와 메트로놈입니다. 광고도 계정도 없고, 인터넷 없이 전 기능이 동작합니다.
+튜너와 메트로놈이 한 화면에 있고, 드론을 켜 두고 음정을 잡거나 연습을 녹음해 바로 들어볼 수 있습니다.
 
 ■ 튜너
 · 콘트라베이스 E1(40Hz)부터 바이올린 고음까지
@@ -68,7 +70,7 @@ Intonome 은 현악기 연습에 필요한 것만 담은 도구입니다.
 
 ■ 연습 타이머
 · 켜 둔 시간이 아니라 실제로 소리 낸 시간을 잽니다
-· 말소리와 잡음은 빼고 셉니다
+· 잡음은 빼고, 악기 소리가 난 시간만 셉니다
 
 ■ 개인정보
 · 마이크 입력과 녹음은 기기에서만 처리·저장됩니다
@@ -80,7 +82,7 @@ Intonome 은 현악기 연습에 필요한 것만 담은 도구입니다.
 ## Full description (English)
 
 ```
-Intonome has just what you need to practice a string instrument.
+A tuner and metronome for violin, viola, cello and double bass. No ads, no account, and everything works offline.
 The tuner and metronome share one screen. Practice your intonation over a drone, or record yourself and listen back right away.
 
 ■ Tuner
@@ -108,7 +110,7 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 
 ■ Practice timer
 · Counts the time you actually played, not the time the app was open
-· Speech and noise don't count
+· Counts the time an instrument is sounding; noise doesn't count
 
 ■ Privacy
 · Mic input and recordings are processed and stored only on your device
@@ -119,16 +121,26 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 
 ## Graphics
 
-`npm run store:assets` writes everything to `test-assets/store/` (not committed):
+`npm run store:assets` writes everything to `test-assets/store/` (not committed; takes a few minutes, drives the real app with synthesized playing):
 
 | Asset | File(s) | Play requirement |
 |---|---|---|
 | App icon | `icon_512.png` | 512 × 512, 32-bit PNG with alpha, ≤ 1 MB |
-| Feature graphic | `ko_feature_1024x500.png` / `en_feature_1024x500.png` | 1024 × 500 PNG or JPEG, no alpha. Required |
-| Phone screenshots | `ko_1_tuner` … `ko_7_tuner_light`, `en_…` (1080 × 2160) | 2–8 per listing, 320–3840 px, longer side ≤ 2 × shorter, PNG/JPEG without alpha |
+| Feature graphic | `ko_feature_1024x500.png` / `en_feature_1024x500.png` | 1024 × 500 PNG or JPEG, no alpha. Required, though phones only show it when there is a promo video |
+| Phone screenshots | `ko_1_tuner` … `ko_5_light`, `en_…` (1080 × 2160) | 2–8 per listing, 320–3840 px, longer side ≤ 2 × shorter, PNG/JPEG without alpha |
 | 7-inch / 10-inch tablet screenshots | not provided | optional; without them the listing just isn't featured on tablets |
 
-Upload the Korean set to the Korean (default) listing and the English set to the English one. The screenshot baselines in `test-assets/screens/baseline/` (780 × 1688) are for visual checks and do not meet the 2:1 rule.
+Upload in this order; the first two and a half are what a phone shows under the Install button. Each image is a caption plus the app in a phone frame. The captions say only what the picture cannot (edit them in `scripts/store-assets.mjs`, `CAPTIONS`):
+
+| # | Scene | Korean | English |
+|---|---|---|---|
+| 1 | Tuner, A with the vibrato trace (A = 442 in the Korean set, 440 in English) | 비브라토가 보이는 튜너 / 현악기 튜너 · 메트로놈 | Tuner that shows vibrato / Tuner & metronome for strings |
+| 2 | Tuner + metronome, a steady A (no vibrato), 4/4 with eighths running | 튜너와 메트로놈을 한 화면에 / 메트로놈 켜 둔 채 음정 확인 | Tuner and metronome / Check pitch with the click running |
+| 3 | Full-size metronome at 96, frozen on the downbeat | 메트로놈만 크게 / 2/4~6/8 · 셋잇단 · 템포 ±5 | Metronome, full size / 2/4–6/8 · triplets · ±5 BPM |
+| 4 | Drone C on, G (the fifth) held in tune | 드론 켜 놓고 음정 잡기 / 드론 소리는 빼고 연주하는 음만 읽어요 | Play against a drone / It hears you, not the drone |
+| 5 | Light theme | 라이트 테마도 / 광고 없음 · 오프라인 · 무료 | Light theme too / No ads · Offline · Free |
+
+Recording, editor and timer are described in the text but not pictured: list screens do not sell, and five images read in one swipe. The screenshot baselines in `test-assets/screens/baseline/` (780 × 1688) are for visual checks and do not meet the 2:1 rule.
 
 ## Privacy policy URL
 
