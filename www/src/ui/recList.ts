@@ -2,8 +2,8 @@
 import { recListStore, settingsStore, type RecItem } from '../state/index.ts'
 import { fmtT } from '../core/format.ts'
 import { deleteRec, restoreDeleted, recFileName, patchRec } from '../audio/recorder.ts'
-import { expires, warnDaysLeft, DECODE_MAX_SEC } from '../core/recPolicy.ts'
-import { PAUSE_GLYPH, PLAY_GLYPH } from './dom.ts'
+import { trustedDuration, expires, warnDaysLeft, DECODE_MAX_SEC } from '../core/recPolicy.ts'
+import { setGlyph, glyphSvg } from './dom.ts'
 import { saveFile, isIOS, isNative } from '../platform/index.ts'
 import { bufToWav } from '../core/wav.ts'
 import { recExt } from '../audio/recorder.ts'
@@ -22,7 +22,7 @@ export function displayName(item: RecItem): string {
   return `${+m[2]!}/${+m[3]!} ${m[4]}:${m[5]}` + (nums.length ? ` (${nums.join('-')})` : '') + (m[7] ? ` ${m[7]}` : '')
 }
 const players: Record<number, HTMLAudioElement> = {}
-function setPlayBtn(idx: number, playing: boolean): void { const b = document.getElementById('rec-pb-' + idx); if (b) { b.textContent = playing ? PAUSE_GLYPH : PLAY_GLYPH; b.classList.toggle('playing', playing) } }
+function setPlayBtn(idx: number, playing: boolean): void { const b = document.getElementById('rec-pb-' + idx); if (b) { setGlyph(b, playing ? 'pause' : 'play'); b.classList.toggle('playing', playing) } }
 function getPlayer(idx: number): HTMLAudioElement {
   let a = players[idx]
   if (!a) {
@@ -31,7 +31,7 @@ function getPlayer(idx: number): HTMLAudioElement {
     attachGain(a, item.peak) // 레벨 보정 · 첫 채널을 양쪽 귀로(audio/playback)
     a.ontimeupdate = () => {
       const sk = document.getElementById('rec-seek-' + idx) as HTMLInputElement | null, tm = document.getElementById('rec-time-' + idx)
-      if (sk && a!.duration) { sk.max = String(isFinite(a!.duration) ? a!.duration : item.dur); sk.value = String(a!.currentTime) } // 크로미움 WebM 은 duration 이 Infinity (crbug 642012) — 슬라이더가 100 기준으로 깨진다
+      if (sk && a!.duration) { sk.max = String(trustedDuration(item.dur, a!.duration)); sk.value = String(a!.currentTime) } // 미디어가 말하는 길이는 녹음 길이로 거른다(core/recPolicy) — Chromium webm 은 Infinity 거나 안드로이드에선 수십 시간
       if (tm) tm.textContent = fmtT(a!.currentTime)
     }
     a.onended = () => {
@@ -50,17 +50,17 @@ function playPause(idx: number): void {
   for (const k of Object.keys(players)) { const i = +k; if (i !== idx && !players[i]!.paused) { players[i]!.pause(); afterStop(players[i]!); setPlayBtn(i, false) } }
   if (a.paused) { beforePlay(a); setPlayBtn(idx, true); a.play().catch(() => { afterStop(a); setPlayBtn(idx, false); toast(tr('common.cantPlay')) }) } else { a.pause(); afterStop(a); setPlayBtn(idx, false) }
 }
-function seek(idx: number): void { const sk = document.getElementById('rec-seek-' + idx) as HTMLInputElement | null, a = getPlayer(idx); if (sk && a.duration) a.currentTime = +sk.value }
+function seek(idx: number): void { const sk = document.getElementById('rec-seek-' + idx) as HTMLInputElement | null, a = getPlayer(idx); if (sk && a.duration) a.currentTime = Math.min(+sk.value, trustedDuration(recListStore.get().items[idx]!.dur, a.duration)) }
 /** iOS: await 를 거친 뒤에는 탭의 활성화 창이 지나 공유 시트가 거부된다 → 토스트를 띄우고 그 탭 안에서 saveFile. 그 외는 바로 저장 */
 export function handOff(blob: Blob, name: string): void {
   const go = (): void => { void saveFile(blob, name).then(r => { if (!r.ok) toast(tr('common.saveFailed', { e: r.error })) }) }
   if (isIOS()) toast(tr('rec.readyTap'), 8000, go); else go()
 }
-/** 다운로드 (편집기·목록 공용). webm 녹음은 WAV 로 변환해 건넨다 — 아이폰은 webm 을 못 열고, 안드로이드 앱에서 공유한 파일도 받는 쪽이 아이폰이면 못 연다.
- * 10 분이 넘으면(디코드 메모리) 아이폰은 안내만, 안드로이드 앱은 webm 그대로 */
+/** 다운로드 (편집기·목록 공용). webm 녹음은 WAV 로 변환해 건넨다 — 아이폰은 webm 을 못 열고, 받는 쪽이 아이폰이면 못 열며, Chromium 의 MediaRecorder webm 은 길이가 안 적혀 있어
+ * 다른 플레이어에서 길이·탐색이 엉뚱하다(안드로이드 크롬 자신도 47 초를 75 시간으로 본다). 10 분이 넘으면(디코드 메모리) 아이폰은 안내만, 그 밖은 webm 그대로 */
 let converting = false // 변환은 10 분에 Float32 ≈ 115 MB — 연타로 두 번 돌리지 않는다
 export async function downloadRec(item: RecItem): Promise<void> {
-  if ((isIOS() || isNative()) && recExt(item) === 'webm' && (isIOS() || item.dur <= DECODE_MAX_SEC)) {
+  if (recExt(item) === 'webm' && (isIOS() || item.dur <= DECODE_MAX_SEC)) {
     if (item.dur > DECODE_MAX_SEC) { toast(tr('rec.tooLongConvert')); return }
     toast(tr('rec.converting'))
     if (converting) return
@@ -127,8 +127,8 @@ function renderItem(item: RecItem, idx: number, defaultOpen: boolean): HTMLEleme
       <div class="rec-item-detail${defaultOpen ? ' open' : ''}" id="rec-detail-${idx}">
         <div class="rec-player">
           <div class="rec-player-top">
-            <button class="rec-play-btn" id="rec-pb-${idx}" data-action="play" data-idx="${idx}">${PLAY_GLYPH}</button>
-            <input type="range" class="rec-seek" id="rec-seek-${idx}" value="0" min="0" step="0.01" data-action="seek" data-idx="${idx}">
+            <button class="rec-play-btn" id="rec-pb-${idx}" data-action="play" data-idx="${idx}" data-glyph="play">${glyphSvg('play')}</button>
+            <input type="range" class="rec-seek" id="rec-seek-${idx}" value="0" min="0" max="${item.dur || 100}" step="0.01" data-action="seek" data-idx="${idx}">
             <span class="rec-time" id="rec-time-${idx}">00:00</span>
           </div>
           <div class="rec-item-btns">

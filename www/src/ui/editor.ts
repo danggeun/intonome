@@ -12,7 +12,7 @@ import { patchRec } from '../audio/recorder.ts'
 import { createEditorPlayer, type EditorPlayer } from '../audio/editorPlayer.ts'
 import { decodeMono, oneAtATime } from '../audio/decode.ts'
 import { viewRange as viewOf, frac as fracIn, timeAt, zoomWindow, clampA, clampB, loopStart as loopStartOf, clampSpeed, speedLabel, nextPreset, type TimeWindow } from '../core/editRange.ts'
-import { q, on, reflow, setOn, PLAY_GLYPH, PAUSE_GLYPH } from './dom.ts'
+import { q, on, reflow, setOn, setGlyph } from './dom.ts'
 import { displayName, downloadRec, handOff } from './recList.ts'
 import { DECODE_MAX_SEC } from '../core/recPolicy.ts'
 import { toast } from './toast.ts'
@@ -43,11 +43,11 @@ function setZoom(on: boolean): void {
   updateHandles(); renderBmTicks(); if (ed.audio) setPosUI(ed.audio.currentTime); requestWave()
 }
 function updateZoomBtn(): void { const ok = ed.ptA !== null && ed.ptB !== null; q('ed-zoom-btn').classList.toggle('dim', !ok); if (!ok && view) setZoom(false) }
-// Chromium 은 MediaRecorder webm 의 duration 을 끝까지 seek 하기 전까지 Infinity 로 본다(crbug 642012) → item.dur 폴백
-const dur = () => (ed.audio && isFinite(ed.audio.duration) && ed.audio.duration > 0) ? ed.audio.duration : (ed.item?.dur ?? 0)
+// 길이는 재생기가 녹음 길이로 걸러서 준다(audio/editorPlayer → core/recPolicy trustedDuration): Chromium webm 의 Infinity · 안드로이드의 엉뚱한 유한값 모두 녹음 길이로
+const dur = () => ed.audio ? ed.audio.duration : (ed.item?.dur ?? 0)
 const loopStart = () => loopStartOf(ed.ptA, ed.loop)
-// 편집기의 정지는 위치를 유지하는 일시정지 ❚❚. 글리프 크기는 .playing 클래스로 CSS 가 맞춘다
-function setPlayGlyph(playing: boolean): void { const b = q('ed-play-btn'); b.textContent = playing ? PAUSE_GLYPH : PLAY_GLYPH; b.classList.toggle('playing', playing) }
+// 편집기의 정지는 위치를 유지하는 일시정지 ❚❚
+function setPlayGlyph(playing: boolean): void { const b = q('ed-play-btn'); setGlyph(b, playing ? 'pause' : 'play'); b.classList.toggle('playing', playing) }
 
 function setPosUI(t: number): void {
   const d = dur(); if (!d) return
@@ -201,10 +201,7 @@ export function openEditor(item: RecItem): void {
 
   const audio = createEditorPlayer(item.url, item.peak, item.dur) // 레벨 보정 · 배속은 앱이 직접(audio/editorPlayer)
   ed.audio = audio
-  const updateDur = () => { if (ed.audio !== audio) return; q('ed-dur').textContent = fmtT(isFinite(audio.duration) && audio.duration > 0 ? Math.max(item.dur || 0, Math.round(audio.duration)) : (item.dur || 0)) }
-  // webm duration=Infinity 트릭: 끝으로 seek 하면 durationchange 로 실제 길이가 온다
-  let fixing = false
-  audio.addEventListener('loadedmetadata', () => { if (audio.duration === Infinity && !fixing) { fixing = true; audio.currentTime = 1e101; audio.addEventListener('durationchange', () => { if (fixing && isFinite(audio.duration)) { fixing = false; audio.currentTime = 0 } }) } })
+  const updateDur = () => { if (ed.audio !== audio) return; q('ed-dur').textContent = fmtT(Math.round(audio.duration)) }
   audio.addEventListener('loadedmetadata', updateDur); audio.addEventListener('durationchange', updateDur)
   // 저장된 A-B/북마크는 길이를 알아야 그릴 수 있다 — 첫 loadedmetadata 에서 복원
   let restored = false

@@ -9,7 +9,7 @@
 import { attachGain, beforePlay, afterStop, releaseAudio, type Playing } from './playback.ts'
 import { createStretchPlayer, type StretchPlayer } from './stretchPlayer.ts'
 import { audioSupported } from './engine.ts'
-import { DECODE_MAX_SEC } from '../core/recPolicy.ts'
+import { DECODE_MAX_SEC, trustedDuration } from '../core/recPolicy.ts'
 import { notice } from '../core/notice.ts'
 import { t } from '../core/i18n/index.ts'
 import { isIOS } from '../platform/index.ts'
@@ -93,7 +93,7 @@ export function createEditorPlayer(url: string, peak: number | undefined, dur: n
   return {
     get currentTime() { return engine().currentTime },
     set currentTime(v: number) { el.currentTime = v; if (st) st.currentTime = v },
-    get duration() { return el.duration },
+    get duration() { return st ? st.duration : trustedDuration(dur, el.duration) }, // 디코드한 뒤엔 그 길이(정확). 그 전엔 <audio> 가 말하는 길이를 녹음 길이로 걸러서(core/recPolicy)
     get paused() { return engine().paused && !pending },
     get readyState() { return stretching() ? 4 : el.readyState },
     get playbackRate() { return rate },

@@ -383,7 +383,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .rec-item-detail.open{display:flex;flex-direction:column;gap:7px;}
 .rec-item-btn{flex:1;height:var(--h-seg);background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-sm);color:var(--text-2);font-size:var(--fs-btn-sm);font-weight:var(--fw-md);cursor:pointer;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;}
 .rec-play-btn{width:44px;height:44px;background:transparent;border:none;color:var(--text);font-size:var(--fs-xl);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.rec-play-btn.playing{font-size:var(--fs-md);letter-spacing:-.05em;}
+.tp-glyph{width:1em;height:1em;display:block;fill:currentColor;} /* 재생·정지·일시정지 — 버튼 font-size 가 크기, 가운데 맞춤은 flex 가(ui/dom setGlyph) */
 .rec-time{font-family:'DM Mono',monospace;font-size:var(--fs-sm);color:var(--text-2);white-space:nowrap;min-width:38px;text-align:right;}
 .rec-player{display:flex;flex-direction:column;gap:7px;}
 .rec-player-top{display:flex;align-items:center;gap:8px;}
@@ -466,8 +466,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .ed-ab-time-group{display:inline-flex;align-items:center;gap:0;}
 .ed-nudge{width:44px;height:44px;margin:-12px -10px;background:none;border:none;color:var(--text-2);font-family:'DM Mono',monospace;font-size:var(--fs-lg);line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
 #ed-transport{display:flex;align-items:center;gap:var(--s2);padding:var(--s4);margin:var(--s3) var(--s5) var(--s4);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);flex-shrink:0;}
-#ed-play-btn{width:var(--h-tall);height:var(--h-tall);background:var(--accent-fill);border:none;border-radius:50%;color:var(--on-accent);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding-left:3px;}
-#ed-play-btn.playing{font-size:var(--fs-base);letter-spacing:-.05em;padding-left:0;}
+#ed-play-btn{width:var(--h-tall);height:var(--h-tall);background:var(--accent-fill);border:none;border-radius:50%;color:var(--on-accent);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
 #ed-speed-ctrl{flex:1;display:flex;flex-direction:column;border-left:1px solid var(--line);padding-left:14px;}
 #ed-speed-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;}
 #ed-speed-lbl{font-size:var(--fs-md);font-weight:var(--fw-md);color:var(--text);}

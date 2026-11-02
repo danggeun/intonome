@@ -20,3 +20,12 @@ export function warnDaysLeft(ts: number | undefined, keep: boolean | undefined, 
 /** 녹음 파일을 통째로 디코드하는 일(구간 WAV 저장 · webm → WAV 변환 · 편집기 배속 재생)의 상한 (s). 10 분 = 48 kHz 스테레오 PCM 약 230 MB
  * (배속 재생은 그 위에 한 채널 115 MB 를 잠깐 더 쓰고 그 채널만 남긴다). 60 분(약 690 MB)은 아이폰 탭이 죽었다 */
 export const DECODE_MAX_SEC = 600
+
+/** 재생에 쓸 길이. 녹음 길이(itemDur — 녹음하며 벽시계로 잰 값)를 기준으로, 미디어가 말하는 길이는 그 근처(절반~1.5 배)일 때만 믿는다.
+ * Chromium 의 MediaRecorder webm 은 길이를 안 쓰고, 안드로이드 크롬은 그 파일의 길이를 Infinity 가 아니라 엉뚱한 유한값(47 초짜리를 75 시간)으로 보고하기도 한다 — 그러면 슬라이더 끝이 수십 시간이 되어 어디를 눌러도 끝 너머였다 */
+export function trustedDuration(itemDur: number, mediaDur: number | undefined): number {
+  const base = itemDur > 0 ? itemDur : 0
+  if (typeof mediaDur !== 'number' || !isFinite(mediaDur) || mediaDur <= 0) return base
+  if (!base) return mediaDur
+  return mediaDur >= base * 0.5 && mediaDur <= base * 1.5 ? mediaDur : base
+}

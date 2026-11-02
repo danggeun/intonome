@@ -12,7 +12,7 @@ import { t } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
 import { beatDurS, isBeatStart, sweepX, ledIndex, hitIndex } from '../core/metro/sweep.ts'
 import { stageOf, stageChange, sizeBtnTarget, dragTarget, dragProgress, dragCommits, stepCommits, type Stage } from '../core/metro/card.ts'
-import { q, qsa, on, reflow, setOn } from './dom.ts'
+import { setGlyph, q, qsa, on, reflow, setOn } from './dom.ts'
 import { toast } from './toast.ts'
 import { dragTick } from './dragTick.ts'
 import { overlayOpen } from './menu.ts'
@@ -203,7 +203,7 @@ export function mountMetro(): void {
   settingsStore.select(s => s.subDiv, sd => { sweepResetDir(); qsa('[data-sd]').forEach(b => setOn(b, b.dataset.sd === String(sd))); buildBeatVis() }, { immediate: true })
 
   metroStore.select(s => s.playing, playing => {
-    q('metro-play-btn').textContent = q('metro-play-hdr-btn').textContent = playing ? '■' : '▶'
+    setGlyph(q('metro-play-btn'), playing ? 'stop' : 'play'); setGlyph(q('metro-play-hdr-btn'), playing ? 'stop' : 'play')
     syncLayout()
     if (playing) buildBeatVis(); else sweepStop()
     applyCollapse()
