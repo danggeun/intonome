@@ -148,7 +148,7 @@ Recording, editor and timer are described in the text but not pictured: list scr
 https://github.com/danggeun/intonome/blob/main/PRIVACY.md
 ```
 
-**Required for Play review.** The app uses the microphone permission and is rejected without it. The same link is in the app (Settings › Privacy policy), which the User Data policy also requires for apps with sensitive permissions. GitHub renders the Markdown, so this URL works as is (the repository must be public). A separate page on Pages would split the source in two, so keep a single file.
+**Required for Play review.** The app uses the microphone permission and is rejected without it. The same text is shown inside the app (Settings › Privacy policy, built from this file at build time), which the User Data policy also requires for apps with sensitive permissions. GitHub renders the Markdown, so this URL works as is (the repository must be public). A separate page on Pages would split the source in two, so keep a single file.
 
 ## App content (Policy › App content) — answers
 

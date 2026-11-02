@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.7.2] - 2026-11-02
+Settings
+- The bottom of Settings is one quiet line again: Privacy policy · Contact · Open source licenses, under the wordmark and version. The middle item sits exactly on the wordmark's axis and the two dots are the same distance from it, so the line reads as centred whatever the label lengths; the short Contact in the middle keeps both ends nearly symmetric. The About card from 2.7.1 looked like a settings control and stood out
+- Privacy policy opens inside the app, like the licenses, in the current language (the text is the repository's PRIVACY.md, built in). It used to jump to the browser, which was disorienting. Contact still opens your mail app
+
+Look
+- The play, stop and pause marks are drawn larger (the square 15 of 24 units, the triangle 17, the bars 16) — the 2.7.0 marks were about 30 % smaller than the font glyphs they replaced and the stop square looked lost in its button. The play triangle's box is nudged 1.5 units right so it reads as centred
+
+Tests: 3 new unit tests (the privacy page rendering), the settings-links e2e checks the in-app policy page and the footer geometry, the English-screens e2e also walks the policy page; screenshot baselines re-shot for the larger marks
+
 ## [2.7.1] - 2026-11-02
 Settings
 - The Privacy policy, Open source licenses and Contact links are rows of an About card above the wordmark, like the other settings, instead of one dotted line under the version. The line was centred as a whole, but with labels of different lengths its middle item sat off the wordmark's axis and the footer looked lopsided; the rows are also full-width to tap
