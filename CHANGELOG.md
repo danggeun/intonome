@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.6.6] - 2026-11-02
+A recording only runs while the mic actually hears something. When the system cuts the mic off, the recording is saved up to that point and you are told, instead of carrying on with silence.
+
+Recording
+- If the system mutes the mic during a recording (the iPhone home-screen app with the screen turned off, or a call), the recording pauses at once, so no silence goes into the file. If the mic comes back within 1.5 seconds (a Bluetooth headset switching, say), it carries on in the same file. Otherwise the file ends where the mic went quiet: it is saved with its length and waveform cut at that point, and "The mic was cut off, so the recording was saved up to that point" shows (on return, if the app was hidden). This also happens if the mic never comes back
+- When the mic goes quiet, what was recorded so far is written to storage at once, so a crash during the cut-off loses nothing before it
+- REC while the mic is cut off says "The mic is not available right now. A call or another app is using it" instead of starting an empty file. At the 60-minute mark with the mic cut off, the current file is saved and no empty next file is started
+- Android web app and the Android app as before: Chrome keeps the mic on with the screen off, and the app saves and stops when it goes to the background
+
+Tests: 3 new unit tests (when to carry on and when to cut, the length) and 1 new e2e (a blip, a long cut while hidden, a cut that never comes back, REC while cut off)
+
 ## [2.6.5] - 2026-11-02
 Notices say what actually happened: a recording is called saved once it is saved, and notices that arrive while the app is hidden wait for you. Plus the other things a pass over real use turned up, and the Play listing images.
 

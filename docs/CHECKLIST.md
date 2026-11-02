@@ -114,6 +114,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] If the context is stopped from outside (iOS "interrupted"), it resumes on return; if it can't within 1.5 s, the metronome stops with a notice
 - [A] App update: a new service worker is applied only when idle (no mic session in use, metronome, drone, recording or editor)
 - [D] Android app going to the background saves an in-progress recording and ends it (no background recording); "saved" shows on return only if the save worked
+- [A] The system muting the mic during a recording pauses it; back within 1.5 s it carries on, otherwise (or never) the file is saved up to the mute with a notice; REC while muted refuses with a notice
+- [D] iPhone home-screen app: REC, screen off for a minute, back → "The mic was cut off…" and the file ends where the screen went off
 - [A] A notice that arrives while the app is hidden is shown on return; "Recording saved" shows after the save, not at stop
 - [A] Back after the audio was stopped while hidden during a recording and it won't resume → the tuner shows the tap hint
 - [D] iPhone home-screen app: force-close during a recording → the next launch recovers it and it plays
