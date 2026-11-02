@@ -5,7 +5,7 @@ import { createStore } from './store.ts'
 export const CFG = {
   /** 트레이스 창은 초 단위 — 프레임 수로 두면 기기 샘플레이트(sr/1024 프레임률)마다 길이가 달라진다 */
   tuner: { histSec: 4.0, hop: 1024 },
-  metro: { bpmMin: 40, bpmMax: 200, swipePxPerBpm: 2 },
+  metro: { bpmMin: 40, bpmMax: 200 }, // 끌기 감도는 core/metro/dragRate.ts (손가락 속도에 따라)
   /** 무활동 자동 종료 (마이크 켜진 채 소리 없음) */
   inactiveMs: 15 * 60 * 1000,
   ref: { min: 410, max: 466, default: 442 },

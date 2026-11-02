@@ -55,6 +55,8 @@ async function scenario(name, wav, fn, { fresh = false, ...ctxOpts } = {}) {
 const tunerText = p => p.evaluate(() => ({ note: document.getElementById('tuner-note').textContent, acc: document.getElementById('tuner-acc').textContent, oct: document.getElementById('tuner-oct').textContent, cents: document.getElementById('tuner-cents').textContent, inTune: document.getElementById('tuner-card').classList.contains('in-tune') }))
 const waitNote = async (p, pred, ms = 4000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { const t = await tunerText(p); if (pred(t)) return t; await p.waitForTimeout(100) } throw new Error('note not reached: ' + JSON.stringify(await tunerText(p))) }
 const sleep = (p, ms) => p.waitForTimeout(ms)
+/** BPM 숫자 끌기를 천천히(5 px / 100 ms = 0.05 px/ms) — 끌기 감도는 손가락 속도를 따르므로(core/metro/dragRate) 천천히면 1 BPM = 6 px 로 정해진다 */
+const slowDragY = async (p, x, y, dy) => { await p.mouse.move(x, y); await p.mouse.down(); const n = Math.round(Math.abs(dy) / 5); for (let i = 1; i <= n; i++) { await sleep(p, 100); await p.mouse.move(x, y - dy * i / n) } await p.mouse.up() }
 /** 색·캔버스 픽셀을 다크 토큰 기준으로 재는 시나리오용 — 기본 테마는 라이트라 다크를 저장해 두고 연다 */
 const darkTheme = p => p.addInitScript(() => { const s = localStorage.getItem('intonome_settings_v1'); if (!s || JSON.parse(s).__seed) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', noteNames: 'ko', theme: 'dark' })) })
 /** 카드를 아래로 밀어 한 단계 내리기. 헤더의 빈 가운데에서 시작한다 */
@@ -215,8 +217,8 @@ await scenario('metro: bpm +/- , clamp, drag, time sig 6/8 disables subdiv, dots
   assert.equal(await p.evaluate(() => document.getElementById('metro-hdr-bpm').textContent), '79')
   for (let i = 0; i < 70; i++) await p.click('.m-adj:nth-child(1)'); assert.equal(await bpm(), 40, 'clamp min')
   const box = await p.locator('#metro-bpm-wrap').boundingBox()
-  await p.mouse.move(box.x + 30, box.y + 40); await p.mouse.down(); await p.mouse.move(box.x + 30, box.y + 40 - 100, { steps: 10 }); await p.mouse.up()
-  assert.equal(await bpm(), 90, 'drag 100px = +50 bpm')
+  await slowDragY(p, box.x + 30, box.y + 40, 60)
+  assert.equal(await bpm(), 50, 'slow drag 60 px = +10 bpm (6 px each)')
   await p.click('[data-ts="6"]'); assert.equal(await p.evaluate(() => document.getElementById('sd-grid').style.pointerEvents), 'none')
   assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector('[data-sd="1"] .flag')).display), 'block', '6/8 shows eighth-note flag')
   // 6/8 의 숫자는 점4분음표(♩.) 기준 — 헤더 글리프가 바뀌고, aria-pressed 로 고른 박자가 읽힌다
@@ -799,10 +801,10 @@ await scenario('drag ticks: BPM drag and ref drum vibrate per step, strong on te
   await p.goto(URL_); await waitNote(p, t => t.note === '라'); await sizeTap(p) // 펼쳐야 BPM 숫자가 보인다
   const vib = () => p.evaluate(() => (window.__vib ?? []).slice())
   const bpm = () => p.evaluate(() => +document.getElementById('metro-bpm').textContent)
-  const dragBpm = async dy => { const b = await p.locator('#metro-bpm-wrap').boundingBox(); await p.mouse.move(b.x + 30, b.y + 40); await p.mouse.down(); await p.mouse.move(b.x + 30, b.y + 40 - dy, { steps: 12 }); await p.mouse.up() }
+  const dragBpm = async dy => { const b = await p.locator('#metro-bpm-wrap').boundingBox(); await slowDragY(p, b.x + 30, b.y + 40, dy) }
   const b0 = await bpm(); await dragBpm(0); assert.equal(await bpm(), b0); assert.equal((await vib()).length, 0, '값이 그대로면 진동 없음')
-  await dragBpm(100); const v1 = await vib(), b1 = await bpm()
-  assert.ok(b1 > b0 + 40, `BPM ${b0} → ${b1}`)
+  await dragBpm(150); const v1 = await vib(), b1 = await bpm()
+  assert.equal(b1, b0 + 25, `BPM ${b0} → ${b1}`)
   assert.ok(v1.every(ms => ms === 8 || ms === 16), v1.join())
   assert.equal(v1.filter(ms => ms === 16).length, Math.floor(b1 / 10) - Math.floor(b0 / 10), '지난 10 단위마다 센 틱 하나')
   assert.ok(v1.length <= b1 - b0, '바뀐 칸보다 많지 않다')
@@ -1512,10 +1514,10 @@ function sr48(s) { return Math.round(48000 * s) }
 await scenario('metro: bpm change while playing does not restart (beats keep coming, playing stays)', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 500); await sizeTap(p)
   await p.click('#metro-play-btn'); await sleep(p, 900)
-  // 펼침의 큰 ♩BPM 숫자를 드래그해 올린다 (2 px/BPM → 60 px = +30). 폰의 펼침에선 헤더 ♩80 대신 이 숫자가 끄는 자리다
+  // 펼침의 큰 ♩BPM 숫자를 천천히 끌어 올린다 (6 px/BPM → 60 px = +10). 폰의 펼침에선 헤더 ♩80 대신 이 숫자가 끄는 자리다
   const box = await p.locator('#metro-bpm-wrap').boundingBox()
-  await p.mouse.move(box.x + 10, box.y + 10); await p.mouse.down(); await p.mouse.move(box.x + 10, box.y + 10 - 60, { steps: 6 }); await p.mouse.up()
-  assert.equal(await p.evaluate(() => document.getElementById('metro-bpm').textContent), '110')
+  await slowDragY(p, box.x + 10, box.y + 10, 60)
+  assert.equal(await p.evaluate(() => document.getElementById('metro-bpm').textContent), '90')
   assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').dataset.glyph), 'stop')
   const seen = new Set(); for (let i = 0; i < 25; i++) { seen.add(await p.evaluate(() => Array.from(document.querySelectorAll('#beat-vis .led')).findIndex(d => d.classList.contains('mv') || d.className.includes('hit')))); await sleep(p, 60) }
   assert.ok(seen.size >= 2, 'beat dots advancing after bpm change: ' + [...seen].join(','))

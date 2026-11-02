@@ -15,6 +15,7 @@ import { stageOf, stageChange, sizeBtnTarget, dragTarget, dragProgress, dragComm
 import { setGlyph, q, qsa, on, reflow, setOn } from './dom.ts'
 import { toast } from './toast.ts'
 import { dragTick } from './dragTick.ts'
+import { createBpmDrag } from '../core/metro/dragRate.ts'
 import { overlayOpen } from './menu.ts'
 import { isEditorOpen } from './editor.ts'
 
@@ -126,13 +127,14 @@ function flashBeat(tick: number): void {
 /** 끌어서 BPM 을 바꾼다(다이얼 · 숫자 ↕). 값이 실제로 바뀔 때만 눈금 진동 */
 function dragBPM(v: number): void { const prev = settingsStore.get().bpm; setBPM(v); dragTick(prev, settingsStore.get().bpm) }
 function attachDrag(el: HTMLElement): void {
-  let sy = 0, sb = 0, sw = false
-  on(el, 'mousedown', (e: MouseEvent) => { sw = true; sy = e.clientY; sb = settingsStore.get().bpm; e.preventDefault() })
-  on(window, 'mousemove', (e: MouseEvent) => { if (sw) dragBPM(sb + Math.round((sy - e.clientY) / CFG.metro.swipePxPerBpm)) })
-  on(window, 'mouseup', () => { sw = false })
-  on(el, 'touchstart', (e: TouchEvent) => { sw = true; sy = e.touches[0]!.clientY; sb = settingsStore.get().bpm }, { passive: true })
-  on(window, 'touchmove', (e: TouchEvent) => { if (sw) dragBPM(sb + Math.round((sy - e.touches[0]!.clientY) / CFG.metro.swipePxPerBpm)) }, { passive: true })
-  on(window, 'touchend', () => { sw = false }); on(window, 'touchcancel', () => { sw = false }) // OS 가 터치를 끊어도 다음 터치가 옛 기준점으로 튀지 않게
+  let d: ReturnType<typeof createBpmDrag> | null = null
+  const begin = (y: number, t: number): void => { const { bpmMin, bpmMax } = CFG.metro; d = createBpmDrag(settingsStore.get().bpm, bpmMin, bpmMax, y, t) }
+  on(el, 'mousedown', (e: MouseEvent) => { begin(e.clientY, e.timeStamp); e.preventDefault() })
+  on(window, 'mousemove', (e: MouseEvent) => { if (d) dragBPM(d.move(e.clientY, e.timeStamp)) })
+  on(window, 'mouseup', () => { d = null })
+  on(el, 'touchstart', (e: TouchEvent) => begin(e.touches[0]!.clientY, e.timeStamp), { passive: true })
+  on(window, 'touchmove', (e: TouchEvent) => { if (d) dragBPM(d.move(e.touches[0]!.clientY, e.timeStamp)) }, { passive: true })
+  on(window, 'touchend', () => { d = null }); on(window, 'touchcancel', () => { d = null }) // OS 가 터치를 끊어도 다음 터치가 옛 기준점으로 튀지 않게
 }
 
 /** 지금 실제로 접혀 보이는가 — 넓은 화면·전용 모드에서는 collapsed 값과 무관하게 펼쳐져 있다 */
