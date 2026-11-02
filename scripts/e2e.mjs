@@ -651,14 +651,22 @@ await scenario('metro: works without mic (permission denied) + spacebar', 'silen
 }, { permissions: [] })
 
 // 설정 영속
-await scenario('settings: the bottom links — privacy policy and contact open outside (new window on the web), licenses open in-app with the font licences and close with X, Esc and the edge swipe', 'silence_lowfloor.wav', async p => {
+await scenario('settings: the bottom links — contact opens the mail app, privacy policy and licenses open in-app (one language, the font licences) and close with X, Esc and the edge swipe', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await dismissMicPopup(p)
   await p.click('#settings-hdr-btn'); await sleep(p, 300)
-  const links = await p.evaluate(() => ['privacy-link', 'contact-link'].map(id => { const a = document.getElementById(id); return [a.getAttribute('href'), a.target, a.rel] }))
-  assert.deepEqual(links, [['https://github.com/danggeun/intonome/blob/main/PRIVACY.md', '_blank', 'noopener'], ['mailto:intonome.app@gmail.com?subject=Intonome', '', '']])
-  // 44 px 히트 (보이는 크기는 글자만)
-  const hit = await p.evaluate(() => ['privacy-link', 'licenses-btn', 'contact-link'].map(id => document.getElementById(id).getBoundingClientRect().height))
-  assert.ok(hit.every(h => h >= 44), '44 px: ' + hit)
+  assert.deepEqual(await p.evaluate(() => { const a = document.getElementById('contact-link'); return [a.getAttribute('href'), a.target] }), ['mailto:intonome.app@gmail.com?subject=Intonome', ''])
+  // 40 px 히트 (보이는 크기는 글자만) · 가운데 항목(문의)은 워드마크 축 위
+  const geo = await p.evaluate(() => ['privacy-btn', 'contact-link', 'licenses-btn', 'settings-wordmark'].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.height), r.left + r.width / 2] }))
+  assert.ok(geo.slice(0, 3).every(([h]) => h >= 40), '40 px: ' + geo.map(g => g[0]))
+  assert.ok(Math.abs(geo[1][1] - geo[3][1]) < 1, `contact centred on the wordmark axis: ${geo[1][1]} vs ${geo[3][1]}`)
+  // 개인정보처리방침 — 앱 안 화면, 한국어 절만
+  await p.click('#privacy-btn'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.getElementById('privacy-page').classList.contains('open')), true)
+  const priv = await p.evaluate(() => document.getElementById('privacy-text').innerText)
+  assert.ok(priv.includes('마이크') && priv.includes('수집하지 않는 것') && !priv.includes('Microphone'), 'Korean policy only')
+  assert.deepEqual(await p.evaluate(() => [document.getElementById('settings-page').hasAttribute('inert'), document.getElementById('privacy-page').contains(document.activeElement)]), [true, true], '방침 화면이 맨 위')
+  await p.click('#privacy-close-btn'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.getElementById('privacy-page').classList.contains('open')), false)
   await p.click('#licenses-btn'); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('licenses-page').classList.contains('open')), true)
   const txt = await p.evaluate(() => document.getElementById('licenses-text').textContent)
@@ -729,6 +737,7 @@ await scenario('i18n: English — no Korean on any screen, nothing clipped, surv
   const check = async where => { const r = await screenText(p); seen.push(where); assert.deepEqual(r.korean, [], `Korean on ${where}: ${JSON.stringify(r.korean)}`); assert.deepEqual(r.overflow, [], `clipped text on ${where}: ${JSON.stringify(r.overflow)}`) }
   await check('settings')
   await p.click('#licenses-btn'); await sleep(p, 300); await check('licenses'); await p.click('#licenses-close-btn'); await sleep(p, 300)
+  await p.click('#privacy-btn'); await sleep(p, 300); await check('privacy policy'); await p.click('#privacy-close-btn'); await sleep(p, 300)
   await p.click('#settings-back-btn'); await sleep(p, 400)
   await waitNote(p, t => t.note === 'A'); await check('tuner (A, letter names)')
   assert.equal(await p.evaluate(() => document.getElementById('tuner-enharmonic').textContent), '', 'no Korean secondary name')

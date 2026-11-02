@@ -2,11 +2,12 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { readFileSync } from 'node:fs'
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+const privacy = readFileSync(new URL('./PRIVACY.md', import.meta.url), 'utf8') // 설정 › 개인정보처리방침 화면이 그대로 보여 준다(ui/about.ts) — 저장소의 문서 하나가 정본
 
 // base: GitHub Pages 는 /intonome/, Capacitor 빌드(build:cap)는 / (package.json scripts 참고)
 export default defineConfig(({ mode }) => ({
   root: 'www',
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  define: { __APP_VERSION__: JSON.stringify(pkg.version), __PRIVACY_MD__: JSON.stringify(privacy) },
   base: process.env.BASE ?? '/intonome/',
   build: { outDir: '../dist', emptyOutDir: true, target: 'es2022' },
   server: { port: 5173, open: false },

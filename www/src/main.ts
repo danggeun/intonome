@@ -30,7 +30,7 @@ import { stopDrone, stopRefNote } from './audio/refTone.ts'
 import { mountMenu, hideMenu, closeSettings, overlayOpen } from './ui/menu.ts'
 import { mountSettings } from './ui/settings.ts'
 import { mountTimer, stopTimer } from './ui/timer.ts'
-import { mountAbout, isLicensesOpen, closeLicenses } from './ui/about.ts'
+import { mountAbout, closeDoc } from './ui/about.ts'
 import { mountMicPopup, showMicPopup, closeMicPopup, onMicRetryFailed } from './ui/micPopup.ts'
 import { mountRecHeader } from './ui/recHeader.ts'
 import { mountRecList } from './ui/recList.ts'
@@ -183,7 +183,7 @@ onContextState(state => {
 // Android 뒤로가기: 열린 화면부터 닫고, 메인이면 앱을 백그라운드로 (종료하지 않음)
 onBackButton(() => {
   if (isEditorOpen()) { closeEditor(); return true }
-  if (isLicensesOpen()) { closeLicenses(); return true }
+  if (closeDoc()) return true
   if (q('settings-page').classList.contains('open')) { closeSettings(); return true }
   if (q('menu-overlay').classList.contains('open')) { hideMenu(); return true }
   if (q('mic-popup-bg').classList.contains('show')) { closeMicPopup(); return true }

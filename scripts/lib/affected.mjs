@@ -17,7 +17,7 @@ const AREAS = [
   { e2e: ['settings', 'theme', 'first launch', 'i18n', 'first-run'], files: [/^www\/src\/state\//, /^www\/src\/persist\/(settings|legacy)\.ts$/] },
   { e2e: ['i18n', 'first launch', 'settings: note names'], shots: true, files: [/^www\/src\/core\/i18n\//, /^www\/src\/ui\/lang\.ts$/] },
   { e2e: ['theme'], shots: true, files: [/^www\/src\/ui\/theme\.ts$/] },
-  { e2e: ['ux: edge swipe', 'keys', 'settings', 'rec:'], shots: true, files: [/^www\/src\/ui\/(menu|settings|swipeBack)\.ts$/] },
+  { e2e: ['ux: edge swipe', 'keys', 'settings', 'rec:'], shots: true, files: [/^www\/src\/ui\/(menu|settings|swipeBack|about|licensesText)\.ts$/] },
   { e2e: ['timer'], files: [/^www\/src\/ui\/timer\.ts$/] },
   { e2e: ['permission', 'i18n: English mic popup', 'metro: works without mic'], files: [/^www\/src\/ui\/micPopup\.ts$/] },
   { e2e: ['launch'], files: [/^www\/src\/ui\/launch\.ts$/] },

@@ -2,7 +2,7 @@
 import { q, qs, on, reflow } from './dom.ts'
 import { attachSwipeBack } from './swipeBack.ts'
 import { dronePopOpen } from './drone.ts'
-import { isLicensesOpen, closeLicenses } from './about.ts'
+import { isDocOpen, closeDoc } from './about.ts'
 
 function toggleMenu(): void { q('menu-overlay').classList.toggle('open') }
 /** 편집기에서 돌아올 때: 트랜지션 없이 즉시 열린 상태로 */
@@ -16,7 +16,7 @@ export const closeSettings = (): void => q('settings-page').classList.remove('op
 
 /** 화면을 덮고 있는 오버레이가 있는가 — 전역 단축키(Space)는 지금 보이는 화면의 것 */
 export const overlayOpen = (): boolean =>
-  q('menu-overlay').classList.contains('open') || q('settings-page').classList.contains('open') || isLicensesOpen() || q('mic-popup-bg').classList.contains('show') || dronePopOpen()
+  q('menu-overlay').classList.contains('open') || q('settings-page').classList.contains('open') || isDocOpen() || q('mic-popup-bg').classList.contains('show') || dronePopOpen()
 
 export function mountMenu(): void {
   on(q('menu-btn'), 'click', toggleMenu)
@@ -29,14 +29,14 @@ export function mountMenu(): void {
   // Esc 도 닫는다 (키보드·스위치 사용자). 열린 것 중 맨 위부터 — 드론 창은 ui/drone, 안내는 ui/tour 가 받는다
   on(window, 'keydown', (e: KeyboardEvent) => {
     if (e.key !== 'Escape') return
-    if (isLicensesOpen()) closeLicenses()
+    if (isDocOpen()) closeDoc()
     else if (q('settings-page').classList.contains('open')) closeSettings()
     else if (q('menu-overlay').classList.contains('open')) hideMenu()
   })
   // 메뉴·설정·라이선스·마이크 팝업·편집기가 열려 있는 동안 맨 위 화면만 살아 있다: 뒤 화면(헤더·본문)과 그 아래 깔린 화면은 inert — 스크린리더·Tab 이 가려진 것을 돌지 않게.
   // 맨 위가 바뀌면 포커스를 그 화면(컨테이너)으로 옮긴다 — 버튼에 주면 포커스 링이 그려져 탭으로 연 사람에게 군더더기다. 닫히면 그 화면을 열었던 버튼으로 돌려준다
   const behind = [q('hdr'), q('main-body')]
-  const layers: Array<[HTMLElement, string, string]> = [[q('menu-overlay'), 'open', '#menu-panel'], [q('settings-page'), 'open', '#settings-inner'], [q('licenses-page'), 'open', '#licenses-inner'], [q('mic-popup-bg'), 'show', '#mic-popup'], [q('editor-page'), 'open', '#ed-inner']]
+  const layers: Array<[HTMLElement, string, string]> = [[q('menu-overlay'), 'open', '#menu-panel'], [q('settings-page'), 'open', '#settings-inner'], [q('privacy-page'), 'open', '#privacy-inner'], [q('licenses-page'), 'open', '#licenses-inner'], [q('mic-popup-bg'), 'show', '#mic-popup'], [q('editor-page'), 'open', '#ed-inner']]
   let topEl: HTMLElement | null = null, opener: HTMLElement | null = null
   const sync = (): void => {
     const top = [...layers].reverse().find(([el, cls]) => el.classList.contains(cls))

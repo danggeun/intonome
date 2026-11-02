@@ -1,24 +1,54 @@
-/** 설정 맨 아래: 개인정보처리방침 · 오픈소스 라이선스 · 문의. 라이선스는 앱 안 화면으로(글꼴 OFL 은 전문이 함께 가야 한다) */
+/** 설정 맨 아래: 개인정보처리방침 · 문의 · 오픈소스 라이선스. 방침·라이선스는 앱 안 화면(글꼴 OFL 은 전문이 함께 가야 하고, 방침은 앱 밖으로 튀어 나가면 당황스럽다 — 피드백). 문의만 메일 앱 */
 import { q, on } from './dom.ts'
 import { attachSwipeBack } from './swipeBack.ts'
-import { isNative } from '../platform/index.ts'
-import { PRIVACY_URL, CONTACT_URL } from '../core/links.ts'
+import { getLang } from '../core/i18n/index.ts'
+import { CONTACT_URL } from '../core/links.ts'
 import { licensesText } from './licensesText.ts'
 
-export const isLicensesOpen = (): boolean => q('licenses-page').classList.contains('open')
-export function closeLicenses(): void { q('licenses-page').classList.remove('open') }
-function openLicenses(): void {
-  const pre = q('licenses-text'); if (!pre.textContent) pre.textContent = licensesText() // 처음 열 때 한 번
-  q('licenses-page').classList.add('open'); q('licenses-page').scrollTop = 0
+type Doc = 'privacy' | 'licenses'
+const page = (d: Doc): HTMLElement => q(`${d}-page`)
+export const isDocOpen = (): boolean => page('privacy').classList.contains('open') || page('licenses').classList.contains('open')
+/** 열린 문서 화면을 닫는다(맨 위 하나). 없으면 false */
+export function closeDoc(): boolean {
+  for (const d of ['privacy', 'licenses'] as const) if (page(d).classList.contains('open')) { page(d).classList.remove('open'); return true }
+  return false
+}
+function openDoc(d: Doc): void {
+  if (d === 'licenses') { const pre = q('licenses-text'); if (!pre.textContent) pre.textContent = licensesText() } // 처음 열 때 한 번
+  else { const box = q('privacy-text'); const lang = getLang(); if (box.dataset.lang !== lang) { box.innerHTML = privacyHtml(lang === 'ko'); box.dataset.lang = lang } }
+  page(d).classList.add('open'); page(d).scrollTop = 0
+}
+
+/** PRIVACY.md(vite define `__PRIVACY_MD__`; 영문 → `---` → 한국어)를 한 언어만 골라 HTML 로. 마크다운 중 그 파일이 쓰는 것만: `#`·`##` 제목, `-` 목록, `**굵게**`, `<주소>`, `*기울임*` 없음 */
+export function privacyHtml(korean: boolean): string {
+  const parts = __PRIVACY_MD__.split(/\n---\n/)
+  const md = (korean ? parts[1] : parts[0]) ?? __PRIVACY_MD__
+  const esc = (t: string): string => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const inline = (t: string): string => esc(t)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/&lt;(https?:\/\/[^\s&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+    .replace(/\s*·\s*\[[^\]]+\]\(#[^)]*\)/g, '') // 영/한 건너뛰기 링크는 뺀다(화면은 한 언어만)
+  const out: string[] = []; let list: string[] = []; let first = true
+  const flush = (): void => { if (list.length) { out.push(`<ul>${list.join('')}</ul>`); list = [] } }
+  for (const raw of md.split('\n')) {
+    const line = raw.trim()
+    if (!line) { flush(); continue }
+    if (line.startsWith('# ')) continue // 문서 제목은 화면 제목이 대신한다
+    if (line.startsWith('## ')) { flush(); out.push(`<h3>${inline(line.slice(3))}</h3>`); continue }
+    if (line.startsWith('- ')) { list.push(`<li>${inline(line.slice(2))}</li>`); continue }
+    flush()
+    if (first) { out.push(`<p class="doc-meta">${inline(line)}</p>`); first = false } // '최종 수정일' 줄
+    else out.push(`<p>${inline(line)}</p>`)
+  }
+  flush(); return out.join('')
 }
 
 export function mountAbout(): void {
-  const privacy = q<HTMLAnchorElement>('privacy-link'), contact = q<HTMLAnchorElement>('contact-link')
-  privacy.href = PRIVACY_URL; contact.href = CONTACT_URL
-  // 웹(특히 홈 화면 웹앱)에서는 새 창으로 — 같은 창에서 열면 뒤로 갈 길이 없는 화면이 된다. 앱(WebView)은 바깥 주소를 그대로 가게 두면 Capacitor 가 브라우저로 넘긴다.
-  // mailto 는 새 창 없이: 페이지를 떠나지 않고 메일 앱만 열리며, _blank 를 주면 빈 탭이 남는 브라우저가 있다
-  if (!isNative()) { privacy.target = '_blank'; privacy.rel = 'noopener' }
-  on(q('licenses-btn'), 'click', openLicenses)
-  on(q('licenses-close-btn'), 'click', closeLicenses)
-  attachSwipeBack(q('licenses-page'), { onBack: closeLicenses })
+  q<HTMLAnchorElement>('contact-link').href = CONTACT_URL // mailto 는 새 창 없이: 페이지를 떠나지 않고 메일 앱만 열리며, _blank 를 주면 빈 탭이 남는 브라우저가 있다
+  on(q('privacy-btn'), 'click', () => openDoc('privacy'))
+  on(q('licenses-btn'), 'click', () => openDoc('licenses'))
+  for (const d of ['privacy', 'licenses'] as const) {
+    on(q(`${d}-close-btn`), 'click', () => page(d).classList.remove('open'))
+    attachSwipeBack(page(d), { onBack: () => page(d).classList.remove('open') })
+  }
 }

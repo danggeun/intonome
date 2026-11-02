@@ -395,15 +395,24 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 /* 설정 페이지 */
 #settings-wordmark{display:block;width:108px;height:auto;margin:var(--s6) auto 0;fill:var(--text);} /* 한 줄 워드마크(resources/wordmark.svg 와 같은 윤곽) */ /* 글자 윤곽을 패스로 넣은 워드마크(Bricolage Grotesque): 폰트 파일을 싣지 않는다 */
 #settings-version{font-family:'DM Mono',monospace;font-size:var(--fs-xs);color:var(--text-3);text-align:center;padding-top:var(--s2);}
-.about-list{display:flex;flex-direction:column;border:1px solid var(--line-ctl);border-radius:var(--r-md);overflow:hidden;} /* 앱 정보 — 설정 카드 안의 목록(step-row 와 같은 테두리) */
-.about-link{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);height:var(--h-seg);padding:0 var(--s3) 0 var(--s4);background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--text);font-family:inherit;font-size:var(--fs-base);font-weight:var(--fw-md);text-decoration:none;text-align:left;cursor:pointer;width:100%;transition:background .1s;}
-.about-link:last-child{border-bottom:none;}
-.about-link:active{background:var(--sel);}
-.about-link .nav-glyph{color:var(--text-3);flex-shrink:0;}
-#licenses-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:61;opacity:0;pointer-events:none;visibility:hidden;transition:opacity var(--t-std),visibility 0s var(--t-std);overflow-y:auto;}
-#licenses-page.open{opacity:1;pointer-events:all;visibility:visible;transition:opacity var(--t-std),visibility 0s;}
-#licenses-inner{min-height:100%;display:flex;flex-direction:column;padding:var(--page-top) var(--s5) calc(var(--s6) + env(safe-area-inset-bottom,0px));max-width:480px;margin:0 auto;}
-#licenses-inner:focus{outline:none;}
+#settings-links{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-top:var(--s3);font-size:var(--fs-sm);color:var(--text-3);} /* 가운데 항목이 축, 양옆은 가운데 쪽으로 — 글자 길이가 달라도 점 간격은 좌우 같다 */
+#settings-links .sl-side{display:flex;align-items:center;gap:4px;min-width:0;}
+#settings-links .sl-side:first-child{justify-content:flex-end;}
+#settings-links a,#settings-links button{background:none;border:none;font:inherit;color:var(--text-3);height:40px;display:flex;align-items:center;cursor:pointer;text-decoration:none;padding:0 8px;white-space:nowrap;} /* 40 px 탭 영역, 보이는 건 글자만 */
+#settings-links .sl-dot{color:var(--deco);}
+@media (max-width:339px){#settings-links a,#settings-links button{white-space:normal;text-align:center;}} /* 320 px 폭: 옆 항목이 두 줄로 */
+.doc-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:61;opacity:0;pointer-events:none;visibility:hidden;transition:opacity var(--t-std),visibility 0s var(--t-std);overflow-y:auto;} /* 설정 위에 덮이는 문서 화면(개인정보처리방침 · 라이선스) */
+.doc-page.open{opacity:1;pointer-events:all;visibility:visible;transition:opacity var(--t-std),visibility 0s;}
+.doc-inner{min-height:100%;display:flex;flex-direction:column;padding:var(--page-top) var(--s5) calc(var(--s6) + env(safe-area-inset-bottom,0px));max-width:480px;margin:0 auto;}
+.doc-inner:focus{outline:none;}
+.doc-text{font-size:var(--fs-md);line-height:1.6;color:var(--text-2);overflow-wrap:anywhere;}
+.doc-text h3{font-size:var(--fs-base);font-weight:var(--fw-b);color:var(--text);margin:var(--s5) 0 var(--s2);}
+.doc-text p{margin:0 0 var(--s3);}
+.doc-text ul{margin:0 0 var(--s3);padding-left:var(--s5);}
+.doc-text li{margin-bottom:var(--s1);}
+.doc-text strong{color:var(--text);font-weight:var(--fw-b);}
+.doc-text a{color:var(--text-2);text-decoration:underline;text-underline-offset:3px;}
+.doc-text .doc-meta{font-size:var(--fs-sm);color:var(--text-3);margin-bottom:var(--s4);}
 #licenses-text{font-family:'DM Mono',monospace;font-size:var(--fs-xs);line-height:1.5;color:var(--text-2);white-space:pre-wrap;overflow-wrap:anywhere;margin:0;}
 #settings-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:60;opacity:0;pointer-events:none;visibility:hidden;transition:opacity var(--t-std),visibility 0s var(--t-std);overflow-y:auto;}
 #settings-page.open{opacity:1;pointer-events:all;visibility:visible;transition:opacity var(--t-std),visibility 0s;}
@@ -430,7 +439,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #editor-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:70;display:none;flex-direction:column;overflow:hidden;opacity:0;transition:opacity var(--t-std);}
 #editor-page.open{opacity:1;}
 /* 가장자리 스와이프 중(ui/swipeBack): 끌리는 화면 왼쪽에 그림자 — 뒤 화면과 층이 갈린다 */
-#menu-overlay.swiping,#settings-page.swiping,#licenses-page.swiping,#editor-page.swiping{box-shadow:-6px 0 24px rgba(var(--shadow-rgb),.45);}
+#menu-overlay.swiping,#settings-page.swiping,.doc-page.swiping,#editor-page.swiping{box-shadow:-6px 0 24px rgba(var(--shadow-rgb),.45);}
 #ed-inner{display:flex;flex-direction:column;min-height:100%;max-width:480px;margin:0 auto;width:100%;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 #ed-top{padding:var(--page-top) var(--s5) 0;flex-shrink:0;}
 #ed-nav{display:flex;align-items:center;gap:6px;padding:0 0 var(--s2);}
