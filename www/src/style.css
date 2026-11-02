@@ -395,6 +395,13 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 /* 설정 페이지 */
 #settings-wordmark{display:block;width:108px;height:auto;margin:var(--s6) auto 0;fill:var(--text);} /* 한 줄 워드마크(resources/wordmark.svg 와 같은 윤곽) */ /* 글자 윤곽을 패스로 넣은 워드마크(Bricolage Grotesque): 폰트 파일을 싣지 않는다 */
 #settings-version{font-family:'DM Mono',monospace;font-size:var(--fs-xs);color:var(--text-3);text-align:center;padding-top:var(--s2);}
+#settings-links{display:flex;justify-content:center;align-items:center;gap:var(--s2);flex-wrap:wrap;font-size:var(--fs-sm);color:var(--text-3);padding-top:var(--s3);}
+#settings-links a,#settings-links button{color:var(--text-2);background:none;border:none;font:inherit;font-size:var(--fs-sm);line-height:20px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:12px 4px;margin:-12px 0;} /* 44 px 히트, 보이는 크기는 글자만 */
+#licenses-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:61;opacity:0;pointer-events:none;visibility:hidden;transition:opacity var(--t-std),visibility 0s var(--t-std);overflow-y:auto;}
+#licenses-page.open{opacity:1;pointer-events:all;visibility:visible;transition:opacity var(--t-std),visibility 0s;}
+#licenses-inner{min-height:100%;display:flex;flex-direction:column;padding:var(--page-top) var(--s5) calc(var(--s6) + env(safe-area-inset-bottom,0px));max-width:480px;margin:0 auto;}
+#licenses-inner:focus{outline:none;}
+#licenses-text{font-family:'DM Mono',monospace;font-size:var(--fs-xs);line-height:1.5;color:var(--text-2);white-space:pre-wrap;overflow-wrap:anywhere;margin:0;}
 #settings-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:60;opacity:0;pointer-events:none;visibility:hidden;transition:opacity var(--t-std),visibility 0s var(--t-std);overflow-y:auto;}
 #settings-page.open{opacity:1;pointer-events:all;visibility:visible;transition:opacity var(--t-std),visibility 0s;}
 #settings-inner{min-height:100%;display:flex;flex-direction:column;padding:var(--page-top) var(--s5) calc(var(--s6) + env(safe-area-inset-bottom,0px));gap:var(--s3);max-width:480px;margin:0 auto;}
@@ -420,7 +427,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #editor-page{position:fixed;inset:0;touch-action:pan-y;background:var(--bg);z-index:70;display:none;flex-direction:column;overflow:hidden;opacity:0;transition:opacity var(--t-std);}
 #editor-page.open{opacity:1;}
 /* 가장자리 스와이프 중(ui/swipeBack): 끌리는 화면 왼쪽에 그림자 — 뒤 화면과 층이 갈린다 */
-#menu-overlay.swiping,#settings-page.swiping,#editor-page.swiping{box-shadow:-6px 0 24px rgba(var(--shadow-rgb),.45);}
+#menu-overlay.swiping,#settings-page.swiping,#licenses-page.swiping,#editor-page.swiping{box-shadow:-6px 0 24px rgba(var(--shadow-rgb),.45);}
 #ed-inner{display:flex;flex-direction:column;min-height:100%;max-width:480px;margin:0 auto;width:100%;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 #ed-top{padding:var(--page-top) var(--s5) 0;flex-shrink:0;}
 #ed-nav{display:flex;align-items:center;gap:6px;padding:0 0 var(--s2);}

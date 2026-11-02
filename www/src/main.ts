@@ -30,6 +30,7 @@ import { stopDrone, stopRefNote } from './audio/refTone.ts'
 import { mountMenu, hideMenu, closeSettings, overlayOpen } from './ui/menu.ts'
 import { mountSettings } from './ui/settings.ts'
 import { mountTimer, stopTimer } from './ui/timer.ts'
+import { mountAbout, isLicensesOpen, closeLicenses } from './ui/about.ts'
 import { mountMicPopup, showMicPopup, closeMicPopup, onMicRetryFailed } from './ui/micPopup.ts'
 import { mountRecHeader } from './ui/recHeader.ts'
 import { mountRecList } from './ui/recList.ts'
@@ -51,7 +52,7 @@ loadSettings(); startSettingsAutosave()
 
 // 화면
 mountLang(); mountTheme(); onThemeChange(retheme)
-mountTuner(); mountRefDrum(); mountMetro(); mountRefPanel(); mountDrone(); mountMenu(); mountSettings()
+mountTuner(); mountRefDrum(); mountMetro(); mountRefPanel(); mountDrone(); mountMenu(); mountSettings(); mountAbout()
 mountTimer()
 mountRecList(openEditor, closeEditorIfEditing); mountEditor()
 // 처음 안내: 새로 설치한 기기에서만 저절로(이미 쓰던 기기는 업데이트로 받아도 안 뜬다). 끝내거나 그만두면 다시 안 뜬다
@@ -182,6 +183,7 @@ onContextState(state => {
 // Android 뒤로가기: 열린 화면부터 닫고, 메인이면 앱을 백그라운드로 (종료하지 않음)
 onBackButton(() => {
   if (isEditorOpen()) { closeEditor(); return true }
+  if (isLicensesOpen()) { closeLicenses(); return true }
   if (q('settings-page').classList.contains('open')) { closeSettings(); return true }
   if (q('menu-overlay').classList.contains('open')) { hideMenu(); return true }
   if (q('mic-popup-bg').classList.contains('show')) { closeMicPopup(); return true }

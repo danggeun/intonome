@@ -645,12 +645,37 @@ await scenario('metro: works without mic (permission denied) + spacebar', 'silen
   assert.equal(await p.evaluate(() => document.getElementById('mic-popup-bg').classList.contains('show')), true, 'mic popup shown')
   await p.click('#mic-popup-cancel'); await p.evaluate(() => document.activeElement?.blur()) // 포커스된 버튼의 Space 는 버튼의 것
   await p.keyboard.press('Space'); await sleep(p, 300)
-  assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').textContent), '■')
+  assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').dataset.glyph), 'stop')
   await p.keyboard.press('Space'); await sleep(p, 200)
-  assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').textContent), '▶')
+  assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').dataset.glyph), 'play')
 }, { permissions: [] })
 
 // 설정 영속
+await scenario('settings: the bottom links — privacy policy and contact open outside (new window on the web), licenses open in-app with the font licences and close with X, Esc and the edge swipe', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 800); await dismissMicPopup(p)
+  await p.click('#settings-hdr-btn'); await sleep(p, 300)
+  const links = await p.evaluate(() => ['privacy-link', 'contact-link'].map(id => { const a = document.getElementById(id); return [a.getAttribute('href'), a.target, a.rel] }))
+  assert.deepEqual(links, [['https://github.com/danggeun/intonome/blob/main/PRIVACY.md', '_blank', 'noopener'], ['mailto:intonome.app@gmail.com?subject=Intonome', '', '']])
+  // 44 px 히트 (보이는 크기는 글자만)
+  const hit = await p.evaluate(() => ['privacy-link', 'licenses-btn', 'contact-link'].map(id => document.getElementById(id).getBoundingClientRect().height))
+  assert.ok(hit.every(h => h >= 44), '44 px: ' + hit)
+  await p.click('#licenses-btn'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.getElementById('licenses-page').classList.contains('open')), true)
+  const txt = await p.evaluate(() => document.getElementById('licenses-text').textContent)
+  for (const s of ['DM Mono', 'Bravura', 'Bricolage Grotesque', 'Capacitor', 'Workbox', 'SIL OPEN FONT LICENSE Version 1.1', 'PERMISSION & CONDITIONS', 'Permission is hereby granted']) assert.ok(txt.includes(s), 'licenses text has ' + s)
+  assert.deepEqual(await p.evaluate(() => [document.getElementById('settings-page').hasAttribute('inert'), document.getElementById('hdr').hasAttribute('inert'), document.getElementById('licenses-page').contains(document.activeElement)]), [true, true, true], '아래 깔린 설정·뒤 화면은 inert, 포커스는 라이선스 화면에')
+  await p.click('#licenses-close-btn'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.getElementById('licenses-page').classList.contains('open')), false)
+  assert.deepEqual(await p.evaluate(() => [document.getElementById('settings-page').classList.contains('open'), document.getElementById('settings-page').hasAttribute('inert'), document.getElementById('settings-page').contains(document.activeElement)]), [true, false, true], '설정은 그대로 열려 있고 다시 살아 있다')
+  await p.click('#settings-back-btn'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.activeElement?.id), 'settings-hdr-btn', '다 닫으면 포커스는 설정을 열었던 ⚙ 로')
+  await p.click('#settings-hdr-btn'); await sleep(p, 300)
+  await p.click('#licenses-btn'); await sleep(p, 200); await p.keyboard.press('Escape'); await sleep(p, 200)
+  assert.deepEqual(await p.evaluate(() => [document.getElementById('licenses-page').classList.contains('open'), document.getElementById('settings-page').classList.contains('open')]), [false, true], 'Esc 는 맨 위(라이선스)만 닫는다')
+  await p.click('#licenses-btn'); await sleep(p, 200)
+  await p.mouse.move(4, 400); await p.mouse.down(); for (let i = 1; i <= 10; i++) await p.mouse.move(4 + 24 * i, 400); await p.mouse.up(); await sleep(p, 400)
+  assert.equal(await p.evaluate(() => document.getElementById('licenses-page').classList.contains('open')), false, '가장자리 스와이프로 닫힘')
+})
 await scenario('settings: persist across reload (cents, smooth, rms, wakelock, bpm, ts, ref)', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 500)
   await p.click('#settings-hdr-btn')
@@ -703,6 +728,7 @@ await scenario('i18n: English — no Korean on any screen, nothing clipped, surv
   const seen = []
   const check = async where => { const r = await screenText(p); seen.push(where); assert.deepEqual(r.korean, [], `Korean on ${where}: ${JSON.stringify(r.korean)}`); assert.deepEqual(r.overflow, [], `clipped text on ${where}: ${JSON.stringify(r.overflow)}`) }
   await check('settings')
+  await p.click('#licenses-btn'); await sleep(p, 300); await check('licenses'); await p.click('#licenses-close-btn'); await sleep(p, 300)
   await p.click('#settings-back-btn'); await sleep(p, 400)
   await waitNote(p, t => t.note === 'A'); await check('tuner (A, letter names)')
   assert.equal(await p.evaluate(() => document.getElementById('tuner-enharmonic').textContent), '', 'no Korean secondary name')
