@@ -87,7 +87,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Delete removes it from the list and IndexedDB; undo within 5 s; a double tap deletes once without a failure notice
 - [A] List survives a restart; items older than 30 days are deleted (can be turned off); last-7-days notice with "Keep"
 - [A] An unfinished recording (app killed) is recovered on the next launch
-- [A] Download: browser download on the web; Filesystem + share sheet in the Android app. [D] Check the share sheet on a device
+- [A] Download: a WAV for recordings up to 10 minutes on every platform (webm as is above that, except iPhone which only says so); browser download on the web, Filesystem + share sheet in the Android app. [D] Check the share sheet on a device
 
 ## Editor
 - [A] Opens with title, 00:00 / length, play button enabled when ready
@@ -95,7 +95,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Speed 0.5–1.5×, remembered per recording. Other than 1.0× the app stretches the sound itself: the position moves at the chosen speed (also a speed changed while the recording is being prepared), changing speed while playing continues from the same spot, A–B looping and the end work the same (e2e); the output is 1/speed as long and a 440 Hz tone keeps its pitch within 1 ¢ and its level within 3 % at 0.5, 0.7, 0.85, 1.25 and 1.5× (a chord within 10 % at 0.5×) (unit tests)
 - [D] iPhone: 0.5 / 0.7 / 0.85 / 1.25× play without stutter or dropped sound; changing speed while playing continues smoothly; a recording close to 10 minutes plays at 0.5× on an older iPhone without the tab reloading (it holds about 345 MB while preparing); a recording over 10 minutes says other speeds may sound uneven
 - [A] A and B show tenths of a second. Set A → set B (after A only) → loop off / on / from 1 s before; drag handles or nudge ±0.25 s
-- [A] Works when webm reports an infinite duration (Android MediaRecorder)
+- [A] Works when webm reports an infinite duration (Android MediaRecorder), and when it reports a wrong finite one (Android Chrome: hours for seconds): the list seek bar, the editor length and seeking use the recorded length. [D] Android: drag the list seek bar and the editor handle on a recording; playback follows
 - [A] Bookmarks: add (no duplicates within 0.3 s), jump, delete
 - [A] Save A–B → one-channel WAV at the in-app level, A to B long (e2e); the live channel is the louder one (unit test)
 - [A] Waveform on the track (peaks computed once and stored)
@@ -129,6 +129,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 ## Look and feel
 - [M] Screenshot baselines: 18 screens (dark, light, English) match pixel for pixel in the development environment; CI only uploads its screenshots as an artifact (its fonts differ)
 - [A] Touch targets are at least 44 px (visible size unchanged)
+- [A] Play / stop / pause marks are drawn (SVG, `data-glyph`), the same on every platform, centred in their buttons
 - [A] Text and control contrast meets WCAG AA in both themes
 - [A] Haptic feedback: dragging the dial, the BPM or the A = drum taps once per step (8 ms), firmer on every ten (16 ms), none while recording, none when Settings › Haptic feedback is off (kept after reload)
 - [D] Haptic ticks feel like a detent, not a buzz, when spinning the dial fast; the tuner doesn't read them while dragging with the mic on; on an iPhone home-screen app (iOS 18) the ticks are felt, otherwise the row is hidden or silent
@@ -148,5 +149,5 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Playing detection: noise doesn't count; sustained string tones count after about 0.14 s (six frames) even when the first frames read wild (a click, a harmonic); a long stretch of playing followed by silence turns off within 0.25 s (unit tests). Talk nearby mostly counts as sound — the label says sound, not playing
 - [A] Practice time with the metronome on: counts while the note sounds and stops when it stops, at 16ths 80–100, triplets 100 and 8ths 150 bpm; clicks alone never count (unit tests). Playback from the list doesn't count
 - [A] Note names 도레미 / C D E in Korean (the other system shown small); always C D E in English
-- [A] Recordings kept 30 days / forever; version shown at the bottom of Settings
+- [A] Recordings kept 30 days / forever; version shown at the bottom of Settings; below it Privacy policy (external, new window on the web), Open source licenses (in-app page with the OFL and MIT texts; closes with X, Esc, the edge swipe and the Android back button) and Contact (mail app). [D] In the Android app the policy opens in the browser and Contact opens the mail app
 - [A] Landscape on small phones (height ≤ 500 px) shows a notice

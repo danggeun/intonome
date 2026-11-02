@@ -2,6 +2,30 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.7.0] - 2026-11-02
+Ready for the Play Store: the notices the store requires are in the app, a recording's length and seek bar no longer depend on what the browser guesses, and the release build, the listing images and the console answers come from the repo.
+
+Settings
+- At the bottom: Privacy policy (opens the policy page; in the Android app it opens in the browser), Open source licenses (an in-app page with the notices and the full SIL Open Font License and MIT texts for DM Mono, Bravura, Bricolage Grotesque, Capacitor and Workbox) and Contact (opens your mail app). The store's User Data policy asks for the policy link inside the app, and the font licenses ask for their text to travel with the fonts
+
+Playback
+- The seek bar in the list, the length in the editor and seeking use the length the app measured while recording whenever the browser's own figure is not close to it (half to one and a half times). Chromium's MediaRecorder writes no length into its webm, and Android Chrome then reports not Infinity (which was already handled) but a wrong finite number: a 47-second recording showed as 4500:20 in the list and 8652:07 in the editor, and dragging the seek bar landed hours past the end, where playback stalled. Once the editor has decoded the recording, its exact length is used
+- Download gives a WAV on every platform for recordings up to 10 minutes (it did on iPhone and in the Android app). A webm from Chromium shows the same wrong length in other players
+
+Look
+- The play, stop and pause marks on every button (metronome header and card, the big button in the metronome-only view, the recording list, the editor) are drawn as SVG instead of the ▶ ■ ❚❚ characters of whatever font the phone has. The characters sat differently on each phone (on iPhone the play mark looked off-centre); the drawn marks are the same everywhere and the play triangle is nudged right by 5 % so it reads as centred
+- Screens stacked on top of each other (licenses over Settings) behave like one: the one on top gets focus, the ones underneath are inert for the keyboard and screen readers, and when everything is closed focus returns to the button that opened the first one
+
+Tests
+- Test names are English throughout; a check keeps them so (Korean on-screen spellings a test verifies go in double quotes)
+- Screenshot baselines re-shot (the play marks changed); the baseline environment now renders Korean with Noto Sans CJK KR
+
+Release
+- `npm run keygen` makes the Play upload key once (asks for a password twice, hidden; writes `intonome-upload.jks` and `keystore.properties`, both ignored by git). `npm run cap:sync` now also wires that key into the Android release build (`scripts/cap-signing.mjs`; without the key file nothing changes). `npm run aab` builds the signed App Bundle for the store
+- `npm run store:assets` also writes the 512 px store icon (32-bit PNG). docs/STORE.md is rewritten in the Play Console's order with every answer (app details, listing text, graphics, the App content declarations with reasons, data safety, closed testing for a personal account), and a test keeps its text within the console's limits and its links equal to the app's
+
+Tests: 19 new unit tests (trusted duration, signing config, keystore properties, keygen password rule, store listing, test-name check) and 2 new e2e (the settings links, the licenses page with focus and inert; a webm with a garbage duration), the English-screens e2e also walks the licenses page, and the play/stop/pause assertions read the drawn mark (data-glyph)
+
 ## [2.6.6] - 2026-11-02
 A recording only runs while the mic actually hears something. When the system cuts the mic off, the recording is saved up to that point and you are told, instead of carrying on with silence.
 
