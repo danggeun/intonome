@@ -169,7 +169,7 @@ const freezeDownbeat = async p => {
       const leds = Array.from(document.querySelectorAll(`#${id} .led`)); if (!leds.length) continue
       leds.forEach(l => { l.className = 'led' }); leds[0].className = 'led mv hit-acc'
     }
-    for (const id of ['metro-play-btn', 'metro-play-hdr-btn']) { const b = document.getElementById(id); if (b) b.innerHTML = '<svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.6"/></svg>' }
+    for (const id of ['metro-play-btn', 'metro-play-hdr-btn']) { const b = document.getElementById(id); if (b) b.innerHTML = '<svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/></svg>' }
   })
 }
 

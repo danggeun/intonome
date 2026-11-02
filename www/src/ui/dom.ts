@@ -18,13 +18,13 @@ export function on<K extends keyof HTMLElementEventMap>(el: HTMLElement | Window
 export function reflow(el: HTMLElement): void { void el.offsetHeight }
 
 /** 재생 버튼의 그림 — 글꼴의 ▶·■·❚❚ 대신 SVG: 글꼴 글리프는 기기마다 크기·위치가 달라 버튼 가운데에서 벗어나 보였다(아이폰).
- * 24 칸 좌표. 재생 삼각형은 무게중심이 왼쪽에 있어 오른쪽으로 1.2 칸(5 %) 밀어 눈에 가운데로 — 정지·일시정지는 좌우 대칭이라 그대로.
+ * 24 칸 좌표, 크기는 글꼴 글자(안드로이드 ■ 약 15 칸)에 맞춘다 — 2.7.0 의 12 칸은 작아 보였다(사용자). 재생 삼각형은 무게중심이 왼쪽에 있어 테두리 상자를 오른쪽으로 1.5 칸 밀어 눈에 가운데로 — 정지·일시정지는 좌우 대칭이라 그대로.
  * 정지(■)는 '처음으로', 위치를 유지하는 일시정지는 앱 전체에서 ❚❚ */
 export type Glyph = 'play' | 'stop' | 'pause'
 const GLYPH_PATH: Record<Glyph, string> = {
-  play: '<path d="M8.2 5.6c0-.9 1-1.5 1.8-1l10.2 6.4c.7.5.7 1.5 0 2L10 19.4c-.8.5-1.8-.1-1.8-1Z"/>',
-  stop: '<rect x="6" y="6" width="12" height="12" rx="1.6"/>',
-  pause: '<rect x="6.4" y="5" width="4" height="14" rx="1"/><rect x="13.6" y="5" width="4" height="14" rx="1"/>',
+  play: '<path d="M5.95 4.4c0-1.1 1.2-1.8 2.1-1.2l12.3 7.3c.9.6.9 1.9 0 2.5L8.05 20.3c-.9.6-2.1-.1-2.1-1.2Z"/>',
+  stop: '<rect x="4.5" y="4.5" width="15" height="15" rx="2"/>',
+  pause: '<rect x="5.2" y="4" width="4.6" height="16" rx="1.2"/><rect x="14.2" y="4" width="4.6" height="16" rx="1.2"/>',
 }
 export const glyphSvg = (g: Glyph): string => `<svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true">${GLYPH_PATH[g]}</svg>`
 /** 버튼의 그림을 바꾼다. 어떤 그림인지는 data-glyph 로 남긴다(테스트·스타일) */
