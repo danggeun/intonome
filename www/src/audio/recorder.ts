@@ -3,6 +3,7 @@ import { recListStore, sessionStore, type RecItem } from '../state/index.ts'
 import { dbSave, dbDelete, dbPatchMeta, dbLoadAll, dbLastExpired, dbChunkAdd, dbChunksClear, dbChunksLoad, type ChunkRow } from '../persist/recordingsDb.ts'
 import { computePeaks, peakOf } from '../core/peaks.ts'
 import { containerOf, extFromMime, type RecContainer } from '../core/container.ts'
+import { afterUnmute, recDurSec, CUT_MS } from '../core/recCut.ts'
 import { t, type TKey } from '../core/i18n/index.ts'
 import { notice } from '../core/notice.ts'
 import { isIOS, isSafari } from '../platform/index.ts'
@@ -31,6 +32,7 @@ const REC_SLICE_MS = 10_000
 function startRec(): RecResult {
   if (!A.micStream) return { ok: false, error: t('rec.needMic') }
   if (recorder && recorder.state !== 'inactive') return { ok: false, error: t('rec.already') }
+  if (A.micStream.getAudioTracks()[0]?.muted) return { ok: false, error: t('rec.micMuted') } // OS 가 마이크를 막고 있다(통화 등) — 시작하면 빈 파일이 된다
   const t0 = Date.now()
   const r = startFile(t0, uniqueName(stamp(t0))) // 세션 이름은 여기서 한 번 — 60 분 뒤 이어지는 파일은 이 이름 + _2, _3 …
   if (!r.ok) return r
@@ -60,11 +62,14 @@ function startFile(t0: number, base: string, part = 1): RecResult {
   // '완료' 는 저장이 끝난 뒤에 말한다 — 정지 순간에 말하면 저장이 실패했을 때 '완료' 뒤에 '저장하지 못했어요' 가 따라왔다
   let endNotice: TKey | null = 'rec.done'
   let chunkWarned = false
+  let mutedAt = 0, peaksAtMute = 0, pausedMs = 0 // 마이크가 막힌 시각(0 = 안 막힘) · 그때의 피크 수 · 이어 녹음한 짧은 막힘의 합
   let liveFrom = 0 // 조각마다 그 사이의 실시간 피크를 같이 저장한다 — 복구 때 파형과 재생 보정 피크가 된다
-  rec.ondataavailable = e => { if (e.data.size > 0) { parts.push(e.data); const live = myPeaks.slice(liveFrom); liveFrom = myPeaks.length; void dbChunkAdd({ session: t0, t: Date.now(), mime: rec.mimeType, blob: e.data, live }).then(ok => { if (!ok && !chunkWarned) { chunkWarned = true; notice(t('rec.chunkFailed'), 10000) } }) } } // 조각이 안 써지면(대개 저장 공간) 앱이 죽을 때 복구할 것도 없다 — 한 번 알린다
+  rec.ondataavailable = e => { if (e.data.size > 0) { parts.push(e.data); const upto = mutedAt ? peaksAtMute : myPeaks.length, live = myPeaks.slice(liveFrom, upto); liveFrom = upto; void dbChunkAdd({ session: t0, t: Date.now(), mime: rec.mimeType, blob: e.data, live }).then(ok => { if (!ok && !chunkWarned) { chunkWarned = true; notice(t('rec.chunkFailed'), 10000) } }) } } // 조각이 안 써지면(대개 저장 공간) 앱이 죽을 때 복구할 것도 없다 — 한 번 알린다
   rec.onerror = () => { endNotice = 'rec.errSaved'; if (recorder === rec) stopRec() }
   // 파형·피크·확장자는 부가 정보 — 실패해도 녹음은 저장한다. blob 을 못 만들 때만 포기
   rec.onstop = async () => {
+    track?.removeEventListener('mute', onMute); track?.removeEventListener('unmute', onUnmute); if (cutTimer) clearTimeout(cutTimer)
+    if (mutedAt) myPeaks.length = Math.min(myPeaks.length, peaksAtMute) // 막힌 동안 쌓인 피크는 버린다 — 파형이 소리와 맞게
     let blob: Blob
     try { blob = new Blob(parts, { type: rec.mimeType || 'audio/mp4' }) }
     catch { parts.length = 0; notice(t('rec.saveFailed'), 10000); return }
@@ -80,7 +85,7 @@ function startFile(t0: number, base: string, part = 1): RecResult {
     let ext: RecContainer
     try { ext = containerOf(new Uint8Array(await blob.slice(0, 16).arrayBuffer().catch(() => new ArrayBuffer(0))), rec.mimeType) }
     catch { ext = extFromMime(rec.mimeType) }
-    const item: RecItem = { id: null, url: URL.createObjectURL(blob), name, dur: Math.round((Date.now() - t0) / 1000), blob, mime: rec.mimeType, ext, peak, ts: t0, bookmarks: [], ab: null, peaks }
+    const item: RecItem = { id: null, url: URL.createObjectURL(blob), name, dur: recDurSec(t0, Date.now(), mutedAt, pausedMs), blob, mime: rec.mimeType, ext, peak, ts: t0, bookmarks: [], ab: null, peaks }
     // 목록에는 먼저 넣고 id 는 저장이 끝난 뒤 붙인다 — 큰 파일은 저장에 1~3 s 걸려 "녹음 완료" 뒤 메뉴를 열면 항목이 없었다
     const st = recListStore.get(); recListStore.set({ items: [item, ...st.items], rev: st.rev + 1 })
     const id = await dbSave({ name: item.name, dur: item.dur, blob: item.blob, mime: item.mime, ts: item.ts }, { bookmarks: [], ab: null, peaks, ext, peak }).catch(() => null)
@@ -92,6 +97,33 @@ function startFile(t0: number, base: string, part = 1): RecResult {
   recorder = rec; fileT0 = t0; fileBase = base; filePart = part
   setEndNotice = k => { endNotice = k }
   const myPeaks = startPeakCapture() // 이 파일의 피크 배열 — 다음 파일이 새 배열을 만들어도 참조 유지
+  // 녹음은 마이크가 실제로 소리를 받는 동안만(core/recCut): OS 가 마이크를 막으면 멈춰 두고 — 무음을 녹음하지 않는다 —
+  // 풀릴 때 잠깐이었으면 이어 가고, 길었으면 막힌 시점까지 저장하고 끝낸다. 숨김 중에 오면 안내는 돌아왔을 때 보인다
+  const track = A.micStream!.getAudioTracks()[0]
+  let cutTimer: ReturnType<typeof setTimeout> | null = null
+  function onMute(): void {
+    if (rec.state !== 'recording') return
+    mutedAt = Date.now(); peaksAtMute = myPeaks.length
+    try { rec.requestData(); rec.pause() } catch { mutedAt = 0; return } // requestData: 막히기 전 소리를 바로 조각으로 — 그사이 앱이 죽어도 복구된다. 멈출 수 없으면 그대로 녹음
+    // 'unmute' 가 끝내 안 와도 끝낸다(아이폰은 전화 뒤 한동안 막힌 채 남기도 한다). 화면이 꺼져 타이머가 멈췄으면 돌아왔을 때 돈다
+    cutTimer = setTimeout(cut, CUT_MS)
+  }
+  function cut(): void {
+    cutTimer = null
+    if (!mutedAt || rec.state !== 'paused') return
+    myPeaks.length = Math.min(myPeaks.length, peaksAtMute); liveFrom = Math.min(liveFrom, peaksAtMute)
+    endNotice = 'rec.savedOnCut'
+    if (recorder === rec) stopRec()
+  }
+  function onUnmute(): void {
+    if (!mutedAt || rec.state !== 'paused') return
+    const ms = Date.now() - mutedAt
+    if (afterUnmute(ms) === 'cut') { if (cutTimer) clearTimeout(cutTimer); cut(); return }
+    if (cutTimer) clearTimeout(cutTimer); cutTimer = null
+    myPeaks.length = Math.min(myPeaks.length, peaksAtMute); liveFrom = Math.min(liveFrom, peaksAtMute)
+    try { rec.resume(); mutedAt = 0; pausedMs += ms } catch { cut() } // 이어 가지 못하면 막힌 시점까지 저장하고 끝낸다
+  }
+  track?.addEventListener('mute', onMute); track?.addEventListener('unmute', onUnmute)
   return { ok: true }
 }
 /** 테스트용: 지금 파일의 시작 시각을 과거로 — 다음 초에 60 분 상한이 걸린다 */
@@ -99,6 +131,7 @@ export function backdateRecFile(ms: number): void { fileT0 -= ms }
 /** 60 분 상한: 지금 파일을 저장하고 같은 세션을 새 파일(_2, _3 …)로 잇는다. 헤더의 시간은 계속 흐른다 */
 function rollover(): void {
   if (!recorder || recorder.state === 'inactive') return
+  if (A.micStream?.getAudioTracks()[0]?.muted) { setEndNotice?.('rec.savedOnCut'); stopRec(); return } // 막힌 채로 새 파일을 열면 빈 파일 — 지금 파일을 막힌 시점까지 저장하고 끝낸다
   setEndNotice?.(null); recorder.stop(); stopPeakCapture()
   const r = startFile(Date.now(), fileBase, filePart + 1)
   if (r.ok) notice(t('rec.rolledOver'), 6000)

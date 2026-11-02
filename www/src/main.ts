@@ -256,6 +256,8 @@ if (!isNative() && 'serviceWorker' in navigator) {
   recBackdate: backdateRecFile,
   editor: editorDiag,
   closeMic,
+  /** 테스트용: 마이크 트랙 — OS 가 막는 것('mute')을 흉내 낸다 */
+  micTrack: () => A.micStream?.getAudioTracks()[0] ?? null,
   /** 테스트용: audio·persist 쪽 안내를 하나 보낸다 (숨김 중 안내 보존 검증) */
   notice,
   /** 재생 보정 게인 진단 (e2e) */

@@ -1728,6 +1728,36 @@ await scenario('lifecycle: back after a call stopped the audio while hidden, and
   await setVisibility(p, 'visible')
   await waitToast(p, '오디오가 중단됐어요. 화면을 탭하면 다시 시작해요', 4000)
 })
+await scenario('rec: the system muting the mic pauses the recording — a blip carries on, a long cut saves up to where the mic went quiet', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  const mute = ev => p.evaluate(ev => window.__tt.micTrack().dispatchEvent(new Event(ev)), ev) // OS 가 막고 푸는 것(아이폰 웹앱 화면 끄기·전화)
+  const items = () => p.evaluate(() => Array.from(document.querySelectorAll('#rec-list .rec-item-dur')).map(e => e.textContent))
+  // 짧은 막힘(블루투스 경로 바뀜 같은): 이어 녹음, 파일 하나
+  await p.click('#rec-hdr-btn'); await sleep(p, 2000)
+  await mute('mute'); await sleep(p, 400); await mute('unmute'); await sleep(p, 1600)
+  assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true, '짧은 막힘은 녹음을 끝내지 않는다')
+  await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료')
+  assert.deepEqual(await items(), ['00:04'], '이어 녹음한 막힘은 길이에서 빠진다')
+  // 긴 막힘(화면을 끄거나 전화): 숨김 중에 막히고 3 s 뒤 돌아오면 막힌 시점까지 저장하고 끝, 돌아와서 알린다
+  await p.click('#rec-hdr-btn'); await sleep(p, 2200)
+  await setVisibility(p, 'hidden'); await mute('mute'); await sleep(p, 3000)
+  await setVisibility(p, 'visible'); await mute('unmute')
+  await waitToast(p, '마이크가 끊겨 그 전까지 녹음한 것을 저장했어요')
+  assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), false, '녹음은 끝났다')
+  assert.deepEqual(await items(), ['00:02', '00:04'], '길이는 막힌 시점까지 — 무음 3 초가 붙지 않는다')
+  assert.equal(await p.evaluate(() => window.__tt.stats().micOpen), true, '마이크는 그대로 — 튜너는 이어서 쓴다')
+  // 막힌 채 풀리지 않아도(아이폰은 전화 뒤 한동안 막혀 있기도 하다) 1.5 s 뒤 막힌 시점까지 저장하고 끝낸다
+  await sleep(p, 2700) // 위 토스트가 사라지게
+  await p.click('#rec-hdr-btn'); await sleep(p, 1200); await mute('mute')
+  await waitToast(p, '마이크가 끊겨 그 전까지 녹음한 것을 저장했어요', 4000)
+  assert.deepEqual(await items(), ['00:01', '00:02', '00:04'])
+  // 막혀 있는 동안 REC: 빈 파일을 만들지 않고 알린다
+  await sleep(p, 2700)
+  await p.evaluate(() => Object.defineProperty(window.__tt.micTrack(), 'muted', { configurable: true, get: () => true }))
+  await p.click('#rec-hdr-btn'); await waitToast(p, '지금은 마이크를 쓸 수 없어요. 통화 중이거나 다른 앱이 쓰고 있어요')
+  assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), false)
+  assert.equal((await items()).length, 3)
+})
 await scenario('lifecycle: idle → context suspended (audio focus released); metronome start resumes it', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await p.click('#mic-popup-cancel'); await p.evaluate(() => document.activeElement?.blur())
   await p.keyboard.press('Space'); await sleep(p, 500); assert.equal(await p.evaluate(() => window.__tt.stats().acState), 'running')

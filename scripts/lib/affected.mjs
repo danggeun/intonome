@@ -10,7 +10,7 @@ const AREAS = [
   { e2e: ['metro', 'layout', 'drag ticks', 'keys'],
     files: [/^www\/src\/core\/metro\//, /^www\/src\/audio\/(metronome|metro\.worklet)\.ts$/, /^www\/src\/ui\/(metro|dial|swipeStep|dragTick)\.ts$/] },
   { e2e: ['rec', 'recording', 'playback', 'editor', 'ux'],
-    files: [/^www\/src\/audio\/recorder\.ts$/, /^www\/src\/persist\/recordingsDb\.ts$/, /^www\/src\/ui\/(recList|recHeader)\.ts$/, /^www\/src\/core\/(recPolicy|container|wav|peaks)\.ts$/] },
+    files: [/^www\/src\/audio\/recorder\.ts$/, /^www\/src\/persist\/recordingsDb\.ts$/, /^www\/src\/ui\/(recList|recHeader)\.ts$/, /^www\/src\/core\/(recPolicy|recCut|container|wav|peaks)\.ts$/] },
   { e2e: ['editor', 'ux', 'playback', 'keys'],
     files: [/^www\/src\/ui\/editor\.ts$/, /^www\/src\/audio\/(playback|editorPlayer|stretchPlayer|stretch\.worklet|decode)\.ts$/, /^www\/src\/core\/(playbackGain|softclip|editRange|stretch|mono)\.ts$/] },
   { e2e: ['first-run'], files: [/^www\/src\/(ui|persist)\/tour\.ts$/, /^www\/src\/core\/(tourPlace|metro\/card)\.ts$/] },
