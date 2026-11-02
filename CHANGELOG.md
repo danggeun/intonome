@@ -2,6 +2,10 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.7.1] - 2026-11-02
+Settings
+- The Privacy policy, Open source licenses and Contact links are rows of an About card above the wordmark, like the other settings, instead of one dotted line under the version. The line was centred as a whole, but with labels of different lengths its middle item sat off the wordmark's axis and the footer looked lopsided; the rows are also full-width to tap
+
 ## [2.7.0] - 2026-11-02
 Ready for the Play Store: the notices the store requires are in the app, a recording's length and seek bar no longer depend on what the browser guesses, and the release build, the listing images and the console answers come from the repo.
 
