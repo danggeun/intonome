@@ -8,6 +8,13 @@ function bindSteps(groupId: string, onPick: (v: number) => void): void {
   qsa<HTMLElement>(`#${groupId} .step-btn`).forEach(b => on(b, 'click', () => onPick(+b.dataset.v!)))
 }
 function markSteps(groupId: string, v: number): void { qsa<HTMLElement>(`#${groupId} .step-btn`).forEach(b => setOn(b, +b.dataset.v! === v)) }
+/** 글자가 바뀌어 페이지 길이가 달라져도 그 칸이 화면에서 움직이지 않게 — 바꾸기 전 위치를 재고, 바꾼 뒤 그만큼 스크롤을 옮긴다. 맨 아래에서 페이지가 짧아지면 브라우저가 스크롤을 잘라 카드가 내려오는데, 그것까지 되돌린다(더 못 올리는 만큼은 어쩔 수 없다) */
+function keepInPlace(id: string, change: () => void): void {
+  const el = q(id), before = el.getBoundingClientRect().top
+  change()
+  const scroller = q('settings-page'), moved = el.getBoundingClientRect().top - before
+  if (moved) scroller.scrollTop += moved
+}
 const levelIndex = (levels: readonly number[], v: number) => levels.findIndex(x => Math.abs(x - v) < .001) + 1
 
 export function mountSettings(): void {
@@ -18,7 +25,7 @@ export function mountSettings(): void {
   bindSteps('notenames-steps', v => settingsStore.set({ noteNames: v === 1 ? 'en' : 'ko' }))
   bindSteps('autodelete-steps', v => settingsStore.set({ autoDelete: v === 1 }))
   bindSteps('theme-steps', v => settingsStore.set({ theme: v === 1 ? 'light' : 'dark' }))
-  bindSteps('lang-steps', v => settingsStore.set({ lang: LANGS[v] ?? 'en' }))
+  bindSteps('lang-steps', v => keepInPlace('lang-steps', () => settingsStore.set({ lang: LANGS[v] ?? 'en' }))) // 언어 카드는 맨 아래 — 바꾸면 위 카드들의 글자 길이와 아래 푸터(한 줄 ↔ 세 줄)가 함께 바뀌어 손가락 아래 카드가 뛴다(ja → ko 약 80 px)
   bindSteps('haptics-steps', v => settingsStore.set({ haptics: v === 1 }))
   bindSteps('apitch-steps', v => { if (v === 2 || v === 3 || v === 4) settingsStore.set({ aOctave: v }) })
 

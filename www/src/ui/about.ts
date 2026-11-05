@@ -51,7 +51,7 @@ function layoutLinks(): void {
   const row = q('settings-links'); row.classList.remove('stack')
   if (STACKED.has(getLang())) { row.classList.add('stack'); return }
   const items = [...row.querySelectorAll<HTMLElement>('a, button, .sl-dot')]
-  const need = items.reduce((w, el) => w + el.getBoundingClientRect().width, 0) + 4 * 2 // .sl-side 의 gap 두 번
+  const need = items.reduce((w, el) => w + el.getBoundingClientRect().width, 0) // 점의 양옆 여백은 점 자신의 padding — 폭에 들어 있다
   if (need > row.clientWidth) row.classList.add('stack')
 }
 

@@ -653,7 +653,7 @@ await scenario('metro: works without mic (permission denied) + spacebar', 'silen
 }, { permissions: [] })
 
 // 설정 영속
-await scenario('settings: the bottom links — contact opens the mail app, privacy policy and licenses open in-app (one language, the font licences) and close with X, Esc and the edge swipe', 'silence_lowfloor.wav', async p => {
+await scenario('settings: the bottom links — contact opens the mail app, privacy policy and licenses open in-app (one language, the font licences) and close with X, Esc and the edge swipe; the language card sits above the guide and stays put when the language changes', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 800); await dismissMicPopup(p)
   await p.click('#settings-hdr-btn'); await sleep(p, 300)
   assert.deepEqual(await p.evaluate(() => { const a = document.getElementById('contact-link'); return [a.getAttribute('href'), a.target] }), ['mailto:intonome.app@gmail.com?subject=Intonome', ''])
@@ -667,6 +667,19 @@ await scenario('settings: the bottom links — contact opens the mail app, priva
   assert.ok(Math.abs(dots[0] - dots[1]) < 1 && Math.abs(dots[2] - dots[3]) < 1, 'dots midway between words: ' + dots.map(v => v.toFixed(1)))
   const ver = await p.evaluate(() => { const r = document.createRange(); r.selectNodeContents(document.getElementById('settings-version')); const v = r.getBoundingClientRect(), w = document.getElementById('settings-wordmark').getBoundingClientRect(); return (v.left + v.width / 2) - (w.left + w.width / 2) })
   assert.ok(ver < -1 && ver > -2, 'version optically centred (box ~1.4 px left of the axis): ' + ver.toFixed(2))
+  // 언어 카드는 맨 아래 「사용 안내」 바로 위(2.9.1) — 거기서 언어를 바꿔도 손가락 아래 카드가 안 뛴다: 푸터 높이 고정(min-height) + 바꾸기 전후 위치 맞춤(ui/settings keepInPlace). 2.9.0 배치였다면 ja → ko 에서 약 80 px
+  assert.equal(await p.evaluate(() => document.getElementById('lang-steps').closest('.setting-row').nextElementSibling.contains(document.getElementById('tour-replay-btn'))), true, 'language card sits right above the guide card')
+  for (const [to, back] of [['3', '0'], ['1', '0']]) {
+    await p.evaluate(() => { const sc = document.getElementById('settings-page'); sc.scrollTop = sc.scrollHeight }); await sleep(p, 150)
+    const t0 = await p.evaluate(() => document.getElementById('lang-steps').getBoundingClientRect().top)
+    await p.click(`#lang-steps .step-btn[data-v="${to}"]`); await sleep(p, 250)
+    const t1 = await p.evaluate(() => document.getElementById('lang-steps').getBoundingClientRect().top)
+    assert.ok(Math.abs(t1 - t0) < 1, `language card stays put when the language changes at the bottom (${to}): ${(t1 - t0).toFixed(1)} px`)
+    await p.click(`#lang-steps .step-btn[data-v="${back}"]`); await sleep(p, 250)
+    const t2 = await p.evaluate(() => document.getElementById('lang-steps').getBoundingClientRect().top)
+    assert.ok(Math.abs(t2 - t0) < 1, `and when it changes back: ${(t2 - t0).toFixed(1)} px`)
+  }
+  await p.evaluate(() => { document.getElementById('settings-page').scrollTop = 0 })
   // 개인정보처리방침 — 앱 안 화면, 한국어 절만
   await p.click('#privacy-btn'); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('privacy-page').classList.contains('open')), true)
