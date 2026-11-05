@@ -102,10 +102,25 @@ const CAPTIONS = {
     ['Play against a drone', 'It hears you, not the drone'],
     ['Light theme too', 'No ads · Offline · Free'],
   ],
+  ja: [
+    ['ビブラートが見えるチューナー', '弦楽器のチューナー・メトロノーム'],
+    ['チューナーとメトロノームを1画面に', 'メトロノームを鳴らしたまま音程を確認'],
+    ['メトロノームだけを大きく', '2/4〜6/8 · 3連符 · テンポ ±5'],
+    ['ドローンを鳴らして音程合わせ', 'ドローンの音は拾わず、演奏した音だけを読みます'],
+    ['ライトテーマも', '広告なし · オフライン · 無料'],
+  ],
+  zh: [
+    ['能看见揉弦的调音器', '弦乐调音器 · 节拍器'],
+    ['调音器和节拍器在同一屏', '开着节拍器看音准'],
+    ['放大节拍器', '2/4–6/8 · 三连音 · 速度 ±5'],
+    ['开着持续音练音准', '只听你的音，不听持续音'],
+    ['也有浅色主题', '无广告 · 离线 · 免费'],
+  ],
 }
-const TAG = { ko: '현악기 연습을 위한 튜너 · 메트로놈 · 드론 · 녹음', en: 'Tuner, metronome, drone and recorder for string players' }
-const REF = { ko: 442, en: 440 }
-const FONT = { ko: "'Noto Sans CJK KR','Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif", en: "system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif" }
+const TAG = { ko: '현악기 연습을 위한 튜너 · 메트로놈 · 드론 · 녹음', en: 'Tuner, metronome, drone and recorder for string players', ja: '弦楽器の練習のためのチューナー · メトロノーム · ドローン · 録音', zh: '为弦乐练习设计的调音器 · 节拍器 · 持续音 · 录音' }
+const REF = { ko: 442, en: 440, ja: 442, zh: 440 } // 일본 오케스트라도 442 가 흔하다, 중국은 440
+const FONT = { ko: "'Noto Sans CJK KR','Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif", en: "system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif", ja: "'Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','Yu Gothic',system-ui,sans-serif", zh: "'Noto Sans CJK SC','Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif" }
+const LANGS = ['ko', 'en', 'ja', 'zh']
 
 async function page(browser, lang, theme, extra = {}) {
   const ctx = await browser.newContext({ viewport: VIEW, deviceScaleFactor: SCALE, isMobile: true, hasTouch: true, permissions: ['microphone'] })
@@ -149,7 +164,7 @@ async function compose(lang, idx, shotBuf, name) {
   const p = await composer.newPage()
   await p.setContent(`<!doctype html><meta charset="utf-8"><style>
     html,body{margin:0;width:360px;height:720px;overflow:hidden;background:radial-gradient(120% 60% at 50% 0%,#2a3040,#14161b);font-family:${FONT[lang]};color:#fff;text-align:center}
-    h1{font-size:${lang === 'ko' ? 27 : 25}px;font-weight:700;margin:36px 20px 8px;letter-spacing:-.3px;line-height:1.3}
+    h1{font-size:${lang === 'en' ? 25 : 27}px;font-weight:700;margin:36px 20px 8px;letter-spacing:-.3px;line-height:1.3}
     p{margin:0 20px;font-size:14px;color:#aeb4bd;line-height:1.4}
     /* 폰 틀은 글 아래 흐름에, 통째로 보이게(위 36 · 아래 약 30 px 여백). 틀 안은 앱 화면 비율(1:2) 그대로라 빈 데가 없다 */
     .ph{margin:18px auto 0;width:280px;border-radius:32px;border:6px solid #353b48;background:#353b48;overflow:hidden;box-shadow:0 18px 44px #0008}
@@ -175,7 +190,7 @@ const freezeDownbeat = async p => {
 
 composer = await (await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })).newContext({ viewport: VIEW, deviceScaleFactor: SCALE })
 const featureShot = {}
-for (const lang of ['ko', 'en']) {
+for (const lang of LANGS) {
   console.log(lang)
   const sig = makeSignals(REF[lang]), n = k => `${lang}_${k}`
   // 1. 조율: 바이올린 라 — 맞음(초록), 곧게 내다가 비브라토가 들어온 궤적
@@ -195,7 +210,7 @@ for (const lang of ['ko', 'en']) {
   // 4. 드론 도 위에서 스케일 — 솔(완전5도)이 맞은 순간. 드론이 울려도 연주하는 음만 읽는다
   b = await launch(sig.d); p = await page(b, lang, 'dark')
   await p.click('#drone-btn'); await p.click('.drone-note-btn[data-pc="0"]')
-  await waitNote(p, lang === 'ko' ? '솔' : 'G'); await sleep(p, 4500); await compose(lang, 3, await rawTrace(p), n('4_drone'))
+  await waitNote(p, { ko: '솔', ja: 'ソ' }[lang] ?? 'G'); await sleep(p, 4500); await compose(lang, 3, await rawTrace(p), n('4_drone'))
   await b.close()
   // 5. 라이트 테마 — 밝은 곳에서
   b = await launch(sig.a); p = await page(b, lang, 'light')

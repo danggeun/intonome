@@ -48,11 +48,11 @@ Tuner & metronome for strings that shows your vibrato. Drone, recorder. No ads.
 ```
 
 ```
-バイオリン・ビオラ・チェロ・コントラバスのチューナー＋メトロノーム。ビブラートが見えるチューナー、ドローン、録音。広告なし
+バイオリン・ビオラ・チェロ・コントラバスのチューナー＋メトロノーム。ビブラートが見えるチューナー、ドローン、録音。広告なし・オフライン
 ```
 
 ```
-小提琴、中提琴、大提琴、低音提琴的调音器与节拍器。能看见揉弦的调音器，持续音，录音。无广告，可离线
+小提琴、中提琴、大提琴、低音提琴的调音器与节拍器。能看见揉弦的调音器、持续音、录音。无广告，可离线使用
 ```
 
 ## Full description (Korean)
@@ -138,7 +138,7 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 ## Full description (Japanese)
 
 ```
-バイオリン・ビオラ・チェロ・コントラバスの練習のためのチューナーとメトロノームです。広告もアカウントもなく、インターネットなしで全機能が動きます。
+バイオリン・ビオラ・チェロ・コントラバスの練習のためのチューナーとメトロノームです。広告もアカウントもなく、インターネットなしで全機能が使えます。
 チューナーとメトロノームが同じ画面にあり、ドローンを鳴らしたまま音程を合わせたり、練習を録音してすぐ聴き返したりできます。
 
 ■ チューナー
@@ -182,12 +182,12 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 调音器和节拍器在同一个界面上。可以开着持续音练音准，也可以把练习录下来马上回听。
 
 ■ 调音器
-· 从低音提琴的 E1 (40Hz) 到小提琴的高音区
-· 标准音 A = 410–466Hz (包括巴洛克的 415)
+· 从低音提琴的 E1（40 Hz）到小提琴的高音区
+· 标准音 A = 410–466 Hz（包括巴洛克的 415）
 · 允许误差 ±5、±10、±15 音分
-· 音名 C D E，同时显示等音
+· 音名 C D E，并显示等音（如 A♯/B♭）
 · 最近几秒的音高变化会以一条线留在屏幕上
-· 持续音或 A 音响着的时候，只读你演奏的音，不受应用自身声音的影响
+· 持续音或 A 音响着的时候，也只识别你演奏的音，不受应用自身声音的影响
 
 ■ 节拍器
 · 2/4 · 3/4 · 4/4 · 6/8，四种细分，包括三连音
@@ -196,12 +196,12 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 · 录音时节拍声静音，只在屏幕上显示拍子
 
 ■ A 音与持续音
-· A 音：按乐器选高度 (小提琴、中提琴 A4，大提琴 A3，低音提琴 A2)
-· 持续音：让 12 个音中的任意一个一直响，在它之上练习音程
+· A 音：按乐器选八度（小提琴、中提琴 A4，大提琴 A3，低音提琴 A2）
+· 持续音：让 12 个音中的任意一个一直响，伴着它练音准
 
 ■ 录音与编辑
 · A-B 循环、区间放大、书签
-· 0.5–1.5 倍速 (音高不变)
+· 0.5–1.5 倍速（音高不变）
 · 只截取想要的片段，保存或分享为 WAV
 
 ■ 练习计时
@@ -232,8 +232,8 @@ Upload in this order; the first two and a half are what a phone shows under the 
 |---|---|---|---|---|---|
 | 1 | Tuner, A with the vibrato trace (A = 442 in the Korean and Japanese sets, 440 in English and Chinese) | 비브라토가 보이는 튜너 / 현악기 튜너 · 메트로놈 | Tuner that shows vibrato / Tuner & metronome for strings | ビブラートが見えるチューナー / 弦楽器のチューナー・メトロノーム | 能看见揉弦的调音器 / 弦乐调音器 · 节拍器 |
 | 2 | Tuner + metronome, a steady A (no vibrato), 4/4 with eighths running | 튜너와 메트로놈을 한 화면에 / 메트로놈 켜 둔 채 음정 확인 | Tuner and metronome / Check pitch with the click running | チューナーとメトロノームを1画面に / メトロノームを鳴らしたまま音程を確認 | 调音器和节拍器在同一屏 / 开着节拍器看音准 |
-| 3 | Full-size metronome at 96, frozen on the downbeat | 메트로놈만 크게 / 2/4~6/8 · 셋잇단 · 템포 ±5 | Metronome, full size / 2/4–6/8 · triplets · ±5 BPM | メトロノームだけを大きく / 2/4〜6/8 · 3連符 · テンポ ±5 | 只放大节拍器 / 2/4–6/8 · 三连音 · 速度 ±5 |
-| 4 | Drone C on, G (the fifth) held in tune | 드론 켜 놓고 음정 잡기 / 드론 소리는 빼고 연주하는 음만 읽어요 | Play against a drone / It hears you, not the drone | ドローンを鳴らして音程合わせ / ドローンは除き、演奏した音だけ読みます | 开着持续音练音准 / 只读你的音，不读持续音 |
+| 3 | Full-size metronome at 96, frozen on the downbeat | 메트로놈만 크게 / 2/4~6/8 · 셋잇단 · 템포 ±5 | Metronome, full size / 2/4–6/8 · triplets · ±5 BPM | メトロノームだけを大きく / 2/4〜6/8 · 3連符 · テンポ ±5 | 放大节拍器 / 2/4–6/8 · 三连音 · 速度 ±5 |
+| 4 | Drone C on, G (the fifth) held in tune | 드론 켜 놓고 음정 잡기 / 드론 소리는 빼고 연주하는 음만 읽어요 | Play against a drone / It hears you, not the drone | ドローンを鳴らして音程合わせ / ドローンの音は拾わず、演奏した音だけを読みます | 开着持续音练音准 / 只听你的音，不听持续音 |
 | 5 | Light theme | 라이트 테마도 / 광고 없음 · 오프라인 · 무료 | Light theme too / No ads · Offline · Free | ライトテーマも / 広告なし · オフライン · 無料 | 也有浅色主题 / 无广告 · 离线 · 免费 |
 
 Recording, editor and timer are described in the text but not pictured: list screens do not sell, and five images read in one swipe. The screenshot baselines in `test-assets/screens/baseline/` (780 × 1688) are for visual checks and do not meet the 2:1 rule.
