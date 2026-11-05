@@ -662,6 +662,11 @@ await scenario('settings: the bottom links — contact opens the mail app, priva
   assert.ok(geo.slice(0, 3).every(([h]) => h >= 40), '40 px: ' + geo.map(g => g[0]))
   assert.ok(Math.abs(geo[1][1] - geo[3][1]) < 1, `contact centred on the wordmark axis: ${geo[1][1]} vs ${geo[3][1]}`)
   assert.equal(await p.evaluate(() => document.getElementById('settings-links').classList.contains('stack')), false, 'Korean: one line')
+  // 점(·)은 두 글자 사이 한가운데(2.9.0: 바깥쪽만 gap 4 px 라 「문의」 쪽으로 쏠림) · 버전은 무게중심 보정으로 축보다 약 1.4 px 왼쪽(글자 상자 기준)
+  const dots = await p.evaluate(() => { const tx = e => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect() }; const [a, c, b] = ['privacy-btn', 'contact-link', 'licenses-btn'].map(id => tx(document.getElementById(id))); const [d1, d2] = [...document.querySelectorAll('#settings-links .sl-dot')].map(e => tx(e)); return [d1.left - a.right, c.left - d1.right, d2.left - c.right, b.left - d2.right] })
+  assert.ok(Math.abs(dots[0] - dots[1]) < 1 && Math.abs(dots[2] - dots[3]) < 1, 'dots midway between words: ' + dots.map(v => v.toFixed(1)))
+  const ver = await p.evaluate(() => { const r = document.createRange(); r.selectNodeContents(document.getElementById('settings-version')); const v = r.getBoundingClientRect(), w = document.getElementById('settings-wordmark').getBoundingClientRect(); return (v.left + v.width / 2) - (w.left + w.width / 2) })
+  assert.ok(ver < -1 && ver > -2, 'version optically centred (box ~1.4 px left of the axis): ' + ver.toFixed(2))
   // 개인정보처리방침 — 앱 안 화면, 한국어 절만
   await p.click('#privacy-btn'); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('privacy-page').classList.contains('open')), true)

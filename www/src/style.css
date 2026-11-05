@@ -395,12 +395,12 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
 /* 설정 페이지 */
 #settings-wordmark{display:block;width:108px;height:auto;margin:var(--s6) auto 0;fill:var(--text);} /* 한 줄 워드마크(resources/wordmark.svg 와 같은 윤곽) */ /* 글자 윤곽을 패스로 넣은 워드마크(Bricolage Grotesque): 폰트 파일을 싣지 않는다 */
-#settings-version{font-family:'DM Mono',monospace;font-size:var(--fs-xs);color:var(--text-3);text-align:center;padding-top:var(--s2);}
+#settings-version{font-family:'DM Mono',monospace;font-size:var(--fs-xs);color:var(--text-3);text-align:center;padding-top:var(--s2);transform:translateX(-.125em);} /* 눈 가운데: 글자 양 끝은 축 대칭이지만 왼쪽 v 는 키 작고 가늘고 오른쪽 0 은 빗금까지 있어 무게가 오른쪽(+1.7 px) — 무게중심을 축에 맞춘다(실측 0.2 px). ▶ 를 오른쪽으로 미는 것과 같은 광학 보정 */
 #settings-links{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-top:var(--s3);font-size:var(--fs-sm);color:var(--text-3);} /* 가운데 항목이 축, 양옆은 가운데 쪽으로 — 글자 길이가 달라도 점 간격은 좌우 같다 */
-#settings-links .sl-side{display:flex;align-items:center;gap:4px;min-width:0;}
+#settings-links .sl-side{display:flex;align-items:center;min-width:0;}
 #settings-links .sl-side:first-child{justify-content:flex-end;}
 #settings-links a,#settings-links button{background:none;border:none;font:inherit;color:var(--text-3);height:40px;display:flex;align-items:center;cursor:pointer;text-decoration:none;padding:0 8px;white-space:nowrap;} /* 40 px 탭 영역, 보이는 건 글자만 */
-#settings-links .sl-dot{color:var(--deco);}
+#settings-links .sl-dot{color:var(--deco);padding:0 2px;} /* 점 양옆 같게 — 2.9.0 은 gap 4 px 가 바깥쪽에만 붙어 점이 「문의」 쪽으로 4 px 쏠렸다(13.5 vs 9.5 px). 줄 폭은 그대로(gap 4 → padding 2+2) */
 /* 한 줄에 안 들어가면(일본어 — 세 항목이 약 380 px, 320 px 폰의 한국어·영어) 세로로 쌓는다: 가운데 정렬 3줄, 점은 숨김. 판정은 ui/about.ts 가 실측으로(stack 클래스) */
 #settings-links.stack{display:flex;flex-direction:column;align-items:center;}
 #settings-links.stack .sl-side{flex-direction:column;}
