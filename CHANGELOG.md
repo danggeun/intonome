@@ -2,6 +2,12 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.7.3] - 2026-11-05
+Metronome
+- Dragging the BPM (the big number in the expanded card, the ♩BPM in the collapsed header, the centre of the dial in the metronome-only view) now follows the speed of your finger: slowly, 6 px move one BPM so you can land on 63 or 76 exactly and a 2-3 px wobble as you lift your finger changes nothing; a fast flick keeps the old 2 px per BPM, so 40 to 200 is still one sweep. Before, 1 BPM was always 2 px, under half a millimetre, which is below what a fingertip can place. The per-step vibration (and the stronger one on every ten) is unchanged; the dial ring and the reference-pitch drum are unchanged
+
+Tests: 5 new unit tests (slow and fast rates, lift-off wobble, the ends, determinism); the e2e drags that set a BPM now drag slowly and assert the exact value
+
 ## [2.7.2] - 2026-11-02
 Settings
 - The bottom of Settings is one quiet line again: Privacy policy · Contact · Open source licenses, under the wordmark and version. The middle item sits exactly on the wordmark's axis and the two dots are the same distance from it, so the line reads as centred whatever the label lengths; the short Contact in the middle keeps both ends nearly symmetric. The About card from 2.7.1 looked like a settings control and stood out
