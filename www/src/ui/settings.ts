@@ -8,13 +8,21 @@ function bindSteps(groupId: string, onPick: (v: number) => void): void {
   qsa<HTMLElement>(`#${groupId} .step-btn`).forEach(b => on(b, 'click', () => onPick(+b.dataset.v!)))
 }
 function markSteps(groupId: string, v: number): void { qsa<HTMLElement>(`#${groupId} .step-btn`).forEach(b => setOn(b, +b.dataset.v! === v)) }
-/** 글자가 바뀌어 페이지 길이가 달라져도 그 칸이 화면에서 움직이지 않게 — 바꾸기 전 위치를 재고, 바꾼 뒤 그만큼 스크롤을 옮긴다. 맨 아래에서 페이지가 짧아지면 브라우저가 스크롤을 잘라 카드가 내려오는데, 그것까지 되돌린다(더 못 올리는 만큼은 어쩔 수 없다) */
+/** 글자가 바뀌어 페이지 길이가 달라져도 그 칸이 화면에서 움직이지 않게 — 바꾸기 전 위치를 재고, 바꾼 뒤 그만큼 스크롤을 옮긴다.
+ * 맨 아래에서 페이지가 짧아지면(일본어 → 한국어: 푸터 세 줄 → 한 줄, 설명 줄 수) 스크롤을 더 못 내려 카드가 내려오는데, 모자란 만큼 아래 여백(--settings-slack)을 잠시 두어 페이지 길이를 지킨다.
+ * 여백은 설정을 닫을 때 지우고(menu.ts), 페이지가 다시 길어지면 바닥까지 남은 만큼만 줄인다 — 어느 쪽도 화면에 보이는 변화가 없다. 한 줄 푸터 언어에 상시 여백을 두는 방법(2.9.1 min-height)은 아래가 늘어져 보여 버렸다 */
 function keepInPlace(id: string, change: () => void): void {
-  const el = q(id), before = el.getBoundingClientRect().top
+  const el = q(id), scroller = q('settings-page'), inner = q('settings-inner'), before = el.getBoundingClientRect().top
   change()
-  const scroller = q('settings-page'), moved = el.getBoundingClientRect().top - before
-  if (moved) scroller.scrollTop += moved
+  const slack = parseFloat(inner.style.getPropertyValue('--settings-slack')) || 0
+  if (slack) { const room = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop; setSlack(inner, slack - Math.min(slack, Math.max(0, room))) }
+  scroller.scrollTop += el.getBoundingClientRect().top - before
+  const rest = el.getBoundingClientRect().top - before
+  if (rest > 0.5) { setSlack(inner, (parseFloat(inner.style.getPropertyValue('--settings-slack')) || 0) + rest); scroller.scrollTop += rest }
 }
+function setSlack(inner: HTMLElement, px: number): void { if (px > 0.5) inner.style.setProperty('--settings-slack', `${Math.ceil(px)}px`); else inner.style.removeProperty('--settings-slack') }
+/** 설정을 닫을 때 — 다음에 열면 처음 길이로 */
+export function clearSettingsSlack(): void { q('settings-inner').style.removeProperty('--settings-slack') }
 const levelIndex = (levels: readonly number[], v: number) => levels.findIndex(x => Math.abs(x - v) < .001) + 1
 
 export function mountSettings(): void {

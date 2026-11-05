@@ -679,7 +679,11 @@ await scenario('settings: the bottom links — contact opens the mail app, priva
     const t2 = await p.evaluate(() => document.getElementById('lang-steps').getBoundingClientRect().top)
     assert.ok(Math.abs(t2 - t0) < 1, `and when it changes back: ${(t2 - t0).toFixed(1)} px`)
   }
-  await p.evaluate(() => { document.getElementById('settings-page').scrollTop = 0 })
+  // 한 줄 푸터는 한 줄 높이 그대로(2.9.1 의 상시 min-height 는 아래가 늘어져 보여 버림) · 잠시 둔 아래 여백은 설정을 닫으면 사라진다
+  assert.equal(await p.evaluate(() => document.getElementById('settings-links').getBoundingClientRect().height), 40, 'one-line footer is one line tall')
+  await p.click('#settings-back-btn'); await sleep(p, 400)
+  assert.equal(await p.evaluate(() => document.getElementById('settings-inner').style.getPropertyValue('--settings-slack')), '', 'slack cleared when settings close')
+  await p.click('#settings-hdr-btn'); await sleep(p, 300)
   // 개인정보처리방침 — 앱 안 화면, 한국어 절만
   await p.click('#privacy-btn'); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('privacy-page').classList.contains('open')), true)
