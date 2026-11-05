@@ -427,6 +427,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .step-btn{flex:1;height:var(--h-seg);background:transparent;border:none;border-right:1px solid var(--line);color:var(--text-2);font-family:inherit;font-size:var(--fs-base);font-weight:var(--fw-md);cursor:pointer;text-align:center;transition:background .1s,color .1s;position:relative;}
 .step-btn:last-child{border-right:none;}
 .step-btn.on{background:var(--sel);color:var(--text);font-weight:var(--fw-b);}
+#lang-steps .step-btn{font-size:var(--fs-md);line-height:1.15;padding:0 2px;} /* 언어 5칸 — 네 글자(简体中文)가 360 px 폰의 56 px 칸에 들어가게 한 단계 작게. 320 px 에서는 두 줄로 꺾인다 */
 #cents-steps .step-btn,#notenames-steps .step-btn[data-v="1"]{font-family:'DM Mono',monospace;} /* 모노는 숫자·음이름에만 */
 
 /* 토스트 — 떠 있는 면 (배경에 묻히지 않게) */
