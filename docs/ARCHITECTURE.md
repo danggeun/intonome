@@ -15,7 +15,7 @@ www/src/
   platform/    Web / Capacitor branches (status bar, wake lock, full screen, file saving, back button)
   core/        Pure logic, no browser APIs, all unit-tested:
                pitch/(fft, yinFast, spectrum, tracker, readout, analyzer) · playing/detector · metro/(sequencer, arrival, sweep, dial, clickPitch, card)
-               i18n/(ko, en), drone, note, wav, peaks, format, recPolicy, hist, trace, hzReadout, softclip, playbackGain, container,
+               i18n/(ko, en, ja, zh, zhHant), drone, note, wav, peaks, format, recPolicy, hist, trace, hzReadout, softclip, playbackGain, container,
                notice, micLease, editRange, tourPlace, stretch, mono, yin (reference only, not bundled)
 ```
 
@@ -76,11 +76,11 @@ Changing Capacitor's `androidScheme` or `appId` changes the origin, and the data
 
 ## 4. Language and theme
 
-- On-screen text lives in `core/i18n/ko.ts` (source) and `en.ts`; the type system requires the same keys in both. Static text in `index.html` carries `data-t` / `data-t-aria` keys that `ui/lang.ts` fills in; dynamic text calls `t(key)`.
-- Korean is the default. In English, note names are always C D E and the note-name setting is hidden.
+- On-screen text lives in `core/i18n/ko.ts` (source), `en.ts`, `ja.ts`, `zh.ts` (Simplified) and `zhHant.ts` (Traditional); the type system requires the same keys in all of them. `Lang` is `ko | en | ja | zh-Hans | zh-Hant`; `LANGS` fixes the order of the Settings buttons. Static text in `index.html` carries `data-t` / `data-t-aria` keys that `ui/lang.ts` fills in; dynamic text calls `t(key)`.
+- First launch follows the phone's language (`persist/settings.ts firstRunLang`; Chinese splits into Traditional for Hant/TW/HK/MO, Simplified otherwise); anything else is English. Korean and Japanese offer solfège note names (도레미 / ドレミ) or C D E; English and both Chinese are always C D E and hide that setting (`lettersOnly`). The privacy policy page picks its language's section of PRIVACY.md.
 - Colors are tokens with a dark set (`:root`) and a light set (`[data-theme=light]`). The app starts in light: `<html>` carries `data-theme="light"` and the inline script in `index.html` removes it before the first paint when dark is saved.
 - A small inline script in `index.html` applies the saved theme and language before the first paint.
-- `scripts/i18n.test.mjs` fails if Korean text appears in code outside the dictionary. The English e2e scenario checks every screen for leftover Korean and clipped text.
+- `scripts/i18n.test.mjs` fails if Korean text appears in code outside the dictionary, if any dictionary misses a key, or if kana leaks into English or Chinese. The English, Japanese and Chinese e2e scenarios check every screen for leftover text from another language and for clipped text.
 
 ## 5. Platform branches
 

@@ -20,7 +20,7 @@ Web (PWA) and Android. Works offline; audio never leaves the device.
 - **Recorder and editor**: waveform, A-B loop, bookmarks, 0.5–1.5× speed, save a section as WAV. Recordings are recovered if the app is killed.
 - **Practice timer**: counts only the time you actually played, and shows in the header while it runs.
 - A short guide on a new install lights the tuner, metronome and buttons one at a time, with the hidden gestures tried in place; replay it from Settings.
-- Dark and light themes, dark by default. Starts in Korean on a phone set to Korean and in English otherwise; switch any time in Settings.
+- Dark and light themes, dark by default. Korean, English, Japanese and Chinese (Simplified and Traditional): starts in the phone's language, switch any time in Settings.
 
 ## Run
 

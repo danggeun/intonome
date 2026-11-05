@@ -134,7 +134,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Haptic feedback: dragging the dial, the BPM or the A = drum taps once per step (8 ms), firmer on every ten (16 ms), none while recording, none when Settings › Haptic feedback is off (kept after reload)
 - [D] Haptic ticks feel like a detent, not a buzz, when spinning the dial fast; the tuner doesn't read them while dragging with the mic on; on an iPhone home-screen app (iOS 18) the ticks are felt, otherwise the row is hidden or silent
 - [A] First launch: dark even with the phone in light mode; English on a phone whose first language isn't Korean (applied before the first paint, Korean source text hidden until English is in), Korean on a Korean phone (from the first paint, note names 도 레 미); then Settings › Appearance and Language; status bar follows; a language chosen in Settings is kept on a Korean phone too
-- [A] Language: follows the phone's first language on first launch (Korean → Korean, anything else → English), then Settings › Language (note names then default to 도 레 미); no Korean left on any screen in English, nothing clipped, survives a reload
+- [A] Language: follows the phone's first language on first launch (Korean, Japanese, Chinese Simplified/Traditional → that language, anything else → English), then Settings › Language (five options; note names default to 도 레 미 in Korean, ドレミ in Japanese); no text from another language left on any screen, nothing clipped, survives a reload; the privacy policy opens in that language
 - [A] Header LED row fits with a three-digit BPM on 360 px phones
 - [D] Readable from 60–90 cm; REC, size and drum usable while holding a bow
 - [D] Larger system font sizes on the tuner card layout
@@ -148,6 +148,6 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Keep screen on on/off (Wake Lock)
 - [A] Playing detection: noise doesn't count; sustained string tones count after about 0.14 s (six frames) even when the first frames read wild (a click, a harmonic); a long stretch of playing followed by silence turns off within 0.25 s (unit tests). Talk nearby mostly counts as sound — the label says sound, not playing
 - [A] Practice time with the metronome on: counts while the note sounds and stops when it stops, at 16ths 80–100, triplets 100 and 8ths 150 bpm; clicks alone never count (unit tests). Playback from the list doesn't count
-- [A] Note names 도레미 / C D E in Korean (the other system shown small); always C D E in English
+- [A] Note names 도레미 / C D E in Korean and ドレミ / C D E in Japanese (the other system shown small); always C D E in English and Chinese
 - [A] Recordings kept 30 days / forever; version shown at the bottom of Settings; below it Privacy policy (external, new window on the web), Open source licenses (in-app page with the OFL and MIT texts; closes with X, Esc, the edge swipe and the Android back button) and Contact (mail app). [D] In the Android app the policy opens in the browser and Contact opens the mail app
 - [A] Landscape on small phones (height ≤ 500 px) shows a notice

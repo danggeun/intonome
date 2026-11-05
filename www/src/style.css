@@ -47,7 +47,7 @@
 }
 /* 라이트 — 같은 위계를 밝은 면에 옮긴다. 면은 bg < surface(흰 카드), 선택 면(surface-2)은 한 단 어둡게. 글자·조작 테두리·액센트는 bg·surface 양쪽에서 AA */
 :root[data-theme="light"]{
-  color-scheme:light;
+  color-scheme:only light; /* 폰이 다크여도 브라우저(크롬 자동 다크·Samsung Internet 웹사이트 다크)가 라이트 화면을 억지로 뒤집지 않게 — 캔버스만 흰 채 나머지가 어두워졌다(S26 웹앱, 피드백 #19) */
   --bg:#eef0f3;--surface:#ffffff;--surface-2:#e7eaef;
   --line:#d8dce2;--line-strong:#bcc3cc;--line-ctl:#7b8490;
   --text:#1b1f25;--text-2:#49515b;--text-3:#59616c;--deco:#98a0aa;--text-rgb:27,31,37;
