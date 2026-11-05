@@ -6,6 +6,9 @@ export const ENHARMONIC: Readonly<Partial<Record<KrNote, string>>> = { '도♯':
 /** 일본어 계이름(가타카나) — 일본 음악 교육의 표기. 이명동음도 같은 꼴 */
 export const JA_SOLFEGE = ['ド', 'ド♯', 'レ', 'レ♯', 'ミ', 'ファ', 'ファ♯', 'ソ', 'ソ♯', 'ラ', 'ラ♯', 'シ'] as const
 const JA_ENHARMONIC: Readonly<Record<string, string>> = { 'ド♯': 'レ♭', 'レ♯': 'ミ♭', 'ファ♯': 'ソ♭', 'ソ♯': 'ラ♭', 'ラ♯': 'シ♭' }
+/** 스페인어 계이름(고정도) — 스페인·중남미 현악 교육의 표준 표기. 이명동음도 같은 꼴 */
+export const ES_SOLFEGE = ['Do', 'Do♯', 'Re', 'Re♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯', 'La', 'La♯', 'Si'] as const
+const ES_ENHARMONIC: Readonly<Record<string, string>> = { 'Do♯': 'Re♭', 'Re♯': 'Mi♭', 'Fa♯': 'Sol♭', 'Sol♯': 'La♭', 'La♯': 'Si♭' }
 /** 영문 음이름 (설정 noteNames 로 전환) */
 export const EN = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'] as const
 const EN_ENHARMONIC: Readonly<Record<string, string>> = { 'C♯': 'D♭', 'D♯': 'E♭', 'F♯': 'G♭', 'G♯': 'A♭', 'A♯': 'B♭' }
@@ -13,8 +16,8 @@ import { lettersOnly, type Lang } from './i18n/index.ts'
 /** 'ko' = 그 언어의 계이름(한국어 도레미 · 일본어 ドレミ), 'en' = C D E. 저장값(설정 v3)이라 이름은 그대로 둔다 */
 export type NoteNames = 'ko' | 'en'
 /** 그 언어의 계이름 열 — 영어·중국어는 계이름이 없어 C D E */
-export function solfegeOf(lang: Lang): readonly string[] { return lang === 'ko' ? KR : lang === 'ja' ? JA_SOLFEGE : EN }
-const solfegeEnharmonic = (lang: Lang, name: string): string | undefined => lang === 'ko' ? ENHARMONIC[name as KrNote] : lang === 'ja' ? JA_ENHARMONIC[name] : EN_ENHARMONIC[name]
+export function solfegeOf(lang: Lang): readonly string[] { return lang === 'ko' ? KR : lang === 'ja' ? JA_SOLFEGE : lang === 'es' ? ES_SOLFEGE : EN }
+const solfegeEnharmonic = (lang: Lang, name: string): string | undefined => lang === 'ko' ? ENHARMONIC[name as KrNote] : lang === 'ja' ? JA_ENHARMONIC[name] : lang === 'es' ? ES_ENHARMONIC[name] : EN_ENHARMONIC[name]
 /** 표시용 이름: 선택한 체계의 이름 + 보조 줄(다른 체계의 이름, 이명동음은 '/' 로. 예: 라♯→A♯/B♭, 최대 5글자) */
 export function noteLabel(midi: number, system: NoteNames, lang: Lang = 'ko'): { name: string; secondary: string } {
   const i = ((midi % 12) + 12) % 12, sol = solfegeOf(lang)[i]!, en = EN[i]!

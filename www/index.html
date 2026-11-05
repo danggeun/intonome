@@ -19,7 +19,7 @@
 <!-- "이 사이트는 라이트·다크를 스스로 지원한다" 는 선언 — 크롬 자동 다크·Samsung Internet 웹사이트 다크 모드는 이런 페이지에는 강제 다크를 걸지 않고 사이트 테마에 맡긴다(2.8.0 의 CSS only light 만으로는 Samsung Internet 이 캔버스만 희게 남긴 채 나머지를 뒤집었다 — 실기기). 실제 색은 설정의 테마(data-theme)가 정하고, 이 메타는 그 선언만 한다 -->
 <meta name="color-scheme" content="light dark">
 <!-- 저장된 테마·언어를 첫 그리기 전에 적용한다. 기본은 영어 · 다크(html 에 박혀 있음, 한국어 원문은 i18n-pending 으로 가렸다가 ui/lang.ts 가 영어로 바꾼 뒤 푼다). 한국어 · 라이트를 저장했으면, 저장에 lang 이 없으면(새 설치·2.4.0 이전 설치) 폰의 첫 번째 언어(ko·ja·zh, persist/settings.ts firstRunLang 과 같은 규칙)를 html lang 에 둔다 — 글꼴 선택(style.css)에 쓰인다. 문구 교체는 ui/lang.ts -->
-<script>try{var r=null;try{r=localStorage.getItem('intonome_settings_v1')}catch(e){}var s=JSON.parse(r||'{}'),d=document.documentElement,n=navigator.languages&&navigator.languages[0]||navigator.language||'';var L=['ko','en','ja','zh-Hans','zh-Hant'],g=s.lang;if(L.indexOf(g)<0){var m=/^(ko|ja|zh)(-|$)/i.exec(n);g=m?m[1].toLowerCase():'en';if(g==='zh')g=/hant|-(tw|hk|mo)(-|$)/i.test(n)?'zh-Hant':'zh-Hans'}d.lang=g;if(g==='ko')d.classList.remove('i18n-pending');if(s.theme==='light'){d.dataset.theme='light';document.querySelector('meta[name="theme-color"]').content='#eef0f3';document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content='default'}}catch(e){}</script>
+<script>try{var r=null;try{r=localStorage.getItem('intonome_settings_v1')}catch(e){}var s=JSON.parse(r||'{}'),d=document.documentElement,n=navigator.languages&&navigator.languages[0]||navigator.language||'';var L=['ko','en','ja','zh-Hans','zh-Hant','es'],g=s.lang;if(L.indexOf(g)<0){var m=/^(ko|ja|zh|es)(-|$)/i.exec(n);g=m?m[1].toLowerCase():'en';if(g==='zh')g=/hant|-(tw|hk|mo)(-|$)/i.test(n)?'zh-Hant':'zh-Hans'}d.lang=g;if(g==='ko')d.classList.remove('i18n-pending');if(s.theme==='light'){d.dataset.theme='light';document.querySelector('meta[name="theme-color"]').content='#eef0f3';document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content='default'}}catch(e){}</script>
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png"> <!-- 아이폰 홈 화면 60pt × 3 — 192 를 주면 다시 줄여 흐려진다 -->
 <!-- 아이폰 홈 화면 웹앱 스플래시: 화면 크기·배율이 딱 맞는 그림만 쓴다. 앱 기본이 다크라 다크 한 벌. scripts/gen-splash.mjs 가 만들고 splash.test.mjs 가 맞춰 본다 -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1320x2868-dark.png">
@@ -243,6 +243,7 @@
         <button class="step-btn" data-v="2" lang="ja">日本語</button>
         <button class="step-btn" data-v="3" lang="zh-Hans">简体中文</button>
         <button class="step-btn" data-v="4" lang="zh-Hant">繁體中文</button>
+        <button class="step-btn" data-v="5" lang="es">Español</button>
       </div>
     </div>
 

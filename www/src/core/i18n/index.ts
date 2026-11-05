@@ -1,18 +1,19 @@
-/** 화면 언어. 문구는 ko.ts(원본)·en.ts·ja.ts·zh.ts(간체)·zhHant.ts(번체), 고르는 건 설정 lang */
+/** 화면 언어. 문구는 ko.ts(원본)·en.ts·ja.ts·zh.ts(간체)·zhHant.ts(번체)·es.ts(스페인어), 고르는 건 설정 lang */
 import { KO, type TKey } from './ko.ts'
 import { EN } from './en.ts'
 import { JA } from './ja.ts'
 import { ZH } from './zh.ts'
 import { ZH_HANT } from './zhHant.ts'
+import { ES } from './es.ts'
 
-export type Lang = 'ko' | 'en' | 'ja' | 'zh-Hans' | 'zh-Hant'
-export const LANGS: readonly Lang[] = ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant'] // 설정 「언어」 버튼의 순서(data-v = 색인)
+export type Lang = 'ko' | 'en' | 'ja' | 'zh-Hans' | 'zh-Hant' | 'es'
+export const LANGS: readonly Lang[] = ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant', 'es'] // 설정 「언어」 버튼의 순서(data-v = 색인)
 export const isLang = (v: unknown): v is Lang => (LANGS as readonly unknown[]).includes(v)
-/** 음이름이 C D E 하나뿐인 언어 — 설정의 「음이름 표기」 줄을 숨긴다. 한국어·일본어는 계이름(도레미·ドレミ)과 C D E 중 고른다 */
+/** 음이름이 C D E 하나뿐인 언어 — 설정의 「음이름 표기」 줄을 숨긴다. 한국어·일본어·스페인어는 계이름(도레미·ドレミ·Do Re Mi)과 C D E 중 고른다 */
 export const lettersOnly = (l: Lang): boolean => l === 'en' || l.startsWith('zh')
 export type { TKey }
 
-const DICT: Record<Lang, Record<TKey, string>> = { ko: KO, en: EN, ja: JA, 'zh-Hans': ZH, 'zh-Hant': ZH_HANT }
+const DICT: Record<Lang, Record<TKey, string>> = { ko: KO, en: EN, ja: JA, 'zh-Hans': ZH, 'zh-Hant': ZH_HANT, es: ES }
 let cur: Lang = 'ko'
 
 export function setLang(l: Lang): void { cur = l }

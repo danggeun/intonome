@@ -124,17 +124,24 @@ const CAPTIONS = {
     ['開著持續音練音準', '只聽你的音，不聽持續音'],
     ['也有淺色主題', '無廣告 · 離線 · 免費'],
   ],
+  es: [
+    ['Un afinador que<br>muestra el vibrato', 'Afinador y metrónomo para cuerdas'],
+    ['Afinador y metrónomo<br>juntos', 'Mira la afinación con el click sonando'],
+    ['Metrónomo a<br>tamaño completo', '2/4–6/8 · tresillos · ±5 BPM'],
+    ['Toca sobre<br>una nota pedal', 'Te escucha a ti, no a la nota pedal'],
+    ['También en tema claro', 'Sin anuncios · Sin conexión · Gratis'],
+  ],
 }
-const TAG = { ko: '현악기 연습을 위한 튜너 · 메트로놈 · 드론 · 녹음', en: 'Tuner, metronome, drone and recorder for string players', ja: '弦楽器の練習のためのチューナー · メトロノーム · ドローン · 録音', 'zh-Hans': '为弦乐练习设计的调音器 · 节拍器 · 持续音 · 录音', 'zh-Hant': '為弦樂練習設計的調音器 · 節拍器 · 持續音 · 錄音' }
-const REF = { ko: 442, en: 440, ja: 442, 'zh-Hans': 440, 'zh-Hant': 442 } // 일본 오케스트라도 442 가 흔하다, 중국은 440
-const FONT = { ko: "'Noto Sans CJK KR','Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif", en: "system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif", ja: "'Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','Yu Gothic',system-ui,sans-serif", 'zh-Hans': "'Noto Sans CJK SC','Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif", 'zh-Hant': "'Noto Sans CJK TC','Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif" }
-const LANGS = ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant']
-const TAG_OF = { ko: 'ko', en: 'en', ja: 'ja', 'zh-Hans': 'zh', 'zh-Hant': 'zht' } // 파일 이름 앞머리
+const TAG = { ko: '현악기 연습을 위한 튜너 · 메트로놈 · 드론 · 녹음', en: 'Tuner, metronome, drone and recorder for string players', ja: '弦楽器の練習のためのチューナー · メトロノーム · ドローン · 録音', 'zh-Hans': '为弦乐练习设计的调音器 · 节拍器 · 持续音 · 录音', 'zh-Hant': '為弦樂練習設計的調音器 · 節拍器 · 持續音 · 錄音', es: 'Afinador · metrónomo · nota pedal · grabadora para cuerdas' }
+const REF = { ko: 442, en: 440, ja: 442, 'zh-Hans': 440, 'zh-Hant': 442, es: 442 } // 스페인·중남미 오케스트라도 442 가 흔하다 // 일본 오케스트라도 442 가 흔하다, 중국은 440
+const FONT = { ko: "'Noto Sans CJK KR','Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif", en: "system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif", ja: "'Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','Yu Gothic',system-ui,sans-serif", 'zh-Hans': "'Noto Sans CJK SC','Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif", 'zh-Hant': "'Noto Sans CJK TC','Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif", es: "system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif" }
+const LANGS = ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant', 'es']
+const TAG_OF = { ko: 'ko', en: 'en', ja: 'ja', 'zh-Hans': 'zh', 'zh-Hant': 'zht', es: 'es' } // 파일 이름 앞머리
 
 async function page(browser, lang, theme, extra = {}) {
   const ctx = await browser.newContext({ viewport: VIEW, deviceScaleFactor: SCALE, isMobile: true, hasTouch: true, permissions: ['microphone'] })
   // 처음 안내는 저장된 설정이 있으면 뜨지 않는다(업데이트 설치와 같은 조건)
-  await ctx.addInitScript(s => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify(s)) }, { v: 3, lang, theme, noteNames: lang, refHz: REF[lang], ...extra })
+  await ctx.addInitScript(s => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify(s)) }, { v: 3, lang, theme, noteNames: lang === 'en' ? 'en' : 'ko', refHz: REF[lang], ...extra })
   const p = await ctx.newPage()
   await p.goto(`http://localhost:${PORT}/`); await p.evaluate(() => document.fonts.ready); await sleep(p, 1200)
   return p
@@ -173,7 +180,7 @@ async function compose(lang, idx, shotBuf, name) {
   const p = await composer.newPage()
   await p.setContent(`<!doctype html><meta charset="utf-8"><style>
     html,body{margin:0;width:360px;height:720px;overflow:hidden;background:radial-gradient(120% 60% at 50% 0%,#2a3040,#14161b);font-family:${FONT[lang]};color:#fff;text-align:center}
-    h1{font-size:${lang === 'en' ? 25 : 27}px;font-weight:700;margin:36px 20px 8px;letter-spacing:-.3px;line-height:1.3}
+    h1{font-size:${lang === 'en' || lang === 'es' ? 25 : 27}px;font-weight:700;margin:36px 20px 8px;letter-spacing:-.3px;line-height:1.3}
     p{margin:0 20px;font-size:14px;color:#aeb4bd;line-height:1.4}
     /* 폰 틀은 글 아래 흐름에, 통째로 보이게(위 36 · 아래 약 30 px 여백). 틀 안은 앱 화면 비율(1:2) 그대로라 빈 데가 없다 */
     .ph{margin:18px auto 0;width:280px;border-radius:32px;border:6px solid #353b48;background:#353b48;overflow:hidden;box-shadow:0 18px 44px #0008}
@@ -219,7 +226,7 @@ for (const lang of LANGS) {
   // 4. 드론 도 위에서 스케일 — 솔(완전5도)이 맞은 순간. 드론이 울려도 연주하는 음만 읽는다
   b = await launch(sig.d); p = await page(b, lang, 'dark')
   await p.click('#drone-btn'); await p.click('.drone-note-btn[data-pc="0"]')
-  await waitNote(p, { ko: '솔', ja: 'ソ' }[lang] ?? 'G'); await sleep(p, 4500); await compose(lang, 3, await rawTrace(p), n('4_drone'))
+  await waitNote(p, { ko: '솔', ja: 'ソ', es: 'Sol' }[lang] ?? 'G'); await sleep(p, 4500); await compose(lang, 3, await rawTrace(p), n('4_drone'))
   await b.close()
   // 5. 라이트 테마 — 밝은 곳에서
   b = await launch(sig.a); p = await page(b, lang, 'light')

@@ -863,30 +863,31 @@ await scenario('first launch: English and dark, even with the phone in light mod
 }, { colorScheme: 'light', fresh: true })
 // 한국어 폰의 첫 실행: 첫 그리기부터 한국어(음이름 도레미), 테마는 그대로 다크. 설정에서 영어로 바꾸면 저장되어 폰이 한국어여도 영어로 연다
 // 일본어·중국어: 영어 시나리오의 짧은 판 — 화면마다 한국어(와 중국어엔 가나)가 없고 넘침이 없다. 계이름은 일본어 ドレミ(기본)·중국어 C D E 만
-for (const [v, lang, expectNote, foreign, title] of [['2', 'ja', 'ラ', /[가-힣]/, '設定'], ['3', 'zh-Hans', 'A', /[가-힣぀-ヿ]/, '设置'], ['4', 'zh-Hant', 'A', /[가-힣぀-ヿ]/, '設定']]) await scenario(`i18n: ${lang} — no Korean${lang.startsWith('zh') ? ' or kana' : ''} on any screen, nothing clipped, note names ${expectNote === 'A' ? 'C D E only' : 'in solfège with C D E small'}, survives reload`, 'violin_A4.wav', async p => {
+for (const [v, lang, expectNote, foreign, title] of [['2', 'ja', 'ラ', /[가-힣]/, '設定'], ['3', 'zh-Hans', 'A', /[가-힣぀-ヿ]/, '设置'], ['4', 'zh-Hant', 'A', /[가-힣぀-ヿ]/, '設定'], ['5', 'es', 'La', /[가-힣぀-ヿ\u4e00-\u9fff]/, 'Ajustes']]) await scenario(`i18n: ${lang} — no Korean${lang.startsWith('zh') ? ' or kana' : lang === 'es' ? ', kana or CJK' : ''} on any screen, nothing clipped, note names ${expectNote === 'A' ? 'C D E only' : 'in solfège with C D E small'}, survives reload`, 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#settings-hdr-btn'); await sleep(p, 300)
   await p.click(`#lang-steps .step-btn[data-v="${v}"]`); await sleep(p, 200)
   assert.equal(await p.evaluate(() => document.documentElement.lang), lang)
   assert.equal(await p.evaluate(() => document.querySelector('.settings-title').textContent), title)
-  assert.equal(await p.evaluate(() => document.getElementById('notenames-row').hidden), lang !== 'ja', 'note-name row only where there is a choice')
+  assert.equal(await p.evaluate(() => document.getElementById('notenames-row').hidden), !['ja', 'es'].includes(lang), 'note-name row only where there is a choice')
   const check = async where => { const r = await screenText(p, foreign.source); assert.deepEqual(r.korean, [], `foreign text on ${where}: ${JSON.stringify(r.korean)}`); assert.deepEqual(r.overflow, [], `clipped text on ${where}: ${JSON.stringify(r.overflow)}`) }
   await check('settings')
   // 맨 아래 세 링크가 화면 안에 — 일본어는 한 줄에 안 들어가 세로로 쌓인다(ui/about.ts layoutLinks)
   const foot = await p.evaluate(() => ({ stack: document.getElementById('settings-links').classList.contains('stack'), out: [...document.querySelectorAll('#settings-links a, #settings-links button')].filter(e => { const r = e.getBoundingClientRect(); return r.left < 0 || r.right > innerWidth }).map(e => e.textContent) }))
-  assert.deepEqual(foot.out, [], 'footer links inside the screen'); assert.equal(foot.stack, lang === 'ja', 'Japanese stacks, Chinese stays on one line (English stacks too — checked in the English scenario)')
+  assert.deepEqual(foot.out, [], 'footer links inside the screen'); assert.equal(foot.stack, lang === 'ja' || lang === 'es', 'Japanese and Spanish stack, Chinese stays on one line (English stacks too — checked in the English scenario)')
   await p.click('#licenses-btn'); await sleep(p, 300); await check('licenses'); await p.click('#licenses-close-btn'); await sleep(p, 300)
   await p.click('#privacy-btn'); await sleep(p, 300); await check('privacy policy')
-  assert.ok((await p.evaluate(() => document.getElementById('privacy-text').textContent)).includes({ ja: 'マイク', 'zh-Hans': '麦克风', 'zh-Hant': '麥克風' }[lang]), 'policy in that language')
+  assert.ok((await p.evaluate(() => document.getElementById('privacy-text').textContent)).includes({ ja: 'マイク', 'zh-Hans': '麦克风', 'zh-Hant': '麥克風', es: 'Micrófono' }[lang]), 'policy in that language')
   await p.click('#privacy-close-btn'); await sleep(p, 300)
   await p.click('#settings-back-btn'); await sleep(p, 400)
   await waitNote(p, t => t.note === expectNote); await check('tuner')
-  assert.equal(await p.evaluate(() => document.getElementById('tuner-enharmonic').textContent), lang === 'ja' ? 'A' : '', 'secondary line: C D E small under ドレミ; nothing in Chinese')
+  assert.equal(await p.evaluate(() => document.getElementById('tuner-enharmonic').textContent), lang === 'ja' || lang === 'es' ? 'A' : '', 'secondary line: C D E small under ドレミ / Do Re Mi; nothing in Chinese')
+  if (lang === 'es') assert.ok(await p.evaluate(() => { const n = document.getElementById('tuner-note'), c = document.getElementById('tuner-card').getBoundingClientRect(), o = document.getElementById('tuner-oct').getBoundingClientRect(); return n.textContent === 'La' && o.right <= c.right }), 'Spanish: La with the octave inside the card')
   await sizeTap(p); await check('metronome expanded')
   await swipeUp(p); await check('metronome full'); await sizeTap(p)
   await p.click('#rec-hdr-btn'); await sleep(p, 1500); await p.click('#rec-hdr-btn'); await sleep(p, 900)
   await p.click('#menu-btn'); await sleep(p, 400); await check('menu with a recording')
-  assert.equal(await p.evaluate(() => document.querySelector('.drone-note-btn[data-pc="0"]').textContent), lang === 'ja' ? 'ド' : 'C')
+  assert.equal(await p.evaluate(() => document.querySelector('.drone-note-btn[data-pc="0"]').textContent), { ja: 'ド', es: 'Do' }[lang] ?? 'C')
   await p.click('[data-action="edit"][data-idx="0"]'); await sleep(p, 500); await check('editor')
   await p.click('#ed-a-btn'); await sleep(p, 100); await p.click('#ed-zoom-btn'); await sleep(p, 200); await check('editor toast')
   await p.click('#ed-back-btn'); await sleep(p, 500)
@@ -905,6 +906,10 @@ await scenario('first launch on a Chinese phone: Chinese from the first paint, l
   await p.goto(URL_); await sleep(p, 600)
   assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, hidden: document.getElementById('notenames-row').hidden, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh-Hans', langOn: '3', hidden: true, label: '语言' })
 }, { fresh: true, locale: 'zh-CN' })
+await scenario('first launch on a Spanish-language phone: Spanish, solfège note names', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 600)
+  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, names: document.querySelector('#notenames-steps .step-btn.on').textContent, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'es', langOn: '5', names: 'Do Re Mi', label: 'Idioma' })
+}, { fresh: true, locale: 'es-MX' })
 await scenario('first launch on a Taiwanese phone: Traditional Chinese', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 600)
   assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh-Hant', langOn: '4', label: '語言' })

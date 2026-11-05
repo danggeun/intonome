@@ -1,6 +1,6 @@
 # Intonome Privacy Policy
 
-Last updated: 2026-11-05 · [한국어](#intonome-개인정보처리방침) · [日本語](#intonome-プライバシーポリシー) · [简体中文](#intonome-隐私政策) · [繁體中文](#intonome-隱私權政策)
+Last updated: 2026-11-05 · [한국어](#intonome-개인정보처리방침) · [日本語](#intonome-プライバシーポリシー) · [简体中文](#intonome-隐私政策) · [繁體中文](#intonome-隱私權政策) · [Español](#política-de-privacidad-de-intonome)
 
 ## Summary
 
@@ -263,5 +263,59 @@ App 不收集個人資訊，因此任何年齡都可以安全使用。
 本政策的變更會記錄在本文件和程式碼儲存庫的提交歷史中。
 
 ## 聯絡我們
+
+<https://github.com/danggeun/intonome/issues>
+
+---
+
+# Política de privacidad de Intonome
+
+Última actualización: 2026-11-05
+
+## Resumen
+
+**Intonome no recopila ningún dato personal y no envía nada fuera de tu dispositivo.** La entrada del micrófono y las grabaciones se procesan y se guardan solo en el dispositivo que usas.
+
+## Micrófono
+
+La app necesita permiso del micrófono para analizar la altura del sonido y medir el tiempo de práctica.
+
+- La entrada del micrófono se **analiza en tiempo real y se descarta de inmediato**. No se guarda nada a menos que toques grabar.
+- Todo el análisis ocurre en el dispositivo. No se usa ningún servicio de reconocimiento de voz ni API externa.
+- La app libera el micrófono cuando pasa a segundo plano y lo cierra tras 15 minutos sin sonido.
+
+## Grabaciones
+
+Los archivos que creas con el botón de grabar se guardan solo en el almacenamiento del navegador (IndexedDB) o en el almacenamiento de la app en tu dispositivo.
+
+- Nunca se suben. No podemos verlos.
+- De forma predeterminada se eliminan a los 30 días; puedes desactivarlo en Ajustes. Puedes excluir grabaciones concretas con «Conservar».
+- Un archivo sale de la app solo cuando eliges «Descargar» o «Compartir», y tú decides a dónde va.
+
+## Ajustes
+
+Ajustes como la nota de referencia, el compás y la tolerancia se guardan en el almacenamiento local del dispositivo. No hay cuenta ni inicio de sesión.
+
+## Lo que no recopilamos
+
+**No recopilamos** nombres, direcciones de correo, números de teléfono, ubicación, contactos, identificadores del dispositivo, historial de uso ni registros de fallos. La app no incluye herramientas de analítica (como Google Analytics), SDK de publicidad ni píxeles de seguimiento.
+
+## Red
+
+La app web descarga solo sus propios archivos (HTML, scripts, fuentes, iconos). Todos los recursos, fuentes incluidas, se sirven desde el mismo dominio, así que no hay peticiones a otros servidores; comprobaciones automáticas lo confirman. La app de Android funciona con los archivos instalados, así que todo funciona sin conexión.
+
+## Menores
+
+La app no recopila datos personales, así que es segura a cualquier edad.
+
+## Eliminar datos
+
+Puedes eliminar grabaciones una a una en la app. Para borrarlo todo, elimina los datos del sitio en tu navegador (web) o desinstala la app o usa Ajustes › Aplicaciones › Intonome › Almacenamiento › Borrar datos (Android). No queda ninguna copia de nuestro lado.
+
+## Cambios
+
+Los cambios de esta política se registran en este archivo y en el historial del repositorio.
+
+## Contacto
 
 <https://github.com/danggeun/intonome/issues>

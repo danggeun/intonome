@@ -99,6 +99,9 @@ describe('first run language (nothing saved yet)', () => {
     expect(firstRunLang(['zh-TW'], 'zh-TW')).toBe('zh-Hant')
     expect(firstRunLang(['zh-HK'], 'zh-HK')).toBe('zh-Hant')
     expect(firstRunLang(['zh-Hant'], 'zh-Hant')).toBe('zh-Hant')
+    expect(firstRunLang(['es-MX', 'en'], 'es-MX')).toBe('es')
+    expect(firstRunLang(['es'], 'es')).toBe('es')
+    expect(firstRunLang(['et-EE'], 'et-EE')).toBe('en') // 에스토니아어 — 겉보기만 es
     expect(firstRunLang(['jа'], 'jа')).toBe('en') // 키릴 'а' — 겉보기만 ja
     expect(firstRunLang(undefined, 'ko-KR')).toBe('ko')
     expect(firstRunLang(['en-US', 'ko-KR'], 'en-US'), 'the first language decides').toBe('en')

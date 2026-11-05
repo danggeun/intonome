@@ -179,7 +179,7 @@ function announce(text: string): void {
 function renderNote(midi: number, readCents: number, inTune: boolean, hz: number, cents: number): void {
   const { name, secondary } = noteLabel(midi, settingsStore.get().noteNames, getLang())
   const base = name.replace('♯', ''), acc = name.includes('♯') ? '♯' : ''
-  setText('tuner-note', base); setClass('tuner-note', inTune ? 'tune' : '')
+  setText('tuner-note', base); setClass('tuner-note', [inTune ? 'tune' : '', base.length >= 3 ? 'long' : ''].filter(Boolean).join(' '))
   setText('tuner-acc', acc); q('tuner-acc').classList.toggle('tune', inTune)
   setText('tuner-oct', String(octaveOf(midi)))
   setText('tuner-enharmonic', secondary)

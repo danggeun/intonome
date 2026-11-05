@@ -20,8 +20,8 @@ function openDoc(d: Doc): void {
   page(d).classList.add('open'); page(d).scrollTop = 0
 }
 
-/** PRIVACY.md(vite define `__PRIVACY_MD__`; `---` 로 나뉜 영어 → 한국어 → 일본어 → 중국어 간체 → 번체 절)를 한 언어만 골라 HTML 로. 마크다운 중 그 파일이 쓰는 것만: `#`·`##` 제목, `-` 목록, `**굵게**`, `<주소>`, `*기울임*` 없음 */
-const PRIVACY_PART: Record<Lang, number> = { en: 0, ko: 1, ja: 2, 'zh-Hans': 3, 'zh-Hant': 4 }
+/** PRIVACY.md(vite define `__PRIVACY_MD__`; `---` 로 나뉜 영어 → 한국어 → 일본어 → 중국어 간체 → 번체 → 스페인어 절)를 한 언어만 골라 HTML 로. 마크다운 중 그 파일이 쓰는 것만: `#`·`##` 제목, `-` 목록, `**굵게**`, `<주소>`, `*기울임*` 없음 */
+const PRIVACY_PART: Record<Lang, number> = { en: 0, ko: 1, ja: 2, 'zh-Hans': 3, 'zh-Hant': 4, es: 5 }
 export function privacyHtml(lang: Lang): string {
   const parts = __PRIVACY_MD__.split(/\n---\n/)
   const md = parts[PRIVACY_PART[lang]] ?? parts[0] ?? __PRIVACY_MD__
@@ -46,7 +46,7 @@ export function privacyHtml(lang: Lang): string {
 }
 
 /** 맨 아래 세 링크의 배열(사용자 결정 2026-11-05): 영어·일본어는 세로 3줄 — 한 줄이면 영어는 간당간당하고 일본어(약 380 px)는 넘친다; 한국어·중국어는 한 줄(약 190~250 px, 균형이 맞는다). 폰마다 다르지 않게 언어로 못 박고, 그래도 안 들어가면(낯선 글꼴) 세로로 */
-const STACKED: ReadonlySet<Lang> = new Set(['en', 'ja'])
+const STACKED: ReadonlySet<Lang> = new Set(['en', 'ja', 'es']) // 스페인어도 세 항목 약 330 px 라 세로
 function layoutLinks(): void {
   const row = q('settings-links'); row.classList.remove('stack')
   if (STACKED.has(getLang())) { row.classList.add('stack'); return }

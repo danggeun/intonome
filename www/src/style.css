@@ -64,7 +64,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;font-weight:400;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;} /* 안드로이드 크롬: 카드를 아래로 미는 제스처가 '당겨서 새로고침' 이 되지 않게 */
-html[lang="en"],html[lang="en"] body,html[lang="ja"],html[lang="ja"] body,html[lang^="zh"],html[lang^="zh"] body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans KR','Apple SD Gothic Neo',sans-serif;} /* 영어·일본어·중국어는 기기 기본 글꼴(iOS SF·Hiragino·PingFang, Android Roboto·Noto Sans CJK) — 한국어 글꼴로 그린 라틴·한자는 어색하다. 숫자는 그대로 DM Mono */
+html[lang="en"],html[lang="en"] body,html[lang="ja"],html[lang="ja"] body,html[lang^="zh"],html[lang^="zh"] body,html[lang="es"],html[lang="es"] body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans KR','Apple SD Gothic Neo',sans-serif;} /* 영어·일본어·중국어는 기기 기본 글꼴(iOS SF·Hiragino·PingFang, Android Roboto·Noto Sans CJK) — 한국어 글꼴로 그린 라틴·한자는 어색하다. 숫자는 그대로 DM Mono */
 html.i18n-pending body{visibility:hidden;} /* 영어로 저장돼 있으면 한국어 원문이 한 프레임 보이지 않게 — ui/lang.ts 가 푼다 */
 /* 아이폰 홈 화면 앱(iOS 26~): 화면이 상태바 밑까지 그려지는 배치(위쪽 safe-area 가 있다)에서는 100%·dvh 가 상태바 높이만큼 짧게 잡혀 아래가 빈다.
    lvh 만 화면 전체 높이. 배치는 실행 시점의 meta 로 정해져 테마를 바꿔도 그대로라 테마가 아니라 실제 inset 으로 가른다 — .sb-under 는 platform/fitStandaloneHeight */
@@ -166,6 +166,7 @@ button{font-family:inherit;color:inherit;}
 #tuner-note{font-family:'DM Mono',monospace;font-size:min(var(--fs-d3),26vw);font-weight:var(--fw-md);line-height:1;letter-spacing:-.02em;color:var(--tuner-ink);display:block;transition:color var(--t-fast);}
 #tuner-note.tune{color:var(--ok);text-shadow:var(--tune-glow);}
 #tuner-note.empty{color:var(--tuner-empty);font-size:64px;letter-spacing:.05em;}
+#tuner-note.long{font-size:min(76px,19vw);} /* 세 글자 계이름(Sol · Fa♯ 의 Fa 는 두 글자) — 스페인어. 한 글자 폭의 세 배를 그대로 두면 옥타브·♯ 까지 카드를 넘는다 */
 /* 시작 버튼 — 마이크를 열려면 탭이 필요한 상태. 큰 음 자리에 버튼 하나 + 다음에 벌어질 일 한 줄 */
 #tuner-start{display:none;flex-direction:column;align-items:center;gap:var(--s3);}
 #tuner-card.tap-hint #tuner-start{display:flex;} #tuner-card.tap-hint #tuner-note-main{display:none;}
@@ -431,7 +432,9 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .step-btn{flex:1;height:var(--h-seg);background:transparent;border:none;border-right:1px solid var(--line);color:var(--text-2);font-family:inherit;font-size:var(--fs-base);font-weight:var(--fw-md);cursor:pointer;text-align:center;transition:background .1s,color .1s;position:relative;}
 .step-btn:last-child{border-right:none;}
 .step-btn.on{background:var(--sel);color:var(--text);font-weight:var(--fw-b);}
-#lang-steps .step-btn{font-size:var(--fs-md);line-height:1.15;padding:0 2px;} /* 언어 5칸 — 네 글자(简体中文)가 360 px 폰의 56 px 칸에 들어가게 한 단계 작게. 320 px 에서는 두 줄로 꺾인다 */
+#lang-steps{flex-wrap:wrap;} /* 언어 6칸 = 3×2 */
+#lang-steps .step-btn{flex:0 0 33.3334%;font-size:var(--fs-md);line-height:1.15;padding:0 2px;} /* 한 단계 작게 — 네 글자(简体中文)·Español 이 320 px 폰의 칸에도 들어간다 */
+#lang-steps .step-btn:nth-child(3){border-right:none;} #lang-steps .step-btn:nth-child(n+4){border-top:1px solid var(--line);}
 #cents-steps .step-btn,#notenames-steps .step-btn[data-v="1"]{font-family:'DM Mono',monospace;} /* 모노는 숫자·음이름에만 */
 
 /* 토스트 — 떠 있는 면 (배경에 묻히지 않게) */
@@ -512,7 +515,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #ed-export-btn{font-weight:var(--fw-b);} /* 편집기의 주행동 */
 #ed-dl-btn,#ed-export-btn{cursor:pointer;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;}
 
-@media (orientation: landscape) and (max-height: 500px){html[lang="en"] body::after{content:'Please rotate to portrait';} html[lang="ja"] body::after{content:'縦向きにしてください';} html[lang="zh-Hans"] body::after{content:'请竖屏使用';} html[lang="zh-Hant"] body::after{content:'請直向使用';} body::after{content:'화면을 세로로 돌려주세요';position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);font-size:15px;color:var(--text-2);z-index:999;pointer-events:all;}}
+@media (orientation: landscape) and (max-height: 500px){html[lang="en"] body::after{content:'Please rotate to portrait';} html[lang="ja"] body::after{content:'縦向きにしてください';} html[lang="zh-Hans"] body::after{content:'请竖屏使用';} html[lang="zh-Hant"] body::after{content:'請直向使用';} html[lang="es"] body::after{content:'Gira el teléfono en vertical';} body::after{content:'화면을 세로로 돌려주세요';position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);font-size:15px;color:var(--text-2);z-index:999;pointer-events:all;}}
 @media (min-width: 700px){
   #hdr,#main-body{max-width:680px;}
   #main-body{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);flex:1;min-height:0;width:100%;}
