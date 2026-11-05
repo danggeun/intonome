@@ -109,18 +109,26 @@ const CAPTIONS = {
     ['ドローンを鳴らして音程合わせ', 'ドローンの音は拾わず、演奏した音だけを読みます'],
     ['ライトテーマも', '広告なし · オフライン · 無料'],
   ],
-  zh: [
+  'zh-Hans': [
     ['能看见揉弦的调音器', '弦乐调音器 · 节拍器'],
     ['调音器和节拍器在同一屏', '开着节拍器看音准'],
     ['放大节拍器', '2/4–6/8 · 三连音 · 速度 ±5'],
     ['开着持续音练音准', '只听你的音，不听持续音'],
     ['也有浅色主题', '无广告 · 离线 · 免费'],
   ],
+  'zh-Hant': [
+    ['看得見揉弦的調音器', '弦樂調音器 · 節拍器'],
+    ['調音器和節拍器在同一個畫面', '開著節拍器看音準'],
+    ['放大節拍器', '2/4–6/8 · 三連音 · 速度 ±5'],
+    ['開著持續音練音準', '只聽你的音，不聽持續音'],
+    ['也有淺色主題', '無廣告 · 離線 · 免費'],
+  ],
 }
-const TAG = { ko: '현악기 연습을 위한 튜너 · 메트로놈 · 드론 · 녹음', en: 'Tuner, metronome, drone and recorder for string players', ja: '弦楽器の練習のためのチューナー · メトロノーム · ドローン · 録音', zh: '为弦乐练习设计的调音器 · 节拍器 · 持续音 · 录音' }
-const REF = { ko: 442, en: 440, ja: 442, zh: 440 } // 일본 오케스트라도 442 가 흔하다, 중국은 440
-const FONT = { ko: "'Noto Sans CJK KR','Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif", en: "system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif", ja: "'Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','Yu Gothic',system-ui,sans-serif", zh: "'Noto Sans CJK SC','Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif" }
-const LANGS = ['ko', 'en', 'ja', 'zh']
+const TAG = { ko: '현악기 연습을 위한 튜너 · 메트로놈 · 드론 · 녹음', en: 'Tuner, metronome, drone and recorder for string players', ja: '弦楽器の練習のためのチューナー · メトロノーム · ドローン · 録音', 'zh-Hans': '为弦乐练习设计的调音器 · 节拍器 · 持续音 · 录音', 'zh-Hant': '為弦樂練習設計的調音器 · 節拍器 · 持續音 · 錄音' }
+const REF = { ko: 442, en: 440, ja: 442, 'zh-Hans': 440, 'zh-Hant': 442 } // 일본 오케스트라도 442 가 흔하다, 중국은 440
+const FONT = { ko: "'Noto Sans CJK KR','Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif", en: "system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif", ja: "'Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','Yu Gothic',system-ui,sans-serif", 'zh-Hans': "'Noto Sans CJK SC','Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif", 'zh-Hant': "'Noto Sans CJK TC','Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif" }
+const LANGS = ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant']
+const TAG_OF = { ko: 'ko', en: 'en', ja: 'ja', 'zh-Hans': 'zh', 'zh-Hant': 'zht' } // 파일 이름 앞머리
 
 async function page(browser, lang, theme, extra = {}) {
   const ctx = await browser.newContext({ viewport: VIEW, deviceScaleFactor: SCALE, isMobile: true, hasTouch: true, permissions: ['microphone'] })
@@ -192,7 +200,7 @@ composer = await (await chromium.launch({ executablePath: process.env.CHROMIUM_P
 const featureShot = {}
 for (const lang of LANGS) {
   console.log(lang)
-  const sig = makeSignals(REF[lang]), n = k => `${lang}_${k}`
+  const sig = makeSignals(REF[lang]), n = k => `${TAG_OF[lang]}_${k}`
   // 1. 조율: 바이올린 라 — 맞음(초록), 곧게 내다가 비브라토가 들어온 궤적
   let b = await launch(sig.a); let p = await page(b, lang, 'dark')
   await waitNote(p); await sleep(p, 4500); featureShot[lang] = await rawTrace(p); await compose(lang, 0, featureShot[lang], n('1_tuner'))
@@ -243,8 +251,8 @@ for (const lang of LANGS) {
     <div class="sub">${TAG[lang]}</div>
     <div class="ph"><img src="data:image/png;base64,${featureShot[lang].toString('base64')}"></div>`)
     await sleep(p, 300)
-    writeRgb(join(OUT, `${lang}_feature_1024x500.png`), await p.screenshot())
-    console.log('  ' + `${lang}_feature_1024x500`)
+    writeRgb(join(OUT, `${TAG_OF[lang]}_feature_1024x500.png`), await p.screenshot())
+    console.log('  ' + `${TAG_OF[lang]}_feature_1024x500`)
     await p.close()
   }
   await ctx.close()

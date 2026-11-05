@@ -79,10 +79,10 @@ export function parseStored(raw: string | null): Partial<Settings> {
   return out
 }
 
-/** 첫 실행(저장 없음)의 언어: 폰의 첫 번째 언어가 한국어·일본어·중국어면 그 언어, 아니면 영어. 중국어는 번체 지역(zh-TW·HK·MO·Hant)도 간체로 — 영어보다는 읽기 쉽다(번체 사전이 생기면 나눈다). index.html 의 첫 그리기 스크립트와 같은 규칙 */
+/** 첫 실행(저장 없음)의 언어: 폰의 첫 번째 언어가 한국어·일본어·중국어면 그 언어, 아니면 영어. 중국어는 번체 표시(Hant)나 대만·홍콩·마카오면 번체, 그 밖(본토·싱가포르·말레이시아)은 간체. index.html 의 첫 그리기 스크립트와 같은 규칙 */
 export function firstRunLang(langs: readonly string[] | undefined, lang: string | undefined): Settings['lang'] {
   const l = langs?.[0] ?? lang ?? ''
-  return /^ko(-|$)/i.test(l) ? 'ko' : /^ja(-|$)/i.test(l) ? 'ja' : /^zh(-|$)/i.test(l) ? 'zh' : 'en'
+  return /^ko(-|$)/i.test(l) ? 'ko' : /^ja(-|$)/i.test(l) ? 'ja' : /^zh(-|$)/i.test(l) ? (/hant|-(tw|hk|mo)(-|$)/i.test(l) ? 'zh-Hant' : 'zh-Hans') : 'en'
 }
 
 export function loadSettings(): void {

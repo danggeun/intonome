@@ -1,14 +1,14 @@
 # Store listing
 
 Values to paste into the Play Console, in the order the console asks for them. Edit them here and copy them over; this file is the source, not the console. `scripts/store.test.mjs` checks the lengths and that the URLs match the app.
-There are English, Korean, Japanese and Simplified Chinese listings. **English is the default language**: Play shows the default listing to everyone whose device language has no translation (German, …), so the default must be the one more people can read. Korean, Japanese and Chinese users see their own listing.
+There are English, Korean, Japanese, Simplified Chinese and Traditional Chinese listings. **English is the default language**: Play shows the default listing to everyone whose device language has no translation (German, …), so the default must be the one more people can read. Korean, Japanese and Chinese (Simplified: mainland, Singapore, Malaysia; Traditional: Taiwan, Hong Kong, Macau) users see their own listing.
 
 ## App details (Dashboard › App details)
 
 | Field | Value |
 |---|---|
 | App name | see below (per language) |
-| Default language | English (en-US); add Korean (ko-KR), Japanese (ja-JP), Simplified Chinese (zh-CN) |
+| Default language | English (en-US); add Korean (ko-KR), Japanese (ja-JP), Simplified Chinese (zh-CN), Traditional Chinese (zh-TW) |
 | App or game | App |
 | Free or paid | Free |
 | Category | Music & Audio |
@@ -35,6 +35,10 @@ Intonome: チューナー＆メトロノーム
 Intonome：调音器与节拍器
 ```
 
+```
+Intonome：調音器與節拍器
+```
+
 ## Short description (80 characters)
 
 The 80 characters that search indexes and that show before "More". Instrument names are what people search for; the one thing other tuners do not have (the pitch trace) is named; the tagline stays on the feature graphic.
@@ -53,6 +57,10 @@ Tuner & metronome for strings that shows your vibrato. Drone, recorder. No ads.
 
 ```
 小提琴、中提琴、大提琴、低音提琴的调音器与节拍器。能看见揉弦的调音器、持续音、录音。无广告，可离线使用
+```
+
+```
+小提琴、中提琴、大提琴、低音提琴的調音器與節拍器。看得見揉弦的調音器、持續音、錄音。無廣告，可離線使用
 ```
 
 ## Full description (Korean)
@@ -175,7 +183,7 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 · インターネットがなくても全機能が使えます
 ```
 
-## Full description (Chinese)
+## Full description (Chinese, Simplified)
 
 ```
 为小提琴、中提琴、大提琴和低音提琴练习设计的调音器与节拍器。没有广告，不需要账户，没有网络也能使用全部功能。
@@ -215,6 +223,46 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 · 没有网络也能使用全部功能
 ```
 
+## Full description (Chinese, Traditional)
+
+```
+為小提琴、中提琴、大提琴和低音提琴練習設計的調音器與節拍器。沒有廣告，不需要帳號，沒有網路也能使用全部功能。
+調音器和節拍器在同一個介面上。可以開著持續音練音準，也可以把練習錄下來馬上回聽。
+
+■ 調音器
+· 從低音提琴的 E1（40 Hz）到小提琴的高音區
+· 標準音 A = 410–466 Hz（包括巴洛克的 415）
+· 允許誤差 ±5、±10、±15 音分
+· 音名 C D E，並顯示等音（如 A♯/B♭）
+· 最近幾秒的音高變化會以一條線留在螢幕上
+· 持續音或 A 音響著的時候，也只辨識你演奏的音，不受 App 自身聲音的影響
+
+■ 節拍器
+· 2/4 · 3/4 · 4/4 · 6/8，四種細分，包括三連音
+· 40–200 BPM，播放中改速度也不會卡頓
+· 播放時螢幕保持常亮
+· 錄音時節拍聲靜音，只在螢幕上顯示拍子
+
+■ A 音與持續音
+· A 音：按樂器選八度（小提琴、中提琴 A4，大提琴 A3，低音提琴 A2）
+· 持續音：讓 12 個音中的任意一個一直響，伴著它練音準
+
+■ 錄音與編輯
+· A-B 循環、區間放大、書籤
+· 0.5–1.5 倍速（音高不變）
+· 只擷取想要的片段，儲存或分享為 WAV
+
+■ 練習計時
+· 記錄的是真正發出聲音的時間，而不是開啟 App 的時間
+· 排除噪音，只計算樂器發聲的時間
+
+■ 隱私
+· 麥克風輸入和錄音只在你的裝置上處理和儲存
+· 不向任何伺服器傳送資料
+· 無廣告，無追蹤，無帳號
+· 沒有網路也能使用全部功能
+```
+
 ## Graphics
 
 `npm run store:assets` writes everything to `test-assets/store/` (not committed; takes a few minutes, drives the real app with synthesized playing):
@@ -223,18 +271,18 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 |---|---|---|
 | App icon | `icon_512.png` | 512 × 512, 32-bit PNG with alpha, ≤ 1 MB |
 | Feature graphic | `ko_feature_1024x500.png` / `en_feature_1024x500.png` | 1024 × 500 PNG or JPEG, no alpha. Required, though phones only show it when there is a promo video |
-| Phone screenshots | `ko_1_tuner` … `ko_5_light`, `en_…`, `ja_…`, `zh_…` (1080 × 2160) | 2–8 per listing, 320–3840 px, longer side ≤ 2 × shorter, PNG/JPEG without alpha |
+| Phone screenshots | `ko_1_tuner` … `ko_5_light`, `en_…`, `ja_…`, `zh_…` (Simplified), `zht_…` (Traditional) (1080 × 2160) | 2–8 per listing, 320–3840 px, longer side ≤ 2 × shorter, PNG/JPEG without alpha |
 | 7-inch / 10-inch tablet screenshots | not provided | optional; without them the listing just isn't featured on tablets |
 
 Upload in this order; the first two and a half are what a phone shows under the Install button. Each image is a caption plus the app in a phone frame. The captions say only what the picture cannot (edit them in `scripts/store-assets.mjs`, `CAPTIONS`):
 
-| # | Scene | Korean | English | Japanese | Chinese |
-|---|---|---|---|---|---|
-| 1 | Tuner, A with the vibrato trace (A = 442 in the Korean and Japanese sets, 440 in English and Chinese) | 비브라토가 보이는 튜너 / 현악기 튜너 · 메트로놈 | Tuner that shows vibrato / Tuner & metronome for strings | ビブラートが見えるチューナー / 弦楽器のチューナー・メトロノーム | 能看见揉弦的调音器 / 弦乐调音器 · 节拍器 |
-| 2 | Tuner + metronome, a steady A (no vibrato), 4/4 with eighths running | 튜너와 메트로놈을 한 화면에 / 메트로놈 켜 둔 채 음정 확인 | Tuner and metronome / Check pitch with the click running | チューナーとメトロノームを1画面に / メトロノームを鳴らしたまま音程を確認 | 调音器和节拍器在同一屏 / 开着节拍器看音准 |
-| 3 | Full-size metronome at 96, frozen on the downbeat | 메트로놈만 크게 / 2/4~6/8 · 셋잇단 · 템포 ±5 | Metronome, full size / 2/4–6/8 · triplets · ±5 BPM | メトロノームだけを大きく / 2/4〜6/8 · 3連符 · テンポ ±5 | 放大节拍器 / 2/4–6/8 · 三连音 · 速度 ±5 |
-| 4 | Drone C on, G (the fifth) held in tune | 드론 켜 놓고 음정 잡기 / 드론 소리는 빼고 연주하는 음만 읽어요 | Play against a drone / It hears you, not the drone | ドローンを鳴らして音程合わせ / ドローンの音は拾わず、演奏した音だけを読みます | 开着持续音练音准 / 只听你的音，不听持续音 |
-| 5 | Light theme | 라이트 테마도 / 광고 없음 · 오프라인 · 무료 | Light theme too / No ads · Offline · Free | ライトテーマも / 広告なし · オフライン · 無料 | 也有浅色主题 / 无广告 · 离线 · 免费 |
+| # | Scene | Korean | English | Japanese | Chinese (Simplified) | Chinese (Traditional) |
+|---|---|---|---|---|---|---|
+| 1 | Tuner, A with the vibrato trace (A = 442 in the Korean and Japanese sets, 440 in English and Chinese) | 비브라토가 보이는 튜너 / 현악기 튜너 · 메트로놈 | Tuner that shows vibrato / Tuner & metronome for strings | ビブラートが見えるチューナー / 弦楽器のチューナー・メトロノーム | 能看见揉弦的调音器 / 弦乐调音器 · 节拍器 | 看得見揉弦的調音器 / 弦樂調音器 · 節拍器 |
+| 2 | Tuner + metronome, a steady A (no vibrato), 4/4 with eighths running | 튜너와 메트로놈을 한 화면에 / 메트로놈 켜 둔 채 음정 확인 | Tuner and metronome / Check pitch with the click running | チューナーとメトロノームを1画面に / メトロノームを鳴らしたまま音程を確認 | 调音器和节拍器在同一屏 / 开着节拍器看音准 | 調音器和節拍器在同一個畫面 / 開著節拍器看音準 |
+| 3 | Full-size metronome at 96, frozen on the downbeat | 메트로놈만 크게 / 2/4~6/8 · 셋잇단 · 템포 ±5 | Metronome, full size / 2/4–6/8 · triplets · ±5 BPM | メトロノームだけを大きく / 2/4〜6/8 · 3連符 · テンポ ±5 | 放大节拍器 / 2/4–6/8 · 三连音 · 速度 ±5 | 放大節拍器 / 2/4–6/8 · 三連音 · 速度 ±5 |
+| 4 | Drone C on, G (the fifth) held in tune | 드론 켜 놓고 음정 잡기 / 드론 소리는 빼고 연주하는 음만 읽어요 | Play against a drone / It hears you, not the drone | ドローンを鳴らして音程合わせ / ドローンの音は拾わず、演奏した音だけを読みます | 开着持续音练音准 / 只听你的音，不听持续音 | 開著持續音練音準 / 只聽你的音，不聽持續音 |
+| 5 | Light theme | 라이트 테마도 / 광고 없음 · 오프라인 · 무료 | Light theme too / No ads · Offline · Free | ライトテーマも / 広告なし · オフライン · 無料 | 也有浅色主题 / 无广告 · 离线 · 免费 | 也有淺色主題 / 無廣告 · 離線 · 免費 |
 
 Recording, editor and timer are described in the text but not pictured: list screens do not sell, and five images read in one swipe. The screenshot baselines in `test-assets/screens/baseline/` (780 × 1688) are for visual checks and do not meet the 2:1 rule.
 

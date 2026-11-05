@@ -1,4 +1,4 @@
-/** 화면 문구 — 중국어(간체). 2인칭은 你(앱 UI 관행, Apple zh-CN 과 같음), 중국어·라틴 문자/숫자 사이 띄어쓰기, 문장 끝 마침표 없음(ko·en 과 같게). 음이름은 C D E 만(중국 현악 교육·튜너 앱 관행) */
+/** 화면 문구 — 중국어(간체, 본토·싱가포르·말레이시아). 2인칭은 你(앱 UI 관행, Apple zh-CN 과 같음), 중국어·라틴 문자/숫자 사이 띄어쓰기, 문장 끝 마침표 없음(ko·en 과 같게). 음이름은 C D E 만(중국 현악 교육·튜너 앱 관행) */
 import type { TKey } from './ko.ts'
 export const ZH: Record<TKey, string> = {
   'common.close': '关闭',

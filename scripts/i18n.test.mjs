@@ -7,12 +7,13 @@ import { KO } from '../www/src/core/i18n/ko.ts'
 import { EN } from '../www/src/core/i18n/en.ts'
 import { JA } from '../www/src/core/i18n/ja.ts'
 import { ZH } from '../www/src/core/i18n/zh.ts'
+import { ZH_HANT } from '../www/src/core/i18n/zhHant.ts'
 import { t, setLang } from '../www/src/core/i18n/index.ts'
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', 'www', 'src')
 const HANGUL = /[가-힣]/
 const KANA = /[\u3040-\u30ff]/ // 히라가나·가타카나 — 일본어에만
-const OTHERS = { en: EN, ja: JA, zh: ZH }
+const OTHERS = { en: EN, ja: JA, 'zh-Hans': ZH, 'zh-Hant': ZH_HANT }
 const walk = d => readdirSync(d).flatMap(n => { const p = join(d, n); return statSync(p).isDirectory() ? walk(p) : /\.ts$/.test(p) && !/\.test\.ts$/.test(p) ? [p] : [] })
 // 한국어가 코드에 있어도 되는 곳: 문구 원본, 음이름 데이터, 기준음 버튼의 내부 키('도2')와 한국어 표기
 const ALLOWED_FILES = ['core/i18n/ko.ts', 'core/note.ts']
@@ -27,6 +28,7 @@ describe('i18n dictionaries', () => {
   test('no kana in English or Chinese, no Japanese kana-free Chinese-only text in Japanese', () => {
     expect(Object.entries(EN).filter(([, v]) => KANA.test(v)).map(([k]) => k)).toEqual([])
     expect(Object.entries(ZH).filter(([, v]) => KANA.test(v)).map(([k]) => k)).toEqual([])
+    expect(Object.entries(ZH_HANT).filter(([, v]) => KANA.test(v)).map(([k]) => k)).toEqual([])
   })
   test.each(Object.keys(OTHERS))('placeholders match between Korean and %s', l => {
     const names = s => [...s.matchAll(/\{(\w+)(?:\|[^}]*)?\}/g)].map(m => m[1]).sort().filter((v, i, a) => a.indexOf(v) === i)

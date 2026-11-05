@@ -64,7 +64,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;font-weight:400;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;} /* 안드로이드 크롬: 카드를 아래로 미는 제스처가 '당겨서 새로고침' 이 되지 않게 */
-html[lang="en"],html[lang="en"] body,html[lang="ja"],html[lang="ja"] body,html[lang="zh"],html[lang="zh"] body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans KR','Apple SD Gothic Neo',sans-serif;} /* 영어·일본어·중국어는 기기 기본 글꼴(iOS SF·Hiragino·PingFang, Android Roboto·Noto Sans CJK) — 한국어 글꼴로 그린 라틴·한자는 어색하다. 숫자는 그대로 DM Mono */
+html[lang="en"],html[lang="en"] body,html[lang="ja"],html[lang="ja"] body,html[lang^="zh"],html[lang^="zh"] body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans KR','Apple SD Gothic Neo',sans-serif;} /* 영어·일본어·중국어는 기기 기본 글꼴(iOS SF·Hiragino·PingFang, Android Roboto·Noto Sans CJK) — 한국어 글꼴로 그린 라틴·한자는 어색하다. 숫자는 그대로 DM Mono */
 html.i18n-pending body{visibility:hidden;} /* 영어로 저장돼 있으면 한국어 원문이 한 프레임 보이지 않게 — ui/lang.ts 가 푼다 */
 /* 아이폰 홈 화면 앱(iOS 26~): 화면이 상태바 밑까지 그려지는 배치(위쪽 safe-area 가 있다)에서는 100%·dvh 가 상태바 높이만큼 짧게 잡혀 아래가 빈다.
    lvh 만 화면 전체 높이. 배치는 실행 시점의 meta 로 정해져 테마를 바꿔도 그대로라 테마가 아니라 실제 inset 으로 가른다 — .sb-under 는 platform/fitStandaloneHeight */
@@ -507,7 +507,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #ed-export-btn{font-weight:var(--fw-b);} /* 편집기의 주행동 */
 #ed-dl-btn,#ed-export-btn{cursor:pointer;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;}
 
-@media (orientation: landscape) and (max-height: 500px){html[lang="en"] body::after{content:'Please rotate to portrait';} html[lang="ja"] body::after{content:'縦向きにしてください';} html[lang="zh"] body::after{content:'请竖屏使用';} body::after{content:'화면을 세로로 돌려주세요';position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);font-size:15px;color:var(--text-2);z-index:999;pointer-events:all;}}
+@media (orientation: landscape) and (max-height: 500px){html[lang="en"] body::after{content:'Please rotate to portrait';} html[lang="ja"] body::after{content:'縦向きにしてください';} html[lang="zh-Hans"] body::after{content:'请竖屏使用';} html[lang="zh-Hant"] body::after{content:'請直向使用';} body::after{content:'화면을 세로로 돌려주세요';position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);font-size:15px;color:var(--text-2);z-index:999;pointer-events:all;}}
 @media (min-width: 700px){
   #hdr,#main-body{max-width:680px;}
   #main-body{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);flex:1;min-height:0;width:100%;}

@@ -861,18 +861,18 @@ await scenario('first launch: English and dark, even with the phone in light mod
 }, { colorScheme: 'light', fresh: true })
 // 한국어 폰의 첫 실행: 첫 그리기부터 한국어(음이름 도레미), 테마는 그대로 다크. 설정에서 영어로 바꾸면 저장되어 폰이 한국어여도 영어로 연다
 // 일본어·중국어: 영어 시나리오의 짧은 판 — 화면마다 한국어(와 중국어엔 가나)가 없고 넘침이 없다. 계이름은 일본어 ドレミ(기본)·중국어 C D E 만
-for (const [v, lang, expectNote, foreign, title] of [['2', 'ja', 'ラ', /[가-힣]/, '設定'], ['3', 'zh', 'A', /[가-힣぀-ヿ]/, '设置']]) await scenario(`i18n: ${lang} — no Korean${lang === 'zh' ? ' or kana' : ''} on any screen, nothing clipped, note names ${expectNote === 'A' ? 'C D E only' : 'in solfège with C D E small'}, survives reload`, 'violin_A4.wav', async p => {
+for (const [v, lang, expectNote, foreign, title] of [['2', 'ja', 'ラ', /[가-힣]/, '設定'], ['3', 'zh-Hans', 'A', /[가-힣぀-ヿ]/, '设置'], ['4', 'zh-Hant', 'A', /[가-힣぀-ヿ]/, '設定']]) await scenario(`i18n: ${lang} — no Korean${lang.startsWith('zh') ? ' or kana' : ''} on any screen, nothing clipped, note names ${expectNote === 'A' ? 'C D E only' : 'in solfège with C D E small'}, survives reload`, 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#settings-hdr-btn'); await sleep(p, 300)
   await p.click(`#lang-steps .step-btn[data-v="${v}"]`); await sleep(p, 200)
   assert.equal(await p.evaluate(() => document.documentElement.lang), lang)
   assert.equal(await p.evaluate(() => document.querySelector('.settings-title').textContent), title)
-  assert.equal(await p.evaluate(() => document.getElementById('notenames-row').hidden), lang === 'zh', 'note-name row only where there is a choice')
+  assert.equal(await p.evaluate(() => document.getElementById('notenames-row').hidden), lang !== 'ja', 'note-name row only where there is a choice')
   const check = async where => { const r = await screenText(p, foreign.source); assert.deepEqual(r.korean, [], `foreign text on ${where}: ${JSON.stringify(r.korean)}`); assert.deepEqual(r.overflow, [], `clipped text on ${where}: ${JSON.stringify(r.overflow)}`) }
   await check('settings')
   await p.click('#licenses-btn'); await sleep(p, 300); await check('licenses'); await p.click('#licenses-close-btn'); await sleep(p, 300)
   await p.click('#privacy-btn'); await sleep(p, 300); await check('privacy policy')
-  assert.ok((await p.evaluate(() => document.getElementById('privacy-text').textContent)).includes(lang === 'ja' ? 'マイク' : '麦克风'), 'policy in that language')
+  assert.ok((await p.evaluate(() => document.getElementById('privacy-text').textContent)).includes({ ja: 'マイク', 'zh-Hans': '麦克风', 'zh-Hant': '麥克風' }[lang]), 'policy in that language')
   await p.click('#privacy-close-btn'); await sleep(p, 300)
   await p.click('#settings-back-btn'); await sleep(p, 400)
   await waitNote(p, t => t.note === expectNote); await check('tuner')
@@ -898,8 +898,12 @@ await scenario('first launch on a Japanese phone: Japanese from the first paint,
 }, { fresh: true, locale: 'ja-JP' })
 await scenario('first launch on a Chinese phone: Chinese from the first paint, letter names only', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 600)
-  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, hidden: document.getElementById('notenames-row').hidden, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh', langOn: '3', hidden: true, label: '语言' })
+  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, hidden: document.getElementById('notenames-row').hidden, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh-Hans', langOn: '3', hidden: true, label: '语言' })
 }, { fresh: true, locale: 'zh-CN' })
+await scenario('first launch on a Taiwanese phone: Traditional Chinese', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 600)
+  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh-Hant', langOn: '4', label: '語言' })
+}, { fresh: true, locale: 'zh-TW' })
 await scenario('first launch on a Korean phone: Korean from the first paint; English chosen in Settings stays English', 'silence_lowfloor.wav', async (p, ctx) => {
   const bare = await ctx.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_)
   assert.deepEqual(await bare.evaluate(() => ({ lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending') })), { lang: 'ko', hidden: false }, '첫 그리기 전')

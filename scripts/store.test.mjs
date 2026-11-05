@@ -11,10 +11,10 @@ const blocks = title => { const sec = md.split(/^## /m).find(s => s.startsWith(t
 const len = s => [...s].length // 코드 포인트 수 — Play 는 글자 수로 센다
 
 describe('STORE.md matches what Play Console accepts and what the app says', () => {
-  const FULLS = ['Korean', 'English', 'Japanese', 'Chinese']
-  test('app name ≤ 30, short description ≤ 80, full description ≤ 4000 (Korean, English, Japanese, Chinese)', () => {
+  const FULLS = ['Korean', 'English', 'Japanese', 'Chinese, Simplified', 'Chinese, Traditional']
+  test('app name ≤ 30, short description ≤ 80, full description ≤ 4000 (Korean, English, Japanese, Chinese ×2)', () => {
     const names = blocks('App name'), shorts = blocks('Short description'), fulls = FULLS.flatMap(l => blocks(`Full description (${l})`))
-    expect(names.length).toBe(4); expect(shorts.length).toBe(4); expect(fulls.length).toBe(4)
+    expect(names.length).toBe(5); expect(shorts.length).toBe(5); expect(fulls.length).toBe(5)
     for (const n of names) expect(len(n)).toBeLessThanOrEqual(30)
     for (const s of shorts) expect(len(s)).toBeLessThanOrEqual(80)
     for (const f of fulls) expect(len(f)).toBeLessThanOrEqual(4000)

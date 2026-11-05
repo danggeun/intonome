@@ -19,8 +19,8 @@ function openDoc(d: Doc): void {
   page(d).classList.add('open'); page(d).scrollTop = 0
 }
 
-/** PRIVACY.md(vite define `__PRIVACY_MD__`; `---` 로 나뉜 영어 → 한국어 → 일본어 → 중국어 절)를 한 언어만 골라 HTML 로. 마크다운 중 그 파일이 쓰는 것만: `#`·`##` 제목, `-` 목록, `**굵게**`, `<주소>`, `*기울임*` 없음 */
-const PRIVACY_PART: Record<Lang, number> = { en: 0, ko: 1, ja: 2, zh: 3 }
+/** PRIVACY.md(vite define `__PRIVACY_MD__`; `---` 로 나뉜 영어 → 한국어 → 일본어 → 중국어 간체 → 번체 절)를 한 언어만 골라 HTML 로. 마크다운 중 그 파일이 쓰는 것만: `#`·`##` 제목, `-` 목록, `**굵게**`, `<주소>`, `*기울임*` 없음 */
+const PRIVACY_PART: Record<Lang, number> = { en: 0, ko: 1, ja: 2, 'zh-Hans': 3, 'zh-Hant': 4 }
 export function privacyHtml(lang: Lang): string {
   const parts = __PRIVACY_MD__.split(/\n---\n/)
   const md = parts[PRIVACY_PART[lang]] ?? parts[0] ?? __PRIVACY_MD__

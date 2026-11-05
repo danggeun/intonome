@@ -41,7 +41,7 @@ export interface Settings {
   /** 녹음 자동 삭제(30일) 켜짐 — 끄면 계속 보관 */
   autoDelete: boolean
   theme: 'dark' | 'light'
-  lang: 'ko' | 'en' | 'ja' | 'zh'
+  lang: 'ko' | 'en' | 'ja' | 'zh-Hans' | 'zh-Hant'
   /** 'A 듣기' 의 옥타브 — 악기 A 선의 높이: 4 바이올린·비올라 / 3 첼로 / 2 콘트라베이스 */
   aOctave: 2 | 3 | 4
   /** 끌어서 값을 바꿀 때 눈금 진동(다이얼 · BPM · 기준음 드럼) */
