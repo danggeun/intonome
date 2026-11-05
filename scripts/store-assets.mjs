@@ -126,7 +126,7 @@ const CAPTIONS = {
   ],
   es: [
     ['Un afinador que<br>muestra el vibrato', 'Afinador y metrónomo para cuerdas'],
-    ['Afinador y metrónomo<br>juntos', 'Mira la afinación con el click sonando'],
+    ['Afinador y metrónomo<br>juntos', 'Mira la afinación con el metrónomo sonando'],
     ['Metrónomo a<br>tamaño completo', '2/4–6/8 · tresillos · ±5 BPM'],
     ['Toca sobre<br>una nota pedal', 'Te escucha a ti, no a la nota pedal'],
     ['También en tema claro', 'Sin anuncios · Sin conexión · Gratis'],

@@ -280,7 +280,7 @@ App 不收集個人資訊，因此任何年齡都可以安全使用。
 
 La app necesita permiso del micrófono para analizar la altura del sonido y medir el tiempo de práctica.
 
-- La entrada del micrófono se **analiza en tiempo real y se descarta de inmediato**. No se guarda nada a menos que toques grabar.
+- La entrada del micrófono se **analiza en tiempo real y se descarta de inmediato**. No se guarda nada a menos que toques «Grabar».
 - Todo el análisis ocurre en el dispositivo. No se usa ningún servicio de reconocimiento de voz ni API externa.
 - La app libera el micrófono cuando pasa a segundo plano y lo cierra tras 15 minutos sin sonido.
 
@@ -302,15 +302,15 @@ Ajustes como la nota de referencia, el compás y la tolerancia se guardan en el 
 
 ## Red
 
-La app web descarga solo sus propios archivos (HTML, scripts, fuentes, iconos). Todos los recursos, fuentes incluidas, se sirven desde el mismo dominio, así que no hay peticiones a otros servidores; comprobaciones automáticas lo confirman. La app de Android funciona con los archivos instalados, así que todo funciona sin conexión.
+La app web descarga solo sus propios archivos (HTML, scripts, fuentes, iconos). Todos los recursos, fuentes incluidas, se sirven desde el mismo dominio, así que no hay peticiones a otros servidores; comprobaciones automáticas lo confirman. La app de Android se ejecuta desde los archivos instalados, así que todo funciona sin conexión.
 
 ## Menores
 
-La app no recopila datos personales, así que es segura a cualquier edad.
+La app no recopila datos personales, así que puede usarse a cualquier edad.
 
 ## Eliminar datos
 
-Puedes eliminar grabaciones una a una en la app. Para borrarlo todo, elimina los datos del sitio en tu navegador (web) o desinstala la app o usa Ajustes › Aplicaciones › Intonome › Almacenamiento › Borrar datos (Android). No queda ninguna copia de nuestro lado.
+Puedes eliminar grabaciones una a una en la app. Para borrarlo todo, elimina los datos del sitio en tu navegador (web) o desinstala la app o usa Ajustes › Aplicaciones › Intonome › Almacenamiento › Borrar datos (Android). No conservamos ninguna copia.
 
 ## Cambios
 
