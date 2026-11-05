@@ -2,6 +2,10 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.2] - 2026-11-06
+Settings
+- The links under the version are one line tall again in Korean and Chinese. 2.9.1 held the footer at three lines in every language so the page would not get shorter when the language changed, which looked like stretched empty space under the one-line footer; the page now keeps its length only while that is needed (right after a language change at the bottom) and lets it go when Settings close
+
 ## [2.9.1] - 2026-11-06
 Settings polish before the Play release.
 
