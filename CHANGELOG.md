@@ -2,6 +2,19 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.1] - 2026-11-06
+Settings polish before the Play release.
+
+Settings
+- The language card moves to the bottom, right above "Guide": it is set once (first launch follows the phone), and the six-button grid was pushing the tuner settings down. Changing the language there no longer moves the card under the finger (the footer keeps one height in every language, and the scroll position is corrected for the labels above that change length)
+- The version under the wordmark is optically centred: its glyphs weigh more on the right (a light v, a slashed 0), so it read as sitting right of the links below it; it is now shifted 0.125 em left
+- The dots between the three links sit midway between the words (the spacing was only on the outer side)
+
+Metronome · Recorder
+- The play triangle sits exactly on the vertical centre of its button (it was 0.25 of a 24-unit box high)
+
+Tests: a unit test pins the play glyph's centre and the three static copies in index.html; the footer e2e checks the dot spacing, the version offset, the language card's place and that it stays put when the language changes; 7 settings screenshot baselines
+
 ## [2.9.0] - 2026-11-05
 Spanish, as the sixth language, and a final pass over everything since 2.7.0.
 
