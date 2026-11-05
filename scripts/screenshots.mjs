@@ -45,8 +45,8 @@ const SCENES = {
 }
 
 const results = []
-// 테마·언어는 OS 가 아니라 앱 설정을 따른다 — 저장값을 심어 세 벌 찍는다: 다크 · 라이트 · 영어(다크)
-for (const [scheme, lang, tag] of [['dark', 'ko', 'dark'], ['light', 'ko', 'light'], ['dark', 'en', 'en']]) {
+// 테마·언어는 OS 가 아니라 앱 설정을 따른다 — 저장값을 심어 다섯 벌 찍는다: 다크 · 라이트 · 영어 · 일본어 · 중국어(뒤 셋은 다크)
+for (const [scheme, lang, tag] of [['dark', 'ko', 'dark'], ['light', 'ko', 'light'], ['dark', 'en', 'en'], ['dark', 'ja', 'ja'], ['dark', 'zh', 'zh']]) {
   for (const [name, prep] of Object.entries(SCENES)) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: scheme, permissions: ['microphone'], ...(prep.ctx ?? {}) })
     await ctx.addInitScript(([theme, lang]) => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, theme, lang })) }, [scheme, lang])

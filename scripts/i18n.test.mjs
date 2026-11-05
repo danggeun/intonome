@@ -5,28 +5,41 @@ import { fileURLToPath } from 'node:url'
 import { stringLiterals } from './lib/strings.mjs'
 import { KO } from '../www/src/core/i18n/ko.ts'
 import { EN } from '../www/src/core/i18n/en.ts'
+import { JA } from '../www/src/core/i18n/ja.ts'
+import { ZH } from '../www/src/core/i18n/zh.ts'
 import { t, setLang } from '../www/src/core/i18n/index.ts'
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', 'www', 'src')
 const HANGUL = /[가-힣]/
+const KANA = /[\u3040-\u30ff]/ // 히라가나·가타카나 — 일본어에만
+const OTHERS = { en: EN, ja: JA, zh: ZH }
 const walk = d => readdirSync(d).flatMap(n => { const p = join(d, n); return statSync(p).isDirectory() ? walk(p) : /\.ts$/.test(p) && !/\.test\.ts$/.test(p) ? [p] : [] })
 // 한국어가 코드에 있어도 되는 곳: 문구 원본, 음이름 데이터, 기준음 버튼의 내부 키('도2')와 한국어 표기
 const ALLOWED_FILES = ['core/i18n/ko.ts', 'core/note.ts']
 const ALLOWED_TEXT = new Set(['도2', '도↑'])
 
 describe('i18n dictionaries', () => {
-  test('English has every key and nothing else', () => expect(Object.keys(EN).sort()).toEqual(Object.keys(KO).sort()))
-  test('no Korean left in English strings', () => {
-    const bad = Object.entries(EN).filter(([, v]) => HANGUL.test(v)).map(([k]) => k)
+  test.each(Object.keys(OTHERS))('%s has every key and nothing else', l => expect(Object.keys(OTHERS[l]).sort()).toEqual(Object.keys(KO).sort()))
+  test.each(Object.keys(OTHERS))('no Korean left in %s strings', l => {
+    const bad = Object.entries(OTHERS[l]).filter(([, v]) => HANGUL.test(v)).map(([k]) => k)
     expect(bad).toEqual([])
   })
-  test('placeholders match between languages', () => {
+  test('no kana in English or Chinese, no Japanese kana-free Chinese-only text in Japanese', () => {
+    expect(Object.entries(EN).filter(([, v]) => KANA.test(v)).map(([k]) => k)).toEqual([])
+    expect(Object.entries(ZH).filter(([, v]) => KANA.test(v)).map(([k]) => k)).toEqual([])
+  })
+  test.each(Object.keys(OTHERS))('placeholders match between Korean and %s', l => {
     const names = s => [...s.matchAll(/\{(\w+)(?:\|[^}]*)?\}/g)].map(m => m[1]).sort().filter((v, i, a) => a.indexOf(v) === i)
-    const bad = Object.keys(KO).filter(k => names(KO[k]).join() !== names(EN[k]).join())
+    const bad = Object.keys(KO).filter(k => names(KO[k]).join() !== names(OTHERS[l][k]).join())
     expect(bad).toEqual([])
   })
-  test('<br> only where the other language has it too', () => {
-    const bad = Object.keys(KO).filter(k => KO[k].includes('<br>') !== EN[k].includes('<br>'))
+  test.each(Object.keys(OTHERS))('<br> only where Korean has it too (%s)', l => {
+    const bad = Object.keys(KO).filter(k => KO[k].includes('<br>') !== OTHERS[l][k].includes('<br>'))
+    expect(bad).toEqual([])
+  })
+  test('every language ends sentences without a full stop, like Korean (toasts and labels)', () => {
+    const bad = []
+    for (const [l, d] of Object.entries({ ko: KO, ...OTHERS })) for (const [k, v] of Object.entries(d)) if (/[.。]$/.test(v) && !/\.\.\.$/.test(v)) bad.push(`${l}:${k}`) // '연결 중...' 의 줄임표는 허용
     expect(bad).toEqual([])
   })
   test('t() fills values and picks singular/plural', () => {

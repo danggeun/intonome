@@ -88,12 +88,15 @@ describe('parseStored hardening', () => {
 })
 
 describe('first run language (nothing saved yet)', () => {
-  test('follows the phone: Korean first → Korean, anything else → English', () => {
+  test('follows the phone: Korean, Japanese or Chinese first → that language, anything else → English', () => {
     expect(firstRunLang(['ko-KR', 'en-US'], 'ko-KR')).toBe('ko')
     expect(firstRunLang(['ko'], 'ko')).toBe('ko')
+    expect(firstRunLang(['ja-JP'], 'ja-JP')).toBe('ja')
+    expect(firstRunLang(['zh-CN', 'en'], 'zh-CN')).toBe('zh')
+    expect(firstRunLang(['zh-Hant-TW'], 'zh-TW')).toBe('zh') // 번체 지역도 간체로(번체 사전이 생기면 나눈다)
+    expect(firstRunLang(['jа'], 'jа')).toBe('en') // 키릴 'а' — 겉보기만 ja
     expect(firstRunLang(undefined, 'ko-KR')).toBe('ko')
     expect(firstRunLang(['en-US', 'ko-KR'], 'en-US'), 'the first language decides').toBe('en')
-    expect(firstRunLang(['ja-JP'], 'ja-JP')).toBe('en')
     expect(firstRunLang(['kok-IN'], 'kok-IN'), 'Konkani is not Korean').toBe('en')
     expect(firstRunLang([], '')).toBe('en')
     expect(firstRunLang(undefined, undefined)).toBe('en')

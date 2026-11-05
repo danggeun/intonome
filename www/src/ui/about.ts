@@ -1,7 +1,7 @@
 /** 설정 맨 아래: 개인정보처리방침 · 문의 · 오픈소스 라이선스. 방침·라이선스는 앱 안 화면(글꼴 OFL 은 전문이 함께 가야 하고, 방침은 앱 밖으로 튀어 나가면 당황스럽다 — 피드백). 문의만 메일 앱 */
 import { q, on } from './dom.ts'
 import { attachSwipeBack } from './swipeBack.ts'
-import { getLang } from '../core/i18n/index.ts'
+import { getLang, type Lang } from '../core/i18n/index.ts'
 import { CONTACT_URL } from '../core/links.ts'
 import { licensesText } from './licensesText.ts'
 
@@ -15,14 +15,15 @@ export function closeDoc(): boolean {
 }
 function openDoc(d: Doc): void {
   if (d === 'licenses') { const pre = q('licenses-text'); if (!pre.textContent) pre.textContent = licensesText() } // 처음 열 때 한 번
-  else { const box = q('privacy-text'); const lang = getLang(); if (box.dataset.lang !== lang) { box.innerHTML = privacyHtml(lang === 'ko'); box.dataset.lang = lang } }
+  else { const box = q('privacy-text'); const lang = getLang(); if (box.dataset.lang !== lang) { box.innerHTML = privacyHtml(lang); box.dataset.lang = lang } }
   page(d).classList.add('open'); page(d).scrollTop = 0
 }
 
-/** PRIVACY.md(vite define `__PRIVACY_MD__`; 영문 → `---` → 한국어)를 한 언어만 골라 HTML 로. 마크다운 중 그 파일이 쓰는 것만: `#`·`##` 제목, `-` 목록, `**굵게**`, `<주소>`, `*기울임*` 없음 */
-export function privacyHtml(korean: boolean): string {
+/** PRIVACY.md(vite define `__PRIVACY_MD__`; `---` 로 나뉜 영어 → 한국어 → 일본어 → 중국어 절)를 한 언어만 골라 HTML 로. 마크다운 중 그 파일이 쓰는 것만: `#`·`##` 제목, `-` 목록, `**굵게**`, `<주소>`, `*기울임*` 없음 */
+const PRIVACY_PART: Record<Lang, number> = { en: 0, ko: 1, ja: 2, zh: 3 }
+export function privacyHtml(lang: Lang): string {
   const parts = __PRIVACY_MD__.split(/\n---\n/)
-  const md = (korean ? parts[1] : parts[0]) ?? __PRIVACY_MD__
+  const md = parts[PRIVACY_PART[lang]] ?? parts[0] ?? __PRIVACY_MD__
   const esc = (t: string): string => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const inline = (t: string): string => esc(t)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')

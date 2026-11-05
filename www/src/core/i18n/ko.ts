@@ -185,6 +185,7 @@ export const KO = {
   'set.sensDesc': "작은 소리까지 잡으려면 '높음', 시끄러운 곳에서는 '낮음'",
   'set.names': '음이름 표기',
   'set.namesDesc': '선택하지 않은 쪽은 작게 함께 보여요',
+  'set.solfege': '도레미',
   'set.aPitch': 'A 듣기 높이',
   'set.aPitchDesc': '바이올린·비올라는 A4, 첼로는 A3, 콘트라베이스는 A2',
   'set.wake': '화면 항상 켜짐',

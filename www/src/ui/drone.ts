@@ -4,7 +4,7 @@
  */
 import { droneStore, settingsStore } from '../state/index.ts'
 import { startDrone, stopDrone } from '../audio/refTone.ts'
-import { KR, EN } from '../core/note.ts'
+import { EN, solfegeOf } from '../core/note.ts'
 import { q, qsa, on, setOn } from './dom.ts'
 import { getLang, t } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
@@ -12,7 +12,7 @@ import { toast } from './toast.ts'
 
 const HINT_KEY = 'intonome.hint.drone' // 창을 처음 열 때 한 번만 안내
 
-const noteName = (pc: number): string => ((getLang() === 'en' || settingsStore.get().noteNames === 'en') ? EN : KR)[pc]!
+const noteName = (pc: number): string => (settingsStore.get().noteNames === 'en' ? EN : solfegeOf(getLang()))[pc]! // 영어·중국어는 계이름 열이 곧 C D E
 
 export const dronePopOpen = (): boolean => q('drone-pop').classList.contains('open')
 

@@ -1,6 +1,6 @@
 /** 설정 영속화 (localStorage). 스키마 v2 + v1 마이그레이션 */
 import { settingsStore, RMS_LEVELS, V1_RMS_LEVELS, V201_RMS_LEVELS, SMOOTH_LEVELS, V246_SMOOTH_LEVELS, CFG, type Settings, type SubDiv, type TimeSig } from '../state/index.ts'
-import { t } from '../core/i18n/index.ts'
+import { t, isLang } from '../core/i18n/index.ts'
 import { notice } from '../core/notice.ts'
 
 export const SETTINGS_KEY = 'intonome_settings_v1'
@@ -58,7 +58,7 @@ export function parseStored(raw: string | null): Partial<Settings> {
     if (s.noteNames === 'ko' || s.noteNames === 'en') out.noteNames = s.noteNames
     if (typeof s.autoDelete === 'boolean') out.autoDelete = s.autoDelete
     if (s.theme === 'dark' || s.theme === 'light') out.theme = s.theme
-    if (s.lang === 'ko' || s.lang === 'en') out.lang = s.lang
+    if (isLang(s.lang)) out.lang = s.lang
     if (s.aOctave === 2 || s.aOctave === 3 || s.aOctave === 4) out.aOctave = s.aOctave
     if (typeof s.haptics === 'boolean') out.haptics = s.haptics
     if (out.timeSig === 6) out.subDiv = 1 // 6/8 은 세분 없음 — 따로 저장된 옛 값이 시퀀서·스윕을 어긋나게 한다
@@ -79,9 +79,10 @@ export function parseStored(raw: string | null): Partial<Settings> {
   return out
 }
 
-/** 첫 실행(저장 없음)의 언어: 폰의 첫 번째 언어가 한국어면 한국어, 아니면 영어. index.html 의 첫 그리기 스크립트와 같은 규칙 */
+/** 첫 실행(저장 없음)의 언어: 폰의 첫 번째 언어가 한국어·일본어·중국어면 그 언어, 아니면 영어. 중국어는 번체 지역(zh-TW·HK·MO·Hant)도 간체로 — 영어보다는 읽기 쉽다(번체 사전이 생기면 나눈다). index.html 의 첫 그리기 스크립트와 같은 규칙 */
 export function firstRunLang(langs: readonly string[] | undefined, lang: string | undefined): Settings['lang'] {
-  return /^ko(-|$)/i.test(langs?.[0] ?? lang ?? '') ? 'ko' : 'en'
+  const l = langs?.[0] ?? lang ?? ''
+  return /^ko(-|$)/i.test(l) ? 'ko' : /^ja(-|$)/i.test(l) ? 'ja' : /^zh(-|$)/i.test(l) ? 'zh' : 'en'
 }
 
 export function loadSettings(): void {

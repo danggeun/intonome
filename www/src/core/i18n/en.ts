@@ -177,6 +177,7 @@ export const EN: Record<TKey, string> = {
   'set.sensDesc': 'High picks up quiet playing; Low helps in a noisy room',
   'set.names': 'Note names',
   'set.namesDesc': 'The other system is shown small alongside',
+  'set.solfege': 'Do Re Mi',
   'set.aPitch': 'Play A pitch',
   'set.aPitchDesc': 'Violin and viola A4, cello A3, double bass A2',
   'set.wake': 'Keep screen on',

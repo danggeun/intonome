@@ -1,6 +1,6 @@
 /** 화면 언어 적용: 설정 lang → core/i18n, <html lang>, 정적 문구(data-t · data-t-aria), 이미 그려진 동적 문구 */
 import { settingsStore } from '../state/index.ts'
-import { setLang, t, type TKey } from '../core/i18n/index.ts'
+import { setLang, lettersOnly, t, type TKey } from '../core/i18n/index.ts'
 import { q, qsa } from './dom.ts'
 
 const refreshers: Array<() => void> = []
@@ -19,7 +19,7 @@ export function mountLang(): void {
     const root = document.documentElement
     root.lang = lang
     applyStatic()
-    q('notenames-row').hidden = lang === 'en' // 영어에서는 음이름이 C D E 하나뿐이다
+    q('notenames-row').hidden = lettersOnly(lang) // 영어·중국어에서는 음이름이 C D E 하나뿐이다
     for (const f of refreshers) f()
     root.classList.remove('i18n-pending') // index.html 이 영어일 때 붙인다 — 한국어 문구가 한 프레임 보이지 않게
   }, { immediate: true })

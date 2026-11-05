@@ -209,7 +209,7 @@ for (const lang of ['ko', 'en']) {
   const iconSvg = banner.match(/<g clip-path="url\(#cdark\)">[\s\S]*?<\/g><\/g>/)?.[0] ?? ''
   const wordmark = readFileSync(join(ROOT, 'resources', 'wordmark.svg'), 'utf8')
   const ctx = await composer.browser().newContext({ viewport: { width: 1024, height: 500 }, deviceScaleFactor: 1 })
-  for (const lang of ['ko', 'en']) {
+  for (const lang of LANGS) {
     const p = await ctx.newPage()
     await p.setContent(`<!doctype html><meta charset="utf-8"><style>
       html,body{margin:0;width:1024px;height:500px;overflow:hidden;background:#181B21;font-family:${FONT[lang]}}
