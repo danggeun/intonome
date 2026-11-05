@@ -863,7 +863,7 @@ await scenario('first launch: English and dark, even with the phone in light mod
 }, { colorScheme: 'light', fresh: true })
 // 한국어 폰의 첫 실행: 첫 그리기부터 한국어(음이름 도레미), 테마는 그대로 다크. 설정에서 영어로 바꾸면 저장되어 폰이 한국어여도 영어로 연다
 // 일본어·중국어: 영어 시나리오의 짧은 판 — 화면마다 한국어(와 중국어엔 가나)가 없고 넘침이 없다. 계이름은 일본어 ドレミ(기본)·중국어 C D E 만
-for (const [v, lang, expectNote, foreign, title] of [['2', 'ja', 'ラ', /[가-힣]/, '設定'], ['3', 'zh-Hans', 'A', /[가-힣぀-ヿ]/, '设置'], ['4', 'zh-Hant', 'A', /[가-힣぀-ヿ]/, '設定'], ['5', 'es', 'La', /[가-힣぀-ヿ\u4e00-\u9fff]/, 'Ajustes']]) await scenario(`i18n: ${lang} — no Korean${lang.startsWith('zh') ? ' or kana' : lang === 'es' ? ', kana or CJK' : ''} on any screen, nothing clipped, note names ${expectNote === 'A' ? 'C D E only' : 'in solfège with C D E small'}, survives reload`, 'violin_A4.wav', async p => {
+for (const [v, lang, expectNote, foreign, title] of [['3', 'ja', 'ラ', /[가-힣]/, '設定'], ['4', 'zh-Hans', 'A', /[가-힣぀-ヿ]/, '设置'], ['5', 'zh-Hant', 'A', /[가-힣぀-ヿ]/, '設定'], ['2', 'es', 'La', /[가-힣぀-ヿ\u4e00-\u9fff]/, 'Ajustes']]) await scenario(`i18n: ${lang} — no Korean${lang.startsWith('zh') ? ' or kana' : lang === 'es' ? ', kana or CJK' : ''} on any screen, nothing clipped, note names ${expectNote === 'A' ? 'C D E only' : 'in solfège with C D E small'}, survives reload`, 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#settings-hdr-btn'); await sleep(p, 300)
   await p.click(`#lang-steps .step-btn[data-v="${v}"]`); await sleep(p, 200)
@@ -900,19 +900,19 @@ await scenario('first launch on a Japanese phone: Japanese from the first paint,
   assert.deepEqual(await bare.evaluate(() => ({ lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending') })), { lang: 'ja', hidden: true }, '첫 그리기 전: html lang 은 ja, 한국어 원문은 가린 채')
   await bare.close()
   await p.goto(URL_); await sleep(p, 600)
-  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, names: document.querySelector('#notenames-steps .step-btn.on').textContent, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'ja', langOn: '2', names: 'ドレミ', label: '言語' })
+  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, names: document.querySelector('#notenames-steps .step-btn.on').textContent, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'ja', langOn: '3', names: 'ドレミ', label: '言語' })
 }, { fresh: true, locale: 'ja-JP' })
 await scenario('first launch on a Chinese phone: Chinese from the first paint, letter names only', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 600)
-  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, hidden: document.getElementById('notenames-row').hidden, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh-Hans', langOn: '3', hidden: true, label: '语言' })
+  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, hidden: document.getElementById('notenames-row').hidden, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh-Hans', langOn: '4', hidden: true, label: '语言' })
 }, { fresh: true, locale: 'zh-CN' })
 await scenario('first launch on a Spanish-language phone: Spanish, solfège note names', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 600)
-  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, names: document.querySelector('#notenames-steps .step-btn.on').textContent, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'es', langOn: '5', names: 'Do Re Mi', label: 'Idioma' })
+  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, names: document.querySelector('#notenames-steps .step-btn.on').textContent, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'es', langOn: '2', names: 'Do Re Mi', label: 'Idioma' })
 }, { fresh: true, locale: 'es-MX' })
 await scenario('first launch on a Taiwanese phone: Traditional Chinese', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 600)
-  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh-Hant', langOn: '4', label: '語言' })
+  assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh-Hant', langOn: '5', label: '語言' })
 }, { fresh: true, locale: 'zh-TW' })
 await scenario('first launch on a Korean phone: Korean from the first paint; English chosen in Settings stays English', 'silence_lowfloor.wav', async (p, ctx) => {
   const bare = await ctx.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_)

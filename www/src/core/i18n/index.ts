@@ -7,7 +7,7 @@ import { ZH_HANT } from './zhHant.ts'
 import { ES } from './es.ts'
 
 export type Lang = 'ko' | 'en' | 'ja' | 'zh-Hans' | 'zh-Hant' | 'es'
-export const LANGS: readonly Lang[] = ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant', 'es'] // 설정 「언어」 버튼의 순서(data-v = 색인)
+export const LANGS: readonly Lang[] = ['ko', 'en', 'es', 'ja', 'zh-Hans', 'zh-Hant'] // 설정 3×2: 윗줄 한글·라틴, 아랫줄 한자·가나(사용자 결정 — 글자 계열로 균형) // 설정 「언어」 버튼의 순서(data-v = 색인)
 export const isLang = (v: unknown): v is Lang => (LANGS as readonly unknown[]).includes(v)
 /** 음이름이 C D E 하나뿐인 언어 — 설정의 「음이름 표기」 줄을 숨긴다. 한국어·일본어·스페인어는 계이름(도레미·ドレミ·Do Re Mi)과 C D E 중 고른다 */
 export const lettersOnly = (l: Lang): boolean => l === 'en' || l.startsWith('zh')
