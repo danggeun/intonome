@@ -5,6 +5,10 @@ describe('changed files pick the checks to run', () => {
   test('docs only: nothing but typecheck', () => {
     expect(plan(['README.md', 'docs/ARCHITECTURE.md'])).toEqual({ unit: [], e2e: 'none', bench: false, shots: false })
   })
+  test('PRIVACY.md is bundled into the app: the privacy page unit test and the settings/i18n e2e', () => {
+    const p = plan(['PRIVACY.md'])
+    expect(p.unit).toEqual(['www/src/ui/about.test.ts']); expect(new RegExp(p.e2e).test('settings: the bottom links')).toBe(true); expect(new RegExp(p.e2e).test('i18n: es')).toBe(true); expect(p.shots).toBe(false)
+  })
   test('a tuner algorithm file: related unit tests, tuner e2e and the benchmark', () => {
     const p = plan(['www/src/core/pitch/tracker.ts'])
     expect(p.unit).toEqual(['www/src/core/pitch/tracker.ts'])

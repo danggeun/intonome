@@ -318,7 +318,7 @@ El afinador y el metrónomo comparten una sola pantalla. Practica tu afinación 
 | Asset | File(s) | Play requirement |
 |---|---|---|
 | App icon | `icon_512.png` | 512 × 512, 32-bit PNG with alpha, ≤ 1 MB |
-| Feature graphic | `ko_feature_1024x500.png` / `en_feature_1024x500.png` | 1024 × 500 PNG or JPEG, no alpha. Required, though phones only show it when there is a promo video |
+| Feature graphic | `ko_feature_1024x500.png`, `en_…`, `ja_…`, `zh_…`, `zht_…`, `es_…` | 1024 × 500 PNG or JPEG, no alpha. Required, though phones only show it when there is a promo video |
 | Phone screenshots | `ko_1_tuner` … `ko_5_light`, `en_…`, `ja_…`, `zh_…` (Simplified), `zht_…` (Traditional), `es_…` (1080 × 2160) | 2–8 per listing, 320–3840 px, longer side ≤ 2 × shorter, PNG/JPEG without alpha |
 | 7-inch / 10-inch tablet screenshots | not provided | optional; without them the listing just isn't featured on tablets |
 
@@ -326,7 +326,7 @@ Upload in this order; the first two and a half are what a phone shows under the 
 
 | # | Scene | Korean | English | Japanese | Chinese (Simplified) | Chinese (Traditional) | Spanish |
 |---|---|---|---|---|---|---|---|
-| 1 | Tuner, A with the vibrato trace (A = 442 in the Korean and Japanese sets, 440 in English and Chinese) | 비브라토가 보이는 튜너 / 현악기 튜너 · 메트로놈 | Tuner that shows vibrato / Tuner & metronome for strings | ビブラートが見えるチューナー / 弦楽器のチューナー・メトロノーム | 能看见揉弦的调音器 / 弦乐调音器 · 节拍器 | 看得見揉弦的調音器 / 弦樂調音器 · 節拍器 | Un afinador que muestra el vibrato / Afinador y metrónomo para cuerdas |
+| 1 | Tuner, A with the vibrato trace (A = 442 in the Korean, Japanese, Traditional Chinese and Spanish sets, 440 in English and Simplified Chinese) | 비브라토가 보이는 튜너 / 현악기 튜너 · 메트로놈 | Tuner that shows vibrato / Tuner & metronome for strings | ビブラートが見えるチューナー / 弦楽器のチューナー・メトロノーム | 能看见揉弦的调音器 / 弦乐调音器 · 节拍器 | 看得見揉弦的調音器 / 弦樂調音器 · 節拍器 | Un afinador que muestra el vibrato / Afinador y metrónomo para cuerdas |
 | 2 | Tuner + metronome, a steady A (no vibrato), 4/4 with eighths running | 튜너와 메트로놈을 한 화면에 / 메트로놈 켜 둔 채 음정 확인 | Tuner and metronome / Check pitch with the click running | チューナーとメトロノームを1画面に / メトロノームを鳴らしたまま音程を確認 | 调音器和节拍器在同一屏 / 开着节拍器看音准 | 調音器和節拍器在同一個畫面 / 開著節拍器看音準 | Afinador y metrónomo juntos / Mira la afinación con el metrónomo sonando |
 | 3 | Full-size metronome at 96, frozen on the downbeat | 메트로놈만 크게 / 2/4~6/8 · 셋잇단 · 템포 ±5 | Metronome, full size / 2/4–6/8 · triplets · ±5 BPM | メトロノームだけを大きく / 2/4〜6/8 · 3連符 · テンポ ±5 | 放大节拍器 / 2/4–6/8 · 三连音 · 速度 ±5 | 放大節拍器 / 2/4–6/8 · 三連音 · 速度 ±5 | Metrónomo a tamaño completo / 2/4–6/8 · tresillos · ±5 BPM |
 | 4 | Drone C on, G (the fifth) held in tune | 드론 켜 놓고 음정 잡기 / 드론 소리는 빼고 연주하는 음만 읽어요 | Play against a drone / It hears you, not the drone | ドローンを鳴らして音程合わせ / ドローンの音は拾わず、演奏した音だけを読みます | 开着持续音练音准 / 只听你的音，不听持续音 | 開著持續音練音準 / 只聽你的音，不聽持續音 | Toca sobre una nota pedal / Te escucha a ti, no a la nota pedal |

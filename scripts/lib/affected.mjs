@@ -42,6 +42,7 @@ export function plan(files) {
   let e2eAll = false, bench = false, shots = false
   const parts = new Set()
   for (const f of p) {
+    if (f === 'PRIVACY.md') { if (unit !== 'all') unit.push('www/src/ui/about.test.ts'); parts.add('settings: the bottom'); parts.add('i18n'); continue } // 앱에 번들되는 문서(vite define) — .md 지만 방침 화면이 읽는다
     if (NONE.some(r => r.test(f))) continue
     if (/\.test\.(ts|mjs)$/.test(f)) continue // 테스트만 바뀌면 그 테스트만
     if (/^scripts\/(bench\.mjs|gen-signals\.mjs|lib\/(adapter-v[12]|metrics)\.mjs)$/.test(f)) { bench = true; continue }

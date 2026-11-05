@@ -29,9 +29,9 @@ export const ES: Record<TKey, string> = {
 
   'mic.titleOff': 'Activa el micrófono',
   'mic.titleBlocked': 'El micrófono está bloqueado',
-  'mic.descOff': 'Para escucharte hace falta<br>el micrófono',
+  'mic.descOff': 'Para escucharte<br>hace falta el micrófono',
   'mic.descBlockedNative': 'Permite el micrófono en<br>Ajustes › Aplicaciones › Intonome › Permisos',
-  'mic.descBlockedWeb': 'Toca el icono a la izquierda de la barra<br>de direcciones y permítelo en Configuración del sitio',
+  'mic.descBlockedWeb': 'Toca el icono junto a la dirección<br>y permite el micrófono en el sitio',
   'mic.descBlockedAndroidApp': 'Permite el micrófono en<br>Ajustes › Aplicaciones › Chrome › Permisos',
   'mic.descBlockedIosApp': 'Cierra la app del todo y vuelve a abrirla.<br>Volverá a pedirte el micrófono',
   'mic.retryFailed': 'El micrófono sigue sin poder usarse. Permítelo y vuelve a intentarlo',
@@ -74,7 +74,7 @@ export const ES: Record<TKey, string> = {
   'metro.bpmUp': 'Subir BPM',
   'metro.bpmDown5': 'Bajar 5 BPM',
   'metro.bpmUp5': 'Subir 5 BPM',
-  'metro.tsNone': 'Ninguno',
+  'metro.tsNone': 'Libre', // 박자표 줄(2/4 3/4 4/4 6/8 옆, 모노 글꼴 55 px 칸)에 'Ninguno' 는 넘친다 — 「compás libre」 = 마디 강세 없음
   'metro.tsNoneAria': 'Sin compás, solo pulsos',
   'metro.sd1': 'Sin subdivisión',
   'metro.sd2': 'Corcheas',

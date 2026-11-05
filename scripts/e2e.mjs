@@ -906,6 +906,14 @@ await scenario('first launch on a Chinese phone: Chinese from the first paint, l
   await p.goto(URL_); await sleep(p, 600)
   assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, hidden: document.getElementById('notenames-row').hidden, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'zh-Hans', langOn: '4', hidden: true, label: '语言' })
 }, { fresh: true, locale: 'zh-CN' })
+await scenario('i18n: es — a three-letter name (Sol♯ at A = 466 from the 440 Hz tone) is drawn smaller and stays inside the card with its sharp and octave', 'violin_A4.wav', async p => {
+  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'es', refHz: 466, theme: 'dark' })))
+  await p.goto(URL_); await waitNote(p, t => t.note === 'Sol' && t.acc === '♯', 6000)
+  const g = await p.evaluate(() => { const R = id => document.getElementById(id).getBoundingClientRect(); const n = document.getElementById('tuner-note'); return { text: n.textContent, long: n.classList.contains('long'), acc: document.getElementById('tuner-acc').textContent, oct: document.getElementById('tuner-oct').textContent, octRight: R('tuner-oct').right, accRight: R('tuner-acc').right, cardRight: R('tuner-card').right, noteLeft: R('tuner-note').left, cardLeft: R('tuner-card').left, fontPx: parseFloat(getComputedStyle(n).fontSize) } })
+  assert.equal(g.text, 'Sol'); assert.equal(g.acc, '♯'); assert.equal(g.oct, '4'); assert.equal(g.long, true, 'three letters → long')
+  assert.ok(g.fontPx < 90, 'drawn smaller than the one-letter size: ' + g.fontPx)
+  assert.ok(g.octRight <= g.cardRight && g.accRight <= g.cardRight && g.noteLeft >= g.cardLeft, 'Sol ♯ 4 inside the card: ' + JSON.stringify(g))
+})
 await scenario('first launch on a Spanish-language phone: Spanish, solfège note names', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 600)
   assert.deepEqual(await p.evaluate(() => ({ lang: document.documentElement.lang, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, names: document.querySelector('#notenames-steps .step-btn.on').textContent, label: document.querySelector('[data-t="set.lang"]').textContent })), { lang: 'es', langOn: '2', names: 'Do Re Mi', label: 'Idioma' })
