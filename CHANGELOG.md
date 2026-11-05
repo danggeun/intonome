@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.0] - 2026-11-05
+Spanish, as the sixth language, and a final pass over everything since 2.7.0.
+
+Languages
+- Spanish (es) for every screen, the first-run guide, the settings, the privacy policy and the store listing. Neutral Spanish for Spain and Latin America (tú, no regional vocabulary), checked in an independent review pass like the other languages. A phone set to Spanish starts in Spanish
+- Spanish note names are Do Re Mi (fixed do, the standard for Spanish-speaking string players), with C D E as the alternative like Korean and Japanese; three-letter names (Sol, Sol♯) are drawn one size smaller so the name, its ♯ and the octave stay inside the card
+- Settings › Language is a 3 × 2 grid: 한국어 · English · Español over 日本語 · 简体中文 · 繁體中文
+- The links under the version stack vertically in Spanish too (English, Japanese, Spanish stack; Korean and Chinese stay on one line)
+
+Tests: dictionary checks cover six languages; a Spanish e2e walks every screen and a first launch on a Spanish phone; 6 new screenshot baselines; store images in six languages
+
 ## [2.8.2] - 2026-11-05
 Settings
 - The three links under the version (privacy policy, contact, licenses) stack vertically in English and Japanese, and stay on one line in Korean and both Chinese, where the three labels balance. On one line the Japanese labels (about 380 px) ran off both edges of the screen and the English ones only just fit; a phone whose font still cannot fit a one-line row falls back to the stack
