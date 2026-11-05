@@ -2,6 +2,10 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.8.1] - 2026-11-05
+Look
+- The page declares `<meta name="color-scheme" content="light dark">`. Browsers that darken web pages by force (Samsung Internet's dark mode for websites, Chrome's auto dark theme) leave pages that declare their own dark support alone, so the light theme should stay light on a phone in dark mode; 2.8.0's CSS-only opt-out was not enough for Samsung Internet. The app's own theme setting still decides the colours. Play app and iPhone are unaffected either way
+
 ## [2.8.0] - 2026-11-05
 Japanese, Simplified Chinese and Traditional Chinese, alongside Korean and English.
 
