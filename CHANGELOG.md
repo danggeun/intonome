@@ -2,6 +2,21 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.8.0] - 2026-11-05
+Japanese, Simplified Chinese and Traditional Chinese, alongside Korean and English.
+
+Languages
+- Every screen, toast, the first-run guide and the settings have Japanese (ja), Simplified Chinese (zh-Hans) and Traditional Chinese (zh-Hant) text. The first launch follows the phone's language: Korean, Japanese, Chinese (Traditional for Taiwan, Hong Kong, Macau or any Hant locale; Simplified otherwise), anything else English. Settings › Language has five options
+- Note names: Japanese offers ドレミ (katakana solfège) or C D E, like Korean's 도레미; both Chinese show C D E only, like English, since letter names are what Chinese string players and tuners use
+- The privacy policy page shows the current language's section of PRIVACY.md, which now has Japanese, Simplified and Traditional sections
+- The store listing (docs/STORE.md) and the listing screenshots (`npm run store:assets`, now `ja_…`, `zh_…`, `zht_…`) exist in all five languages; Japanese and Traditional sets use A = 442, Simplified 440
+- The translations were written for the app's register (friendly, short, no sentence-final periods) and checked in an independent review pass per language for register, music terms (基準音・許容範囲・3連符・付点 / 标准音・允许误差・三连音・附点 / 容許誤差・持續音) and Taiwan vs mainland wording (設定・點一下・App・螢幕・網址列・復原・隱私權政策・開放原始碼授權)
+
+Look
+- The light theme declares `color-scheme: only light`, so a browser's forced dark mode (Chrome's auto dark theme, Samsung Internet's dark mode for websites) no longer inverts the light screen around an un-inverted white canvas when the phone is in dark mode
+
+Tests: the dictionary checks cover all five languages (same keys, no Korean or kana leaking, placeholders and <br> aligned, no sentence-final periods); new e2e scenarios walk every screen in ja, zh-Hans and zh-Hant for foreign text and clipping, and first launches on Japanese, mainland-Chinese and Taiwanese phones; 18 new screenshot baselines
+
 ## [2.7.3] - 2026-11-05
 Metronome
 - Dragging the BPM (the big number in the expanded card, the ♩BPM in the collapsed header, the centre of the dial in the metronome-only view) now follows the speed of your finger: slowly, 6 px move one BPM so you can land on 63 or 76 exactly and a 2-3 px wobble as you lift your finger changes nothing; a fast flick keeps the old 2 px per BPM, so 40 to 200 is still one sweep. Before, 1 BPM was always 2 px, under half a millimetre, which is below what a fingertip can place. The per-step vibration (and the stronger one on every ten) is unchanged; the dial ring and the reference-pitch drum are unchanged
