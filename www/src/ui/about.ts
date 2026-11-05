@@ -4,6 +4,7 @@ import { attachSwipeBack } from './swipeBack.ts'
 import { getLang, type Lang } from '../core/i18n/index.ts'
 import { CONTACT_URL } from '../core/links.ts'
 import { licensesText } from './licensesText.ts'
+import { onLangChange } from './lang.ts'
 
 type Doc = 'privacy' | 'licenses'
 const page = (d: Doc): HTMLElement => q(`${d}-page`)
@@ -44,6 +45,16 @@ export function privacyHtml(lang: Lang): string {
   flush(); return out.join('')
 }
 
+/** 맨 아래 세 링크의 배열(사용자 결정 2026-11-05): 영어·일본어는 세로 3줄 — 한 줄이면 영어는 간당간당하고 일본어(약 380 px)는 넘친다; 한국어·중국어는 한 줄(약 190~250 px, 균형이 맞는다). 폰마다 다르지 않게 언어로 못 박고, 그래도 안 들어가면(낯선 글꼴) 세로로 */
+const STACKED: ReadonlySet<Lang> = new Set(['en', 'ja'])
+function layoutLinks(): void {
+  const row = q('settings-links'); row.classList.remove('stack')
+  if (STACKED.has(getLang())) { row.classList.add('stack'); return }
+  const items = [...row.querySelectorAll<HTMLElement>('a, button, .sl-dot')]
+  const need = items.reduce((w, el) => w + el.getBoundingClientRect().width, 0) + 4 * 2 // .sl-side 의 gap 두 번
+  if (need > row.clientWidth) row.classList.add('stack')
+}
+
 export function mountAbout(): void {
   q<HTMLAnchorElement>('contact-link').href = CONTACT_URL // mailto 는 새 창 없이: 페이지를 떠나지 않고 메일 앱만 열리며, _blank 를 주면 빈 탭이 남는 브라우저가 있다
   on(q('privacy-btn'), 'click', () => openDoc('privacy'))
@@ -52,4 +63,5 @@ export function mountAbout(): void {
     on(q(`${d}-close-btn`), 'click', () => page(d).classList.remove('open'))
     attachSwipeBack(page(d), { onBack: () => page(d).classList.remove('open') })
   }
+  onLangChange(layoutLinks); on(window, 'resize', layoutLinks); on(q('settings-hdr-btn'), 'click', layoutLinks); layoutLinks() // 설정을 열 때 한 번 더 — 글꼴이 늦게 와서 처음 잰 폭이 다를 수 있다
 }

@@ -661,6 +661,7 @@ await scenario('settings: the bottom links — contact opens the mail app, priva
   const geo = await p.evaluate(() => ['privacy-btn', 'contact-link', 'licenses-btn', 'settings-wordmark'].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.height), r.left + r.width / 2] }))
   assert.ok(geo.slice(0, 3).every(([h]) => h >= 40), '40 px: ' + geo.map(g => g[0]))
   assert.ok(Math.abs(geo[1][1] - geo[3][1]) < 1, `contact centred on the wordmark axis: ${geo[1][1]} vs ${geo[3][1]}`)
+  assert.equal(await p.evaluate(() => document.getElementById('settings-links').classList.contains('stack')), false, 'Korean: one line')
   // 개인정보처리방침 — 앱 안 화면, 한국어 절만
   await p.click('#privacy-btn'); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('privacy-page').classList.contains('open')), true)
@@ -740,6 +741,7 @@ await scenario('i18n: English — no Korean on any screen, nothing clipped, surv
   const seen = []
   const check = async where => { const r = await screenText(p); seen.push(where); assert.deepEqual(r.korean, [], `Korean on ${where}: ${JSON.stringify(r.korean)}`); assert.deepEqual(r.overflow, [], `clipped text on ${where}: ${JSON.stringify(r.overflow)}`) }
   await check('settings')
+  assert.equal(await p.evaluate(() => document.getElementById('settings-links').classList.contains('stack')), true, 'English: the three footer links stack vertically')
   await p.click('#licenses-btn'); await sleep(p, 300); await check('licenses'); await p.click('#licenses-close-btn'); await sleep(p, 300)
   await p.click('#privacy-btn'); await sleep(p, 300); await check('privacy policy'); await p.click('#privacy-close-btn'); await sleep(p, 300)
   await p.click('#settings-back-btn'); await sleep(p, 400)
@@ -870,6 +872,9 @@ for (const [v, lang, expectNote, foreign, title] of [['2', 'ja', 'ラ', /[가-�
   assert.equal(await p.evaluate(() => document.getElementById('notenames-row').hidden), lang !== 'ja', 'note-name row only where there is a choice')
   const check = async where => { const r = await screenText(p, foreign.source); assert.deepEqual(r.korean, [], `foreign text on ${where}: ${JSON.stringify(r.korean)}`); assert.deepEqual(r.overflow, [], `clipped text on ${where}: ${JSON.stringify(r.overflow)}`) }
   await check('settings')
+  // 맨 아래 세 링크가 화면 안에 — 일본어는 한 줄에 안 들어가 세로로 쌓인다(ui/about.ts layoutLinks)
+  const foot = await p.evaluate(() => ({ stack: document.getElementById('settings-links').classList.contains('stack'), out: [...document.querySelectorAll('#settings-links a, #settings-links button')].filter(e => { const r = e.getBoundingClientRect(); return r.left < 0 || r.right > innerWidth }).map(e => e.textContent) }))
+  assert.deepEqual(foot.out, [], 'footer links inside the screen'); assert.equal(foot.stack, lang === 'ja', 'Japanese stacks, Chinese stays on one line (English stacks too — checked in the English scenario)')
   await p.click('#licenses-btn'); await sleep(p, 300); await check('licenses'); await p.click('#licenses-close-btn'); await sleep(p, 300)
   await p.click('#privacy-btn'); await sleep(p, 300); await check('privacy policy')
   assert.ok((await p.evaluate(() => document.getElementById('privacy-text').textContent)).includes({ ja: 'マイク', 'zh-Hans': '麦克风', 'zh-Hant': '麥克風' }[lang]), 'policy in that language')
