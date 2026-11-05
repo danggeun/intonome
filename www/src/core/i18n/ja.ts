@@ -101,7 +101,7 @@ export const JA: Record<TKey, string> = {
   'rec.deleted': '削除しました',
   'rec.deleteFailed': '削除できませんでした',
   'rec.bookmarks': 'ブックマーク {n}',
-  'rec.noAutoDelete': '自動削除しない',
+  'rec.noAutoDelete': '自動削除なし',
   'rec.deletesToday': '今日削除',
   'rec.deletesIn': '{n}日後に削除',
   'rec.keep': '残す',
