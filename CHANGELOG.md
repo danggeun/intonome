@@ -2,6 +2,36 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.6] - 2026-11-08
+Recording and the editor checked feature by feature on a phone-sized touch screen, and what did not hold up fixed; a few last words and touches.
+
+Recordings list
+- On an Android phone ▶ could sit at 00:00 with nothing playing. If playback through the app's level correction does not start, it now plays directly after 1.5 s (once; if that fails too it says it can't play instead of retrying). A position dragged to before ▶ is applied once playback starts (setting it on a recording that was not loaded yet could stop playback on Android webm files, 2.9.3)
+- Holding the slider while it plays no longer has the dot creep under your finger
+- Opening the editor stops the recording playing in the list (both could play at once)
+- "Converting…" appears only when it takes more than a second (the web app showed it together with the browser's own download notice); a second tap while converting does nothing
+- A kept recording says "계속 보관" ("Kept") instead of "자동 삭제 안 함"
+
+Editor
+- After setting A while playing, dragging the position dot now moves the position: A sat on top of it and was dragged instead, and the dot jumped back on release. A and B are dragged by their A / B labels; when A and B overlap, the first direction you drag picks which
+- Dragging the dot past B with the loop on no longer throws it back to A mid-drag
+- Tapping near a handle moves there (it was ignored as the end of a drag)
+- After clearing A, or on another recording, B shows "B —" and its ‹ › are hidden (the old B time stayed)
+- Zoomed in, the window follows A and B when they change; bookmarks outside it are no longer drawn at the edges
+- Rename edits the name in place (the browser's own "danggeun.github.io says" box is gone): Enter, tapping elsewhere or going back saves, Esc cancels; the same name as another recording gets (2); an IME's Enter that confirms a conversion does not save
+- Saving A–B ignores a second tap while it works and says so if it takes long
+- Tapping the speed value switches between 1.0× and your practice speed (0.75× the first time, then the last speed other than 1.0× you used); it used to cycle 1.0 → 0.5 → 0.7 → 0.85
+- A touch cut off by the system no longer leaves a handle being dragged; handles and bookmarks are redrawn once the exact length is known
+
+Elsewhere
+- Settings: Tuner response "faster makes the line follow more sensitively, slower draws it more smoothly"; Keep recordings "choose Forever not to delete automatically" — both in the form of Mic sensitivity (all six languages)
+- Practice timer: "연주 시간" (playing time) instead of "소리 낸 시간", like the other languages
+- The collapsed metronome's ▶ is square like ∧ next to it (it was 44×40); its touch area stays 44
+- The ♩BPM drag area reaches a finger's width to the right of the number, so you can drag without covering it; further right still swipes the card
+- Long-pressing a button no longer selects its text with a copy / translate bar (Android)
+- First-run guide: the highlight around ☰ and ⚙ keeps the icon centred while staying on screen; at "slide the number next to ♩", only the number is open, so the card can no longer be swiped open under that bubble
+- Privacy policy: "your email address and message are used only to reply", and the GitHub link is introduced as another way to ask (six languages)
+
 ## [2.9.5] - 2026-11-07
 Shorter words where 2.9.4 still made you read twice, and three small fixes.
 
