@@ -2,6 +2,40 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.3] - 2026-11-07
+The last pass before the Play release: a full review of every screen in six languages, both themes, phone and tablet widths, plus independent reviews of the store text, privacy policy, accessibility and the first ten minutes of use. Nothing blocked release; this fixes what a careful eye would notice.
+
+Layout
+- Japanese and Chinese text wraps inside its box again: the first-run guide cards clipped their sentences (Korean word-keeping was applied to every language). Korean keeps whole words everywhere now, including Settings and the privacy page; Japanese breaks at phrases
+- Notices use the screen width (they were capped at half the screen and broke into three or four lines)
+- On 320 px phones the beat lights shrink to fit (the ninth light slid under the play button) and the time signatures fit their buttons in the metronome-only view (Spanish "Libre" touched the edges); on low tablets in landscape the metronome-only view shows all time signatures (6/8 was cut off); on tablets the metronome card ends where its content ends
+- Small alignments: the menu's close button, the metronome header's right edge, − and + drawn like the play triangle (the text glyphs sat 2 px low), the play button as wide as − and +, the dial centred in the metronome-only view, true minus sign in the cents reading, recording ▶ aligned with its title, the same "on" look for DRONE and REC, the guide's "Show again" as a button
+- The version under the wordmark is centred by the weight of its ink, measured on the device (a fixed shift was right for 2.9.0 and wrong for 2.9.2); the wordmark is shifted by its own measured 1.2 px
+- No faux-bold monospace (the selected tolerance and bookmarks asked for a weight the font does not ship)
+
+Behaviour
+- Dragging the recordings slider before pressing play now starts from that point (it started from 0:00)
+- Recording dates name the month in English and Spanish ("Nov 7", "7 nov") and use 月日 in Chinese; 11/7 read as 11 July outside the US
+- Recordings always show how many days are left before auto-delete, next to Keep (it showed only in the last week)
+- "Recording saved · Tap to listen" opens the list
+- The first-run guide also opens when the mic was refused, and the start button says why it is there
+- Drone notes use the spellings string players expect: C♯ E♭ F♯ A♭ B♭
+- Closing Settings right after a language change no longer jumps the page down (2.9.2)
+- Android app: the system font size is applied to the app's text from 0.85× up to 1.3×, without breaking the one-screen layout (the WebView used to scale text alone, up to 2×); the navigation bar's icons follow the app theme
+
+Accessibility
+- The collapsed metronome's hidden buttons are no longer reachable by screen reader or Tab; every button and slider has a name; play buttons say play or pause; REC says when it is recording; the BPM is announced after it changes; the tuner speaks when the note or the in-tune state changes, not every few cents; focus goes back to ☰ after the menu was opened from a notice, and into the guide when it appears from behind the mic pop-up
+- Undo and "tap to listen" notices are real buttons and stay while focused, for at least 7 seconds
+- With reduced motion, the downbeat flash and growing beat lights are off and the card and pop-ups move without animation; sliders show a focus ring from the keyboard; pages and titles are marked as dialogs and headings
+
+Text
+- All six languages: the guide says what to tap, explains the cents and green on the first step and how to change the tempo, says that the A it changes is only a trial, mentions the 30-day auto-delete at REC; clearer settings descriptions; fewer literal translations (English "Sounding", "stays calm"; Chinese 发声; Japanese 練習なので; Spanish "pulsa" for tapping, since "toca" also means play), Traditional Chinese 歸零 and 開源授權, the A label reads "La =" in Spanish
+- Store listing: no promise that a note matching the drone is read through the speaker; E1 is 41 Hz; the English short description names the four instruments, the Spanish one adds the double bass; no "Free" in screenshot captions; zh-HK listing
+- Privacy policy: the contact email next to GitHub issues (and that an email is used only to reply), the real Settings and button names, the web app keeps the mic while recording, the temporary share copy in the Android app, "not directed at children under 13"
+- Licenses: Bravura © 2019 (it said 2026); the text-zoom plugin listed
+
+Tests: unit tests for the date format, drone spellings, font scale and the play glyph; the footer e2e checks no jump while closing Settings; the dial is turned around the ring centre the SVG actually draws; 42 screenshot baselines re-taken
+
 ## [2.9.2] - 2026-11-06
 Settings
 - The links under the version are one line tall again in Korean and Chinese. 2.9.1 held the footer at three lines in every language so the page would not get shorter when the language changed, which looked like stretched empty space under the one-line footer; the page now keeps its length only while that is needed (right after a language change at the bottom) and lets it go when Settings close
@@ -15,7 +49,7 @@ Settings
 - The dots between the three links sit midway between the words (the spacing was only on the outer side)
 
 Metronome · Recorder
-- The play triangle sits exactly on the vertical centre of its button (it was 0.25 of a 24-unit box high)
+- The play triangle sits exactly on the vertical centre of its button (it sat 0.25 units high in its 24-unit drawing box)
 
 Tests: a unit test pins the play glyph's centre and the three static copies in index.html; the footer e2e checks the dot spacing, the version offset, the language card's place and that it stays put when the language changes; 7 settings screenshot baselines
 
@@ -55,7 +89,7 @@ Tests: the dictionary checks cover all five languages (same keys, no Korean or k
 
 ## [2.7.3] - 2026-11-05
 Metronome
-- Dragging the BPM (the big number in the expanded card, the ♩BPM in the collapsed header, the centre of the dial in the metronome-only view) now follows the speed of your finger: slowly, 6 px move one BPM so you can land on 63 or 76 exactly and a 2-3 px wobble as you lift your finger changes nothing; a fast flick keeps the old 2 px per BPM, so 40 to 200 is still one sweep. Before, 1 BPM was always 2 px, under half a millimetre, which is below what a fingertip can place. The per-step vibration (and the stronger one on every ten) is unchanged; the dial ring and the reference-pitch drum are unchanged
+- Dragging the BPM (the big number in the expanded card, the ♩BPM in the collapsed header, the centre of the dial in the metronome-only view) now follows the speed of your finger: slowly, 6 px move one BPM so you can land on 63 or 76 exactly and the small wobble as you lift your finger rarely changes the value; a fast flick keeps the old 2 px per BPM, so 40 to 200 is still one sweep. Before, 1 BPM was always 2 px, under half a millimetre, which is below what a fingertip can place. The per-step vibration (and the stronger one on every ten) is unchanged; the dial ring and the reference-pitch drum are unchanged
 
 Tests: 5 new unit tests (slow and fast rates, lift-off wobble, the ends, determinism); the e2e drags that set a BPM now drag slowly and assert the exact value
 
@@ -81,7 +115,7 @@ Settings
 
 Playback
 - The seek bar in the list, the length in the editor and seeking use the length the app measured while recording whenever the browser's own figure is not close to it (half to one and a half times). Chromium's MediaRecorder writes no length into its webm, and Android Chrome then reports not Infinity (which was already handled) but a wrong finite number: a 47-second recording showed as 4500:20 in the list and 8652:07 in the editor, and dragging the seek bar landed hours past the end, where playback stalled. Once the editor has decoded the recording, its exact length is used
-- Download gives a WAV on every platform for recordings up to 10 minutes (it did on iPhone and in the Android app). A webm from Chromium shows the same wrong length in other players
+- Download gives a WAV for webm recordings (Android, Chromium) up to 10 minutes everywhere, not only on iPhone and in the Android app; iPhone recordings (mp4) are handed over as they are. A webm from Chromium shows the same wrong length in other players
 
 Look
 - The play, stop and pause marks on every button (metronome header and card, the big button in the metronome-only view, the recording list, the editor) are drawn as SVG instead of the ▶ ■ ❚❚ characters of whatever font the phone has. The characters sat differently on each phone (on iPhone the play mark looked off-centre); the drawn marks are the same everywhere and the play triangle is nudged right by 5 % so it reads as centred

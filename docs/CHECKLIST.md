@@ -45,7 +45,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Plays without the mic
 - [A] Play/stop from the card button, the header button (whenever collapsed: ▶ when stopped, ■ when playing) and the space bar
 - [A] Header beat dots are one size in collapsed and expanded, playing or stopped
-- [A] BPM −/+, drag (2 px per BPM), clamped to 40–200
+- [A] BPM −/+, drag (follows finger speed: 6 px per BPM slowly, 2 px fast), clamped to 40–200
 - [A] Time signatures none/2/4/3/4/4/4/6/8, subdivisions; 6/8 disables subdivisions, counts the tempo in dotted quarters (♩. glyph in the header, a bar = two beats of three eighths) (unit tests + e2e)
 - [A] Volume slider: square taper — half is −12 dB, a tenth −40 dB, 0 is silent (unit test)
 - [A] Cello C2 (65 Hz), double bass B0 (30.9 Hz, 5-string), C1 (extension) and a loose E string (38.9 Hz) read their own note steadily within 0.3 s (unit tests)
@@ -87,7 +87,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Delete removes it from the list and IndexedDB; undo within 5 s; a double tap deletes once without a failure notice
 - [A] List survives a restart; items older than 30 days are deleted (can be turned off); last-7-days notice with "Keep"
 - [A] An unfinished recording (app killed) is recovered on the next launch
-- [A] Download: a WAV for recordings up to 10 minutes on every platform (webm as is above that, except iPhone which only says so); browser download on the web, Filesystem + share sheet in the Android app. [D] Check the share sheet on a device
+- [A] Download: webm recordings (Android, Chromium) become a WAV up to 10 minutes (webm as is above that, except iPhone which only says so); iPhone recordings (mp4/AAC) are handed over as they are; browser download on the web, Filesystem + share sheet in the Android app. [D] Check the share sheet on a device
 
 ## Editor
 - [A] Opens with title, 00:00 / length, play button enabled when ready
@@ -123,11 +123,11 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] getUserMedia errors become actionable messages (no mic / another app / HTTPS required)
 - [A] No silent failures: settings save, recording storage (also storage filling up during a recording, and an undone delete that can't be stored again), edit info and wake lock problems all show a toast
 - [A] Worker frame p95 < 12 ms in headless Chromium. [D] Check real phones with `window.__tt.stats()`
-- [D] Android back button: editor → settings → menu → mic popup → drone picker, then background on the main screen
+- [D] Android back button: editor → privacy/licenses page → settings → menu → mic popup → drone picker → first-run guide (ends it) → metronome-only view (leaves it), then background on the main screen
 - [D] Phone calls during and after use, Bluetooth headphone latency
 
 ## Look and feel
-- [M] Screenshot baselines: 18 screens (dark, light, English) match pixel for pixel in the development environment; CI only uploads its screenshots as an artifact (its fonts differ)
+- [M] Screenshot baselines: 42 screens (dark and light Korean, English, Spanish, Japanese, Simplified and Traditional Chinese; 6 scenes each) match pixel for pixel in the development environment; CI only uploads its screenshots as an artifact (its fonts differ)
 - [A] Touch targets are at least 44 px (visible size unchanged)
 - [A] Play / stop / pause marks are drawn (SVG, `data-glyph`), the same on every platform, centred in their buttons
 - [A] Text and control contrast meets WCAG AA in both themes

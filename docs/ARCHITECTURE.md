@@ -6,17 +6,18 @@
 www/src/
   main.ts      Wiring: connects modules, startup sequence, app lifecycle (hide/return, editor, idle watch; what to let go on hide or when the editor opens is decided by core/micLease), service worker, diagnostics hook window.__tt
   ui/          DOM bindings per card: tuner, refDrum, refPanel (Play A), drone, metro, dial, swipeBack, swipeStep, menu, settings, timer,
-               micPopup, recHeader, recList, editor, toast, theme, lang, tour (first-run guide). mount*() binds the DOM and subscribes to stores
+               micPopup, recHeader, recList, editor, toast, theme, lang, tour (first-run guide), about (privacy and licenses pages, footer), launch,
+               licensesText, dom, dragTick. mount*() binds the DOM and subscribes to stores
   audio/       Web Audio adapters: engine (single AudioContext, mic session), analysis (+worker), capture.worklet,
                metronome (+metro.worklet), refTone (Play A and drone), recorder, playback (output route for recordings),
                editorPlayer (what the editor plays through), stretchPlayer (+stretch.worklet), decode, messages
   state/       Stores per domain (settings / tuner / metro / refTone / drone / session / recList). Source of the types
   persist/     Settings and the first-run guide flag in localStorage, recordings in IndexedDB
   platform/    Web / Capacitor branches (status bar, wake lock, full screen, file saving, back button)
-  core/        Pure logic, no browser APIs, all unit-tested:
+  core/        Pure logic, no browser APIs, unit-tested (except fft, links):
                pitch/(fft, yinFast, spectrum, tracker, readout, analyzer) · playing/detector · metro/(sequencer, arrival, sweep, dial, clickPitch, card)
                i18n/(ko, en, es, ja, zh, zhHant), drone, note, wav, peaks, format, recPolicy, hist, trace, hzReadout, softclip, playbackGain, container,
-               notice, micLease, editRange, tourPlace, stretch, mono, yin (reference only, not bundled)
+               notice, micLease, editRange, tourPlace, stretch, mono, recCut, links, metro/dragRate, yin (reference only, not bundled)
 ```
 
 Dependency rules (`scripts/check-deps.mjs`, part of `npm run check`):
@@ -91,7 +92,7 @@ Only `platform/index.ts` looks at `window.Capacitor`.
 | Saving files | iOS: share sheet (inside a tap) · elsewhere: `<a download>` | `@capacitor/filesystem` → `@capacitor/share` |
 | Keep screen on | Wake Lock. iOS web needs a DOM tap for the first request, so it shows a start button first | Same |
 | Status bar | `theme-color` meta | `@capacitor/status-bar` |
-| Back button | Browser default | backButton: editor → settings → menu → mic popup → drone picker; `minimizeApp` on the main screen |
+| Back button | Browser default | backButton: editor → privacy/licenses page → settings → menu → mic popup → drone picker → first-run guide → metronome-only view; `minimizeApp` on the main screen |
 | Service worker | Precache. A new version is applied when idle; otherwise a toast offers it | Not registered |
 
 Builds: `npm run build` (base `/intonome/`, Pages) · `npm run build:cap` (base `/`, Capacitor).
@@ -103,7 +104,7 @@ Builds: `npm run build` (base `/intonome/`, Pages) · `npm run build:cap` (base 
 | Pure logic | Vitest `*.test.ts`, `scripts/*.test.mjs` |
 | Tuner benchmark | `npm run bench`: synthetic signals: bias, p90, octave errors, lock latency, F1. Changes to the tuner or detector must not regress. `test-assets/bench/latest.md` changes only when a result changes (timing goes to the console), so `git diff` of it is the comparison |
 | Browser integration | `npm run e2e`: headless Chromium with WAV files as a fake mic. `--only <regex>` |
-| Visual regression | `npm run shots`: 18 screens (dark, light, English) compared with `test-assets/screens/baseline/` via pixelmatch |
+| Visual regression | `npm run shots`: 42 screens (dark and light Korean + en, es, ja, zh, zht; 6 scenes each) compared with `test-assets/screens/baseline/` via pixelmatch |
 | Module boundaries | `scripts/check-deps.mjs` |
 | Which checks a change needs | `npm run affected` (table in `scripts/lib/affected.mjs`: changed files → unit tests via `vitest related`, e2e scenarios by name, benchmark, screenshots); `--run` runs them |
 
