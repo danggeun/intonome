@@ -55,16 +55,18 @@ export function toast(msg: string, ms = 2500, action?: () => void): void {
     if (same) { clearTimeout(same.timer); same.timer = setTimeout(() => drop(same), ms); return }
   }
   const host = q('toast-host')
-  // 누를 수 있는 안내(실행 취소·탭해서 듣기)는 진짜 버튼 — 화면 읽기·키보드로 닿고, 포커스·손가락이 올라가 있는 동안은 사라지지 않는다. 읽고 누를 시간도 넉넉히(7 초 이상)
+  // 누를 수 있는 안내(실행 취소·눌러서 듣기)는 진짜 버튼 — 화면 읽기·키보드로 닿고, 키보드 포커스·마우스가 올라가 있는 동안은 사라지지 않는다.
+  // 시간은 부른 쪽이 정한 그대로(실행 취소 5 초). 2.9.3 의 '최소 7 초' 는 폰에서 너무 오래 떠 있었다
   const el = document.createElement(action ? 'button' : 'div')
   el.className = 'toast'; el.textContent = msg
   if (action) el.classList.add('actionable')
-  const life = action ? Math.max(ms, 7000) : ms
-  const slot: Slot = { el, timer: setTimeout(() => drop(slot), life), msg, actionable: !!action }
+  const slot: Slot = { el, timer: setTimeout(() => drop(slot), ms), msg, actionable: !!action }
   el.onclick = action ? () => { action(); drop(slot) } : null
   if (action) {
     const hold = (): void => clearTimeout(slot.timer), resume = (): void => { clearTimeout(slot.timer); slot.timer = setTimeout(() => drop(slot), 3000) }
-    el.addEventListener('focus', hold); el.addEventListener('blur', resume); el.addEventListener('pointerenter', hold); el.addEventListener('pointerleave', resume)
+    el.addEventListener('focus', hold); el.addEventListener('blur', resume)
+    // 마우스만 — 폰에서는 손가락이 스치기만 해도 pointerenter 가 오고 leave 가 늦거나 안 와서 안내가 멈춰 있을 수 있다
+    el.addEventListener('pointerenter', e => { if ((e as PointerEvent).pointerType === 'mouse') hold() }); el.addEventListener('pointerleave', e => { if ((e as PointerEvent).pointerType === 'mouse') resume() })
   }
   host.appendChild(el)
   slots.push(slot); markLatest()

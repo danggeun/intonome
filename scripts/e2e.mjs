@@ -971,9 +971,9 @@ await scenario('first-run guide: a fresh install walks through every step and no
   await p.goto(URL_); await waitTour(p)
   let s = await tour(p); assert.equal(s.key, 'new', '끝내기 전에는 다음 실행에 다시 뜬다')
   assert.notEqual(await themeColor(p), '#181b21', '막이 떠 있는 동안 상태바도 어둡게')
-  // 첫 장: × 를 가리키는 '언제든 닫을 수 있어요' 말풍선 — 밝힌 곳(음이름·¢)과 말풍선 사이 틈에 떠서 아무것도 가리지 않는다
+  // 첫 장: × 를 가리키는 '언제든 그만두기' 말풍선 — 밝힌 곳(음이름·¢)과 말풍선 사이 틈에 떠서 아무것도 가리지 않는다
   const hint = await p.evaluate(() => { const h = document.querySelector('#tour .tour-skip-hint'), r = h.getBoundingClientRect(), sp = document.querySelector('#tour .tour-spot').getBoundingClientRect(), c = document.querySelector('#tour .tour-card').getBoundingClientRect(); return { text: h.textContent, shown: !h.hidden, top: r.top, bottom: r.bottom, spotBottom: sp.bottom, cardTop: c.top } })
-  assert.equal(hint.text, '언제든 닫을 수 있어요'); assert.equal(hint.shown, true)
+  assert.equal(hint.text, '언제든 그만두기'); assert.equal(hint.shown, true)
   assert.ok(hint.top >= hint.spotBottom && hint.bottom <= hint.cardTop, '말풍선이 밝힌 곳을 가리지 않는다: ' + JSON.stringify(hint))
   // ① 소리를 내면 읽는 법으로 바뀐다(허용 오차 값이 들어간다). "다음"이 진해진다
   await waitUntil(p, () => !document.querySelector('#tour .tour-next.soft'), 5000, 'note step done')
@@ -983,7 +983,7 @@ await scenario('first-run guide: a fresh install walks through every step and no
   await tourNext(p); s = await tour(p); assert.equal(s.title, '기준음은 밀어서 바꿔요'); assert.equal(s.soft, true)
   const box = await p.locator('#ref-drum-outer').boundingBox()
   await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await p.mouse.down(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 56, { steps: 8 }); await p.mouse.up(); await sleep(p, 400)
-  s = await tour(p); assert.equal(s.title, '이렇게 바꾸면 돼요'); assert.match(s.body, /442 Hz/)
+  s = await tour(p); assert.equal(s.title, '이렇게 바꾸면 돼요'); assert.equal(s.body, '다음으로 넘어가면 원래대로 돌아가요')
   assert.equal(await p.evaluate(() => document.querySelector('.ref-drum-item.active').textContent), '440 Hz')
   await tourNext(p); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.querySelector('.ref-drum-item.active').textContent), '442 Hz', '안내에서 바꾼 기준음은 되돌린다')
@@ -1014,7 +1014,7 @@ await scenario('first-run guide: a fresh install walks through every step and no
   assert.equal(await p.evaluate(() => document.querySelector('#tour .tour-pulse').className), 'tour-pulse g-drag')
   const lb = await p.locator('#metro-hdr-label').boundingBox()
   await p.mouse.move(lb.x + lb.width / 2, lb.y + lb.height / 2); await p.mouse.down(); await p.mouse.move(lb.x + lb.width / 2, lb.y + lb.height / 2 - 60, { steps: 8 }); await p.mouse.up(); await sleep(p, 300)
-  s = await tour(p); assert.equal(s.title, '이렇게 바꾸면 돼요'); assert.match(s.body, /80 BPM/)
+  s = await tour(p); assert.equal(s.title, '이렇게 바꾸면 돼요'); assert.equal(s.body, '다음으로 넘어가면 원래대로 돌아가요')
   assert.notEqual(await p.evaluate(() => document.getElementById('metro-hdr-bpm').textContent), '80')
   // ⑦~⑨ 보여 주기만: 밝힌 버튼을 눌러도 아무것도 시작되지 않는다(녹음이 시작되면 안 된다)
   await tourNext(p); assert.equal((await tour(p)).title, 'REC')

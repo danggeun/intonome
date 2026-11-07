@@ -225,7 +225,8 @@ button{font-family:inherit;color:inherit;}
   /* 양옆 칸은 버튼 하나(36)씩 — ♩80(64)이 빠져 LED 줄이 좁은 폰에서도 원래 간격(320 px 에서 0 → 약 5 px) */
   #metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr{grid-template-columns:minmax(var(--h-compact),1fr) minmax(0,calc(9*13px + 8*7px)) minmax(var(--h-compact),1fr);}
 }
-#metro-play-hdr-btn{width:44px;height:var(--h-compact);background:var(--accent-fill);border:none;border-radius:var(--r-sm);color:var(--on-accent);font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;}
+#metro-play-hdr-btn{width:44px;height:var(--h-compact);background:var(--accent-fill);border:1px solid transparent;border-radius:var(--r-sm);color:var(--on-accent);font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;}
+#metro-play-hdr-btn[data-glyph="play"]{background:transparent;border-color:var(--line-ctl);color:var(--text);} /* 접혀 멈춰 있을 때는 테두리만 — 빨강은 '울리는 중' 일 때만(REC 와 같은 규칙). 튜너를 볼 때 시선을 끌지 않게 */
 /* 크기 버튼 하나 — 상태에 따라 글리프만 바꾼다: 접힘 ∧(펼치러) · 펼침 ∧(펼침2로) · 전용 ∨(접힘으로) */
 #metro-size-btn{position:relative;width:var(--h-compact);height:var(--h-compact);background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-sm);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;}
 #metro-size-btn::after{content:'';position:absolute;inset:-6px;}

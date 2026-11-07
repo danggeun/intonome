@@ -241,7 +241,9 @@ function holeRect(s: Step): DOMRect | null {
   const rs = els.map(e => e.getBoundingClientRect()), p = s.pad ?? 6
   const x0 = Math.min(...rs.map(r => r.left)) - p, y0 = Math.min(...rs.map(r => r.top)) - p
   const x1 = Math.max(...rs.map(r => r.right)) + p, y1 = Math.max(...rs.map(r => r.bottom)) + p
-  return new DOMRect(x0, y0, x1 - x0, y1 - y0)
+  // 화면 끝의 버튼(☰·⚙)은 여백을 더하면 화면 밖으로 나가 테두리가 잘렸다 — 테두리(2 px)까지 화면 안에 들게
+  const m = 3, l = Math.max(m, x0), t = Math.max(m, y0), r = Math.min(innerWidth - m, x1), b = Math.min(innerHeight - m, y1)
+  return new DOMRect(l, t, r - l, b - t)
 }
 /** 안전 영역(노치·홈 막대) — 말풍선이 그 안으로 들어가지 않게 */
 let insets = { top: 0, bottom: 0 }

@@ -90,7 +90,7 @@ mountRecHeader(() => tryOpenMic(true)) // REC 가 마이크를 켠다 — 직접
 setMicOpener(() => startInGesture()) // 꺼진 채 남은 튜너의 시작 버튼 (정의는 아래 — 누를 때 부른다)
 const droneOn = (): boolean => droneStore.get().pitchClass !== null
 // audio·persist·platform 이 알리는 한 줄은 모두 토스트로. 녹음 완료만은 눌러서 바로 목록으로 — 「완료」 뿐이면 어디서 듣는지 몰랐다
-onNotice((msg, ms) => { if (msg === t('rec.done')) toast(t('rec.doneTap'), 4000, openMenu); else toast(msg, ms) })
+onNotice((msg, ms) => { if (msg === t('rec.done')) toast(t('rec.doneTap'), 5000, openMenu); else toast(msg, ms) })
 // 녹음 재생도 유휴가 아니다 — 재생이 보정 게인 그래프를 타면 컨텍스트가 잠들 때 무음이 된다
 setIdleCheck(() => !metroStore.get().playing && !refToneStore.get().active && !droneOn() && !playbackActive())
 startAnalysis()
