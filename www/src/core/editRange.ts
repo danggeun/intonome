@@ -9,8 +9,8 @@ const ZOOM_PAD = 2
 /** 반복 '1 s 앞' 의 프리롤 (s) */
 const PREROLL_SEC = 1
 const SPEED_MIN = 0.5, SPEED_MAX = 1.5
-/** 값 라벨 탭 순환: 1.0 → 0.5 → 0.7 → 0.85 → 1.0 (활 든 손으로 슬라이더 대신 한 번씩 탭) */
-const SPEED_PRESETS = [1.0, 0.5, 0.7, 0.85] as const
+/** 속도 라벨을 처음 눌렀을 때의 연습 속도 — 그 뒤로는 마지막에 쓴 느린(1.0 이 아닌) 속도 */
+export const PRACTICE_SPEED = 0.75
 
 /** 보이는 창 — 확대가 없거나 깨졌으면 전체(길이를 모르면 0..1) */
 export function viewRange(view: TimeWindow | null, dur: number): TimeWindow { return view && view.t1 > view.t0 ? view : { t0: 0, t1: dur || 1 } }
@@ -32,8 +32,8 @@ export function loopStart(a: number | null, loop: 0 | 1 | 2): number { return a 
 export function clampSpeed(v: number): number { return Math.max(SPEED_MIN, Math.min(SPEED_MAX, Math.round(v * 100) / 100)) }
 /** 속도 라벨: 0.1 단위면 한 자리('0.5×'), 아니면 두 자리('0.85×') */
 export function speedLabel(v: number): string { return (Number.isInteger(v * 10) ? v.toFixed(1) : v.toFixed(2)) + '×' }
-/** 다음 프리셋 — 프리셋이 아닌 값(슬라이더로 맞춘 0.75 등)에서는 1.0 으로 */
-export function nextPreset(cur: number): number {
-  const i = SPEED_PRESETS.findIndex(p => Math.abs(p - cur) < 0.01)
-  return SPEED_PRESETS[(i + 1) % SPEED_PRESETS.length]!
+/** 속도 라벨 탭(활 든 손으로 한 번): 1.0 이 아니면 1.0 으로, 1.0 이면 마지막 연습 속도로 — '원래 속도 ↔ 연습 속도' 두 칸.
+ *  2.9.5 까지는 1.0 → 0.5 → 0.7 → 0.85 순환이라 원래 속도로 돌아가려면 여러 번 눌러야 했고, 슬라이더 값에서는 다음이 어디인지 알 수 없었다 */
+export function toggleSpeed(cur: number, lastPractice: number): number {
+  return Math.abs(cur - 1) > 0.001 ? 1 : clampSpeed(Math.abs(lastPractice - 1) > 0.001 ? lastPractice : PRACTICE_SPEED)
 }

@@ -11,9 +11,9 @@ import { recListStore, type RecItem } from '../state/index.ts'
 import { patchRec } from '../audio/recorder.ts'
 import { createEditorPlayer, type EditorPlayer } from '../audio/editorPlayer.ts'
 import { decodeMono, oneAtATime } from '../audio/decode.ts'
-import { viewRange as viewOf, frac as fracIn, timeAt, zoomWindow, clampA, clampB, loopStart as loopStartOf, clampSpeed, speedLabel, nextPreset, type TimeWindow } from '../core/editRange.ts'
+import { viewRange as viewOf, frac as fracIn, timeAt, zoomWindow, clampA, clampB, loopStart as loopStartOf, clampSpeed, speedLabel, toggleSpeed, PRACTICE_SPEED, type TimeWindow } from '../core/editRange.ts'
 import { q, on, reflow, setOn, setGlyph } from './dom.ts'
-import { displayName, downloadRec, handOff } from './recList.ts'
+import { displayName, downloadRec, handOff, stopListPlayers } from './recList.ts'
 import { DECODE_MAX_SEC } from '../core/recPolicy.ts'
 import { toast } from './toast.ts'
 import { t as tr } from '../core/i18n/index.ts'
@@ -56,8 +56,8 @@ function setPosUI(t: number): void {
 }
 function onTimeUpdate(): void {
   if (!ed.audio) return
-  loopCheck(ed.audio) // 화면이 꺼지면 rAF 가 멈춘다 — timeupdate(≤ 250 ms 늦음)가 B 를 지나치지 않게 받친다
-  if (ed.dragging) return
+  if (ed.dragging !== 'pos') loopCheck(ed.audio) // 화면이 꺼지면 rAF 가 멈춘다 — timeupdate(≤ 250 ms 늦음)가 B 를 지나치지 않게 받친다. 손잡이를 끄는 동안은 반복이 위치를 빼앗지 않게
+  if (ed.dragging === 'pos') return // A·B 를 끄는 동안에도 재생 위치는 계속 그린다(멈췄다가 놓을 때 튀었다)
   const d = dur(); if (!d) return
   setPosUI(ed.audio.currentTime)
 }
@@ -66,7 +66,7 @@ function loopCheck(a: EditorPlayer): void { if (ed.loop && ed.ptA !== null && ed
 let loopRaf: number | null = null
 function loopTick(): void {
   loopRaf = null; const a = ed.audio; if (!a || a.paused) return
-  loopCheck(a)
+  if (ed.dragging !== 'pos') loopCheck(a)
   loopRaf = requestAnimationFrame(loopTick)
 }
 function startLoopWatch(): void { if (loopRaf == null) loopRaf = requestAnimationFrame(loopTick) }
@@ -80,6 +80,8 @@ function updateHandles(): void {
     q('ed-ab-times').style.display = 'flex'; q('ed-a-time').textContent = 'A ' + fmtTenths(ed.ptA)
   }
   if (ed.ptB !== null) { const bH = q('ed-b-handle'); bH.style.display = 'block'; bH.style.left = pct(ed.ptB, d); q('ed-b-time').textContent = 'B ' + fmtTenths(ed.ptB) }
+  else q('ed-b-time').textContent = 'B —'
+  for (const id of ['ed-b-nudge-l', 'ed-b-nudge-r']) q(id).style.visibility = ed.ptB === null ? 'hidden' : '' // B 가 없으면 B 조절은 할 일이 없다
   if (ed.ptA !== null && ed.ptB !== null) { const r = q('ed-ab-range'); r.style.display = 'block'; r.style.left = pct(ed.ptA); r.style.width = ((frac(ed.ptB) - frac(ed.ptA)) * 100).toFixed(3) + '%' }
   updateZoomBtn()
   requestWave()
@@ -101,7 +103,12 @@ function nudge(which: 'a' | 'b', d: number): void {
   const len = dur(); if (!len) return
   if (which === 'a' && ed.ptA !== null) ed.ptA = clampA(ed.ptA + d, ed.ptB, len)
   if (which === 'b' && ed.ptB !== null) ed.ptB = clampB(ed.ptB + d, ed.ptA, len)
-  updateHandles(); if (ed.ptA !== null) updateABtn(); if (ed.ptB !== null) updateBBtn(); persistEdit()
+  updateHandles(); if (ed.ptA !== null) updateABtn(); if (ed.ptB !== null) updateBBtn(); refreshZoom(); persistEdit()
+}
+/** 확대 중 A·B 가 바뀌면 창도 [A−2, B+2] 로 다시 — 끄는 동안이 아니라 놓은 뒤·미세 조정 뒤에(손가락 아래 창이 움직이지 않게) */
+function refreshZoom(): void {
+  if (!view || ed.ptA === null || ed.ptB === null) return
+  view = zoomWindow(ed.ptA, ed.ptB, dur()); updateHandles(); renderBmTicks(); if (ed.audio) setPosUI(ed.audio.currentTime)
 }
 /** 10 분이 넘는 녹음은 구간 저장이 안 된다(디코드 메모리) — 열 때부터 흐리게, 눌러야 알게 하지 않는다 */
 const tooLongToCut = (): boolean => !!ed.item && ed.item.dur > DECODE_MAX_SEC
@@ -165,43 +172,63 @@ async function ensurePeaks(item: RecItem): Promise<void> {
 function removeWindowHandlers(): void {
   if (!ed.handlers) return
   window.removeEventListener('mousemove', ed.handlers.mm); window.removeEventListener('mouseup', ed.handlers.mu)
-  window.removeEventListener('touchmove', ed.handlers.tm); window.removeEventListener('touchend', ed.handlers.te)
+  window.removeEventListener('touchmove', ed.handlers.tm); window.removeEventListener('touchend', ed.handlers.te); window.removeEventListener('touchcancel', ed.handlers.te)
   ed.handlers = null
 }
 let dragEndedAt = 0
-/** 트랙 위 포인터다운: 플레이헤드·A·B 중 가장 가까운 것을 잡는다 */
-function pickHandle(clientX: number): EdState['dragging'] {
+/** A·B 가 거의 같은 자리여서 어느 쪽인지 처음 미는 방향으로 정할 때 — 시작 x */
+let abTieX: number | null = null
+/** 트랙 위 포인터다운: 무엇을 잡나.
+ *  · A·B 위의 글자표(A/B)를 잡으면 그 손잡이
+ *  · 그 밖에는 재생 위치(검은 동그라미)가 먼저 — 재생 중 A 를 찍으면 A 가 재생 위치와 겹쳐, 동그라미를 끌려던 손가락이 A 를 끌고 갔다
+ *  · 재생 위치가 멀면 가까운 A·B. 둘이 겹쳐 있으면 처음 미는 방향(왼쪽 A, 오른쪽 B) */
+function pickHandle(clientX: number, clientY: number): EdState['dragging'] {
   const d = dur(); if (!d) return null
-  const r = q('ed-track').getBoundingClientRect(), x = clientX - r.left
-  const cands: Array<[EdState['dragging'], number | null]> = [['pos', ed.audio?.currentTime ?? 0], ['a', ed.ptA], ['b', ed.ptB]]
-  let best: EdState['dragging'] = null, bestDist = 24
-  for (const [k, t] of cands) { if (t === null) continue; const dist = Math.abs(frac(t) * r.width - x); if (dist < bestDist) { bestDist = dist; best = k } }
-  return best
+  abTieX = null
+  // 글자표는 7×14 px 라 손가락 폭만큼 넓혀서 본다(위에 손잡이의 넓은 누름 칸이 겹쳐 있어 대상 요소로는 못 가린다)
+  const onLbl = (id: string): boolean => { const h = q(id); if (h.style.display === 'none') return false; const r = h.querySelector('.ed-handle-lbl')!.getBoundingClientRect(); return clientX > r.left - 14 && clientX < r.right + 14 && clientY > r.top - 12 && clientY < r.bottom + 6 }
+  const la = ed.ptA !== null && onLbl('ed-a-handle'), lb = ed.ptB !== null && onLbl('ed-b-handle')
+  if (la || lb) {
+    if (la && lb && ed.ptA !== null && ed.ptB !== null) { abTieX = clientX; return 'a' } // 둘 다 손가락 아래 — 미는 방향으로
+    return la ? 'a' : 'b'
+  }
+  const r = q('ed-track').getBoundingClientRect(), x = clientX - r.left, near = 24
+  const dist = (t: number | null): number => t === null ? Infinity : Math.abs(frac(t) * r.width - x)
+  if (dist(ed.audio?.currentTime ?? 0) < near) return 'pos'
+  const da = dist(ed.ptA), db = dist(ed.ptB)
+  if (da >= near && db >= near) return null
+  if (ed.ptA !== null && ed.ptB !== null && Math.abs(frac(ed.ptB) * r.width - frac(ed.ptA) * r.width) < 8) { abTieX = clientX; return 'a' }
+  return da <= db ? 'a' : 'b'
 }
 function initDrag(): void {
   removeWindowHandlers()
+  let moved = false
   const move = (clientX: number) => {
     const d = dur(); if (!ed.dragging || !ed.audio || !d) return
+    if (abTieX !== null) { if (Math.abs(clientX - abTieX) < 3) return; ed.dragging = clientX > abTieX ? 'b' : 'a'; abTieX = null }
+    moved = true
     const t = tFromClient(clientX)
     if (ed.dragging === 'pos') { const c = Math.max(0, Math.min(d, t)); ed.audio.currentTime = c; setPosUI(c) }
     else if (ed.dragging === 'a') { ed.ptA = clampA(t, ed.ptB, d); updateHandles(); updateABtn(); checkExportBtn() }
     else if (ed.dragging === 'b') { ed.ptB = clampB(t, ed.ptA, d); updateHandles(); updateBBtn(); checkExportBtn() }
   }
-  const end = () => { const was = ed.dragging; if (was) dragEndedAt = Date.now(); ed.dragging = null; if (ed.audio && dur()) setPosUI(ed.audio.currentTime); if (was === 'a' || was === 'b') persistEdit() }
+  // 움직이지 않은 터치는 끌기가 아니다 — 손잡이 근처를 톡 눌러도 그 자리로 이동(click)한다
+  const end = () => { const was = ed.dragging; if (was && moved) dragEndedAt = Date.now(); ed.dragging = null; abTieX = null; moved = false; if (ed.audio && dur()) setPosUI(ed.audio.currentTime); if (was === 'a' || was === 'b') { refreshZoom(); persistEdit() } }
   ed.handlers = { mm: e => move(e.clientX), mu: end, tm: e => { if (ed.dragging) move(e.touches[0]!.clientX) }, te: end }
   window.addEventListener('mousemove', ed.handlers.mm); window.addEventListener('mouseup', ed.handlers.mu)
-  window.addEventListener('touchmove', ed.handlers.tm, { passive: true }); window.addEventListener('touchend', ed.handlers.te)
+  window.addEventListener('touchmove', ed.handlers.tm, { passive: true }); window.addEventListener('touchend', ed.handlers.te); window.addEventListener('touchcancel', ed.handlers.te) // 시스템이 터치를 끊어도 끌기가 남지 않게
 }
 
 export function openEditor(item: RecItem): void {
   if (!recListStore.get().items.includes(item)) return
+  stopListPlayers() // 목록에서 듣던 소리가 편집기 소리와 겹치지 않게
   hideMenu()
   if (ed.audio) { ed.audio.release(); ed.audio = null }
   ed.idx = 0; ed.item = item; ed.ptA = null; ed.ptB = null; ed.loop = 0; ed.bookmarks = item.bookmarks.slice(); ed.dragging = null; view = null
 
   const audio = createEditorPlayer(item.url, item.peak, item.dur) // 레벨 보정 · 배속은 앱이 직접(audio/editorPlayer)
   ed.audio = audio
-  const updateDur = () => { if (ed.audio !== audio) return; q('ed-dur').textContent = fmtT(Math.round(audio.duration)) }
+  const updateDur = () => { if (ed.audio !== audio) return; q('ed-dur').textContent = fmtT(Math.round(audio.duration)); updateHandles(); renderBmTicks(); setPosUI(audio.currentTime) } // 길이가 확정되면 손잡이·북마크를 다시 그린다
   audio.addEventListener('loadedmetadata', updateDur); audio.addEventListener('durationchange', updateDur)
   // 저장된 A-B/북마크는 길이를 알아야 그릴 수 있다 — 첫 loadedmetadata 에서 복원
   let restored = false
@@ -232,9 +259,11 @@ export function openEditor(item: RecItem): void {
   q('ed-cur').textContent = '00:00'; q('ed-dur').textContent = item.dur ? fmtT(item.dur) : '--:--'
   setPlayGlyph(false); playBtn.classList.add('dim'); playBtn.disabled = true
   if (audio.readyState >= 3) { playBtn.classList.remove('dim'); playBtn.disabled = false }
+  lastPractice = PRACTICE_SPEED
   setSpeed(item.speed ?? 1.0, false) // 녹음별 마지막 속도 복원
   q('ed-progress').style.width = '0%'; q('ed-pos-handle').style.left = '0%'
   for (const id of ['ed-ab-range', 'ed-a-handle', 'ed-b-handle', 'ed-ab-times']) q(id).style.display = 'none'
+  q('ed-a-time').textContent = 'A —'; q('ed-b-time').textContent = 'B —' // 전 녹음의 A·B 가 남지 않게
   q('ed-bm-ticks').innerHTML = ''
   renderBmList()
   resetABtn(); resetBBtn(); resetLoopBtn(); updateZoomBtn()
@@ -246,6 +275,7 @@ export function openEditor(item: RecItem): void {
 }
 
 export function closeEditor(): void {
+  endTitleEdit(true) // 이름을 고치다 뒤로 가도 저장 — 화면의 ‹ 는 먼저 입력칸을 벗어나며 저장되므로, 기기 뒤로·가장자리 밀기도 같게
   if (ed.audio) { ed.audio.release(); ed.audio = null }
   if (loopRaf != null) { cancelAnimationFrame(loopRaf); loopRaf = null }
   peaks = null; ed.idx = -1; ed.item = null; ed.ptA = null; ed.ptB = null; ed.loop = 0; view = null // 닫힌 뒤 늦게 오는 ended 가 반복을 되살리지 않게
@@ -262,14 +292,24 @@ export const editorDiag = () => ({ ptA: ed.ptA, ptB: ed.ptB, loop: ed.loop, audi
 
 /** 녹음 이름의 최대 길이 — 파일명·목록 카드가 감당할 수 있는 길이 */
 const NAME_MAX = 40
+/** 이름 바꾸기 — 브라우저 입력창(prompt, 'danggeun.github.io 내용:') 대신 이름 자리가 그대로 입력칸이 된다.
+ *  완료(엔터)·바깥 누르기·뒤로 = 저장, Esc = 취소. 빈 이름은 저장하지 않고, 다른 녹음과 같으면 (2)·(3) 을 붙인다 */
 function editTitle(): void {
-  const current = ed.item ? ed.item.name : ''
-  const newName = prompt(tr('ed.namePrompt'), current)
-  if (newName && newName.trim() && ed.item) {
-    const name = newName.trim().slice(0, NAME_MAX)
-    const next = patchRec(ed.item, { name }); if (next) ed.item = next
-    q('editor-title-display').textContent = displayName(ed.item)
-  }
+  if (!ed.item) return
+  const inp = q<HTMLInputElement>('ed-title-input')
+  inp.value = displayName(ed.item); inp.hidden = false // 저장명(20261108_0107)이 아니라 보이는 이름(11/8 01:07)에서 시작
+  q('editor-title-display').hidden = true; q('ed-title-edit').hidden = true
+  inp.focus(); inp.select()
+}
+function endTitleEdit(save: boolean): void {
+  const inp = q<HTMLInputElement>('ed-title-input'); if (inp.hidden) return
+  inp.hidden = true; q('editor-title-display').hidden = false; q('ed-title-edit').hidden = false
+  const name = inp.value.trim().slice(0, NAME_MAX)
+  if (!save || !ed.item || !name || name === ed.item.name || name === displayName(ed.item)) return // 고치지 않았으면 자동 이름 그대로
+  const taken = new Set(recListStore.get().items.filter(i => i !== ed.item).map(i => i.name))
+  let unique = name; for (let n = 2; taken.has(unique); n++) { const suf = ` (${n})`; unique = name.slice(0, NAME_MAX - suf.length) + suf } // (2) 를 붙여도 40자 안
+  const next = patchRec(ed.item, { name: unique }); if (next) ed.item = next
+  q('editor-title-display').textContent = displayName(ed.item)
 }
 
 /** play() 의 거부(AbortError·디코드 실패)를 삼키지 않는다 — 글리프가 '재생 중' 으로 남지 않게 */
@@ -287,19 +327,22 @@ function togglePlay(): void {
     if (a.readyState < 2) a.addEventListener('canplay', tryPlay, { once: true }); else tryPlay()
   } else { a.pause(); a.stopped(); setPlayGlyph(false) }
 }
+let lastPractice = PRACTICE_SPEED // 마지막에 쓴 1.0 이 아닌 속도(라벨 탭이 돌아갈 곳)
 function setSpeed(v: number, persist = true): void {
   v = clampSpeed(v)
+  if (Math.abs(v - 1) > 0.001) lastPractice = v
   q('ed-speed-val').textContent = speedLabel(v)
   q<HTMLInputElement>('ed-speed').value = String(v)
   if (ed.audio) ed.audio.playbackRate = v // 음높이는 그대로
   if (persist && ed.item && ed.item.speed !== v) { const next = patchRec(ed.item, { speed: v }); if (next) ed.item = next }
 }
-/** 값 라벨 탭: 프리셋 순환(core/editRange) */
-function cycleSpeed(): void { setSpeed(nextPreset(ed.audio?.playbackRate ?? 1)) }
+/** 값 라벨 탭: 원래 속도 ↔ 마지막 연습 속도(core/editRange) */
+function cycleSpeed(): void { setSpeed(toggleSpeed(ed.audio?.playbackRate ?? 1, lastPractice)) }
 function toggleA(): void {
   if (ed.ptA !== null) {
     ed.ptA = null; ed.ptB = null
     for (const id of ['ed-a-handle', 'ed-b-handle', 'ed-ab-range', 'ed-ab-times']) q(id).style.display = 'none'
+    q('ed-a-time').textContent = 'A —'; q('ed-b-time').textContent = 'B —'
     resetABtn(); resetBBtn(); resetLoopBtn(); checkExportBtn(); updateZoomBtn(); persistEdit(); requestWave()
   } else {
     if (!dur()) return
@@ -311,6 +354,7 @@ function toggleB(): void {
   if (ed.ptB !== null) {
     ed.ptB = null
     q('ed-b-handle').style.display = 'none'; q('ed-ab-range').style.display = 'none'; q('ed-b-time').textContent = 'B —'
+    for (const id of ['ed-b-nudge-l', 'ed-b-nudge-r']) q(id).style.visibility = 'hidden'
     resetBBtn(); resetLoopBtn(); checkExportBtn(); updateZoomBtn(); persistEdit(); requestWave()
   } else {
     if (!dur()) return
@@ -331,7 +375,9 @@ function toggleLoop(): void {
 
 function renderBmTicks(): void {
   const wrap = q('ed-bm-ticks'); wrap.innerHTML = ''; const d = dur(); if (!d) return
+  const w = viewRange()
   for (const t of ed.bookmarks) {
+    if (t < w.t0 || t > w.t1) continue // 확대한 창 밖의 북마크를 가장자리에 붙여 그리지 않는다
     const tick = document.createElement('div')
     tick.className = 'bm-tick'; tick.style.left = pct(t, d)
     wrap.appendChild(tick)
@@ -356,8 +402,16 @@ function addBookmark(): void {
   ed.bookmarks.push(t); ed.bookmarks.sort((a, b) => a - b); renderBmTicks(); renderBmList(); persistEdit()
 }
 
+let exporting = false
 async function exportAB(): Promise<void> {
   if (ed.ptA === null || ed.ptB === null || !ed.item) { toast(tr('ed.needAB')); return }
+  if (exporting) return // 두 번 눌러 파일이 둘 생기지 않게
+  exporting = true
+  const slow = setTimeout(() => toast(tr('rec.preparingShare')), 1000) // 오래 걸릴 때만 알린다
+  try { await exportABNow() } finally { clearTimeout(slow); exporting = false }
+}
+async function exportABNow(): Promise<void> {
+  if (ed.ptA === null || ed.ptB === null || !ed.item) return
   // 녹음 전체를 디코드한다 — 60분이면 ~690 MB PCM 이라 아이폰 탭이 죽는다
   if (tooLongToCut()) { toast(tr('ed.tooLongCut')); return }
   const item = ed.item
@@ -389,10 +443,14 @@ export function mountEditor(): void {
     const d = dur(); if (!d) return
     const t = tFromClient(e.clientX); ed.audio!.currentTime = t; setPosUI(t)
   })
-  on(track, 'mousedown', (e: MouseEvent) => { ed.dragging = pickHandle(e.clientX) })
-  on(track, 'touchstart', (e: TouchEvent) => { ed.dragging = pickHandle(e.touches[0]!.clientX) }, { passive: true })
+  on(track, 'mousedown', (e: MouseEvent) => { ed.dragging = pickHandle(e.clientX, e.clientY) })
+  on(track, 'touchstart', (e: TouchEvent) => { ed.dragging = pickHandle(e.touches[0]!.clientX, e.touches[0]!.clientY) }, { passive: true })
   on(q('ed-back-btn'), 'click', closeEditor)
   on(q('ed-title-edit'), 'click', editTitle)
+  on(q('editor-title-display'), 'click', editTitle)
+  const titleIn = q<HTMLInputElement>('ed-title-input')
+  on(titleIn, 'keydown', (e: KeyboardEvent) => { if (e.isComposing || e.keyCode === 229) return /* 일본어·중국어 입력기의 변환 확정 엔터는 저장이 아니다 */; if (e.key === 'Enter') { e.preventDefault(); titleIn.blur() } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); endTitleEdit(false) } })
+  on(titleIn, 'blur', () => endTitleEdit(true))
   on(q('ed-play-btn'), 'click', togglePlay)
   // 편집기가 열려 있는 동안 Space 는 편집기 재생. 메트로놈 쪽은 isEditorOpen() 으로 비켜 준다
   on(document, 'keydown', (e: KeyboardEvent) => {

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { viewRange, frac, timeAt, zoomWindow, clampA, clampB, loopStart, clampSpeed, speedLabel, nextPreset } from './editRange.ts'
+import { viewRange, frac, timeAt, zoomWindow, clampA, clampB, loopStart, clampSpeed, speedLabel, toggleSpeed, PRACTICE_SPEED } from './editRange.ts'
 
 describe('editor track window', () => {
   test('whole recording unless zoomed; unknown length maps to 0..1', () => {
@@ -39,8 +39,9 @@ describe('playback speed', () => {
   test('label keeps one decimal when it can', () => {
     expect(speedLabel(1)).toBe('1.0×'); expect(speedLabel(0.5)).toBe('0.5×'); expect(speedLabel(0.85)).toBe('0.85×')
   })
-  test('tap cycles 1.0 → 0.5 → 0.7 → 0.85 → 1.0; a slider value goes to 1.0', () => {
-    expect([1, 0.5, 0.7, 0.85].map(nextPreset)).toEqual([0.5, 0.7, 0.85, 1])
-    expect(nextPreset(0.75)).toBe(1)
+  test('tap toggles between 1.0 and the last practice speed', () => {
+    expect(toggleSpeed(0.6, 0.6)).toBe(1); expect(toggleSpeed(1.25, 0.6)).toBe(1)
+    expect(toggleSpeed(1, 0.6)).toBe(0.6); expect(toggleSpeed(1, 1)).toBe(PRACTICE_SPEED)
+    expect(toggleSpeed(1, 0.3)).toBe(0.5) // 범위 안으로
   })
 })

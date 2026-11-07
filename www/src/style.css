@@ -73,7 +73,7 @@ html.i18n-pending body{visibility:hidden;} /* 영어로 저장돼 있으면 한�
 /* 아이폰 홈 화면 앱(iOS 26~): 화면이 상태바 밑까지 그려지는 배치(위쪽 safe-area 가 있다)에서는 100%·dvh 가 상태바 높이만큼 짧게 잡혀 아래가 빈다.
    lvh 만 화면 전체 높이. 배치는 실행 시점의 meta 로 정해져 테마를 바꿔도 그대로라 테마가 아니라 실제 inset 으로 가른다 — .sb-under 는 platform/fitStandaloneHeight */
 @supports (height:100lvh){@media (display-mode:standalone){html.sb-under,html.sb-under body{height:100lvh;}}}
-button{font-family:inherit;color:inherit;}
+button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;} /* 버튼을 꾹 누르면 글자가 선택되며 복사·번역 막대가 떴다(안드로이드) */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes metroflash{0%{background:rgba(var(--accent-rgb),.28);box-shadow:inset 0 0 0 2px var(--accent)}60%{background:rgba(var(--accent-rgb),.1);box-shadow:inset 0 0 0 2px var(--accent)}100%{background:var(--surface);box-shadow:none}}
 
@@ -113,7 +113,7 @@ button{font-family:inherit;color:inherit;}
 #drone-btn,#rec-hdr-btn{height:var(--h-hdr);padding:0 6.5px 0 7.5px;min-width:64px;justify-content:center;font-size:var(--fs-xs);letter-spacing:.04em;} /* 헤더 양쪽의 두 네모: 같은 크기(30×64). 폭은 DRONE 에 여유 조금, 녹음 시간(● 00:00)도 들어간다. 글자 뒤 자간과 점 때문에 잉크가 왼쪽으로 0.5 px 쏠려 여백을 0.5 px 옮긴다 */
 #drone-btn::after,#rec-hdr-btn::after{inset:-7px -2px;} /* 보이는 네모는 30, 누르는 범위는 44 */
 #ref-a-btn::after{inset:-8px -2px;} /* A 듣기 칩은 28 — 누르는 범위 44 */
-#metro-play-hdr-btn{position:relative;} #metro-play-hdr-btn::after{content:'';position:absolute;inset:-4px 0;} /* 접힘 ▶ 36 → 44 (가장 자주 누르는 버튼) */
+#metro-play-hdr-btn{position:relative;} #metro-play-hdr-btn::after{content:'';position:absolute;inset:-4px;} /* 보이는 칸은 옆 ∧ 와 같은 정사각(2.9.5 까지 44×40 으로 옆으로 길었다), 누르는 칸은 44 */
 #drone-btn[aria-expanded="true"]{z-index:71;} /* 창이 열린 동안 배경(69)보다 위: 다시 누르면 배경이 아니라 버튼이 받아 창을 닫는다 */
 #drone-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-size:var(--fs-md);letter-spacing:0;}
 #hdr-timer{flex:1;min-width:0;display:flex;align-items:center;gap:5px;margin:0 8px 0 0;padding:0;height:44px;background:transparent;border:none;cursor:pointer;} /* 누르는 범위는 헤더 높이 44 */
@@ -193,6 +193,7 @@ button{font-family:inherit;color:inherit;}
 #metro-card.flash-strong{animation:metroflash .22s ease-out forwards;}
 #metro-hdr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line);gap:10px;min-height:52px;}
 #metro-hdr-label{position:relative;display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:var(--fs-xl);color:var(--text);font-weight:var(--fw-md);white-space:nowrap;cursor:ns-resize;touch-action:none;user-select:none;padding:8px 10px 8px 0;margin:-8px 0;}
+#metro-hdr-label::after{content:'';position:absolute;top:0;bottom:0;left:100%;width:40px;} /* ♩BPM 끌기 자리를 숫자 오른쪽으로 손가락 하나만큼 — 숫자를 손가락으로 가리지 않고 옆을 잡아 끈다. 그보다 오른쪽은 카드 끌기 */
 #metro-hdr-label .note-glyph{width:8.1px;height:20px;vertical-align:0;}
 /* 6/8: 박 단위가 점4분음표라 글리프도 ♩. — 숫자가 무엇을 세는지 보이게 */
 #metro-hdr-label .note-glyph.g-dq{width:11.8px;display:none;} #metro-card.compound #metro-hdr-label .g-q{display:none;} #metro-card.compound #metro-hdr-label .g-dq{display:block;}
@@ -225,7 +226,7 @@ button{font-family:inherit;color:inherit;}
   /* 양옆 칸은 버튼 하나(36)씩 — ♩80(64)이 빠져 LED 줄이 좁은 폰에서도 원래 간격(320 px 에서 0 → 약 5 px) */
   #metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr{grid-template-columns:minmax(var(--h-compact),1fr) minmax(0,calc(9*13px + 8*7px)) minmax(var(--h-compact),1fr);}
 }
-#metro-play-hdr-btn{width:44px;height:var(--h-compact);background:var(--accent-fill);border:1px solid transparent;border-radius:var(--r-sm);color:var(--on-accent);font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;}
+#metro-play-hdr-btn{width:var(--h-compact);height:var(--h-compact);background:var(--accent-fill);border:1px solid transparent;border-radius:var(--r-sm);color:var(--on-accent);font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;}
 #metro-play-hdr-btn[data-glyph="play"]{background:transparent;border-color:var(--line-ctl);color:var(--text);} /* 접혀 멈춰 있을 때는 테두리만 — 빨강은 '울리는 중' 일 때만(REC 와 같은 규칙). 튜너를 볼 때 시선을 끌지 않게 */
 /* 크기 버튼 하나 — 상태에 따라 글리프만 바꾼다: 접힘 ∧(펼치러) · 펼침 ∧(펼침2로) · 전용 ∨(접힘으로) */
 #metro-size-btn{position:relative;width:var(--h-compact);height:var(--h-compact);background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-sm);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;}
@@ -464,6 +465,10 @@ button.toast{font-family:inherit;line-height:inherit;cursor:pointer;min-height:4
 #ed-file-row{padding:0 0 var(--s3);display:flex;align-items:center;justify-content:space-between;gap:10px;}
 #editor-title-display{font-family:'DM Mono',monospace;font-size:var(--fs-md);color:var(--text);font-weight:var(--fw-md);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
 #ed-title-edit{flex-shrink:0;}
+#editor-title-display{cursor:text;}
+#ed-title-input{flex:1;min-width:0;height:var(--h-compact);padding:0 10px;font-family:'DM Mono',monospace;font-size:max(16px,var(--fs-md));color:var(--text);font-weight:var(--fw-md);background:var(--surface);border:1px solid var(--line-ctl);border-radius:var(--r-sm);outline:none;} /* 16 px 이상 — 아이폰이 입력칸을 확대하지 않게 */
+#ed-title-input:focus{border-color:var(--text-2);}
+#ed-title-input[hidden],#editor-title-display[hidden],#ed-title-edit[hidden]{display:none;}
 #ed-track-wrap{padding:0 var(--s5);flex-shrink:0;}
 #ed-track-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s4);}
 #ed-time-row{display:flex;justify-content:space-between;align-items:center;padding:var(--s2) 0 0;flex-shrink:0;}
@@ -498,7 +503,7 @@ button.toast{font-family:inherit;line-height:inherit;cursor:pointer;min-height:4
 #ed-speed-ctrl{flex:1;display:flex;flex-direction:column;border-left:1px solid var(--line);padding-left:14px;}
 #ed-speed-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;}
 #ed-speed-lbl{font-size:var(--fs-md);font-weight:var(--fw-md);color:var(--text);}
-/* 값 라벨은 버튼이다(탭 → 프리셋 순환). 빨간 글자는 이 앱에서 '선택됨' 이지 '누르세요' 가 아니다 */
+/* 값 라벨은 버튼이다(탭 → 원래 속도 ↔ 연습 속도). 빨간 글자는 이 앱에서 '선택됨' 이지 '누르세요' 가 아니다 */
 #ed-speed-val{font-family:'DM Mono',monospace;color:var(--text);padding:0 10px;letter-spacing:0;}
 #ed-speed{width:100%;flex:none;} /* 세로 flex 안에서는 flex:1 이 높이를 0 으로 접어 히트 높이가 4 px 이 된다 */
 #ed-ab-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--s2);padding:0 var(--s5) var(--s4);flex-shrink:0;}

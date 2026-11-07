@@ -60,7 +60,7 @@
     <div id="hdr-left">
       <button id="menu-btn" aria-label="메뉴" data-t-aria="hdr.menu"><svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4h16M2 10h16M2 16h16"/></svg></button>
     </div>
-    <!-- 연습 타이머: 칸은 소리 낸 시간 ÷ 경과 시간만큼 차고, 칸 안은 소리 낸 시간, 밖은 경과 시간. 타이머가 돌거나 멈춘 채 0 이 아닐 때만. 누르면 메뉴(맨 위가 타이머) -->
+    <!-- 연습 타이머: 칸은 연주 시간 ÷ 경과 시간만큼 차고, 칸 안은 연주 시간, 밖은 경과 시간. 타이머가 돌거나 멈춘 채 0 이 아닐 때만. 누르면 메뉴(맨 위가 타이머) -->
     <button id="hdr-timer" hidden><span class="ht-bar"><span class="ht-fill"></span><span class="ht-in" id="hdr-timer-played">00:00</span></span><span class="ht-out" id="hdr-timer-elapsed">00:00</span></button>
     <div id="hdr-right">
       <!-- 드론: 꺼져 있으면 누르면 음 고르기, 켜져 있으면(빨간 음이름) 누르면 끔 — A 듣기·REC·메트로놈과 같은 규칙 -->
@@ -209,7 +209,7 @@
       <div class="menu-sec-title" data-t="menu.timer">타이머</div>
       <div class="timer-grid">
         <div class="timer-box"><div class="timer-lbl" data-t="menu.elapsed">경과 시간</div><div class="timer-val" id="timer-elapsed">00:00</div></div>
-        <div class="timer-box"><div class="timer-lbl" data-t="menu.played">소리 낸 시간</div><div class="timer-val" id="timer-detected">00:00</div></div>
+        <div class="timer-box"><div class="timer-lbl" data-t="menu.played">연주 시간</div><div class="timer-val" id="timer-detected">00:00</div></div>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="menu-btn-sm" id="timer-toggle-btn">시작</button>
@@ -257,6 +257,7 @@
     <!-- 튜너 반응 속도 -->
     <div class="setting-row">
       <span class="setting-lbl" role="heading" aria-level="2" data-t="set.speed">튜너 반응 속도</span>
+      <span class="setting-desc" data-t="set.speedDesc">빠를수록 선이 민감하게 따라가고, 느릴수록 매끄럽게 그려져요</span>
       <div class="step-row" id="smooth-steps">
         <button class="step-btn" data-v="1" data-t="set.slow">느림</button>
         <button class="step-btn on" data-v="2" data-t="common.normal">보통</button>
@@ -319,7 +320,7 @@
     <!-- 녹음 보관 -->
     <div class="setting-row">
       <span class="setting-lbl" role="heading" aria-level="2" data-t="set.keep">녹음 보관</span>
-      <span class="setting-desc" data-t="set.keepDesc">'30일'이면 30일 지난 녹음이 자동으로 지워져요</span>
+      <span class="setting-desc" data-t="set.keepDesc">자동으로 지우지 않으려면 '계속'</span>
       <div class="step-row" id="autodelete-steps">
         <button class="step-btn on" data-v="1" data-t="set.keep30">30일</button>
         <button class="step-btn" data-v="0" data-t="set.keepForever">계속</button>
@@ -426,7 +427,7 @@
         <span id="ed-nav-title" role="heading" aria-level="1" data-t="ed.title">편집</span>
       </div>
       <div id="ed-file-row">
-        <span id="editor-title-display"></span><button id="ed-title-edit" class="compact-btn" data-t="ed.rename">이름 바꾸기</button>
+        <span id="editor-title-display"></span><input id="ed-title-input" type="text" maxlength="40" enterkeyhint="done" autocomplete="off" spellcheck="false" aria-label="녹음 이름" data-t-aria="ed.namePrompt" hidden><button id="ed-title-edit" class="compact-btn" data-t="ed.rename">이름 바꾸기</button>
       </div>
     </div>
     <div id="ed-track-wrap">

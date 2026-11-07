@@ -50,7 +50,9 @@ Changes to this policy are recorded in this file and the repository history.
 
 <intonome.app@gmail.com>
 
-If you email us, your address and message are used only to reply.
+Your email address and message are used only to reply.
+
+You can also ask on GitHub Issues.
 
 <https://github.com/danggeun/intonome/issues>
 
@@ -108,7 +110,9 @@ If you email us, your address and message are used only to reply.
 
 <intonome.app@gmail.com>
 
-메일을 보내시면 주소와 내용은 답장하는 데에만 씁니다.
+보내시는 메일 주소와 내용은 답장하는 데에만 쓰입니다.
+
+GitHub 이슈로도 문의할 수 있습니다.
 
 <https://github.com/danggeun/intonome/issues>
 
@@ -166,7 +170,9 @@ If you email us, your address and message are used only to reply.
 
 <intonome.app@gmail.com>
 
-メールをいただいた場合、アドレスと内容は返信のためだけに使います。
+お送りいただいたメールアドレスと内容は、返信のためだけに使います。
+
+GitHub の Issues でも受け付けています。
 
 <https://github.com/danggeun/intonome/issues>
 
@@ -224,7 +230,9 @@ If you email us, your address and message are used only to reply.
 
 <intonome.app@gmail.com>
 
-如果你发邮件给我们，邮箱地址和邮件内容只用于回复。
+你发送的邮箱地址和内容只用于回复。
+
+也可以在 GitHub Issues 中提问。
 
 <https://github.com/danggeun/intonome/issues>
 
@@ -282,7 +290,9 @@ If you email us, your address and message are used only to reply.
 
 <intonome.app@gmail.com>
 
-如果你寄信給我們，電子郵件地址和信件內容只會用來回覆。
+你寄來的電子郵件地址和內容只會用來回覆。
+
+也可以在 GitHub Issues 提問。
 
 <https://github.com/danggeun/intonome/issues>
 
@@ -340,6 +350,8 @@ Los cambios de esta política se registran en este archivo y en el historial del
 
 <intonome.app@gmail.com>
 
-Si nos escribes, tu dirección y tu mensaje solo se usan para responderte.
+Tu dirección y tu mensaje solo se usan para responderte.
+
+También puedes escribirnos en GitHub Issues.
 
 <https://github.com/danggeun/intonome/issues>

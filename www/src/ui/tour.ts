@@ -72,7 +72,8 @@ const STEPS: Step[] = [
     view: () => ({ title: 'tour.drone', body: 'tour.droneBody', gesture: 'tap', pulseAt: () => q('drone-btn') }) },
   // 카드를 끝까지 한 바퀴: 폰은 접힘 → 위로(펼침) → 한 번 더 위로(메트로놈만 크게 — 헤더 왼쪽 버튼으로도) → 아래로 → 한 번 더 아래로(접힘).
   // 넓은 화면은 펼침 → 위로(크게) → 아래로. 밀기 표시는 헤더 가운데(박 점들) — 왼쪽 ♩80 을 밀면 카드가 아니라 빠르기가 바뀐다
-  { key: 'metro', target: () => [q('metro-card')], pad: 4, radius: 18, open: true, task: true,
+  // 다 돌고 접힌 뒤(done)에는 ♩ 숫자만 밝힌다 — 카드 전체가 열려 있으면 숫자 대신 카드를 밀어 다시 펼칠 수 있었고, 말풍선은 '숫자를 밀어 보세요' 그대로였다
+  { key: 'metro', target: () => [q(done ? 'metro-hdr-label' : 'metro-card')], pad: 4, radius: 18, open: true, task: true,
     view: () => {
       const wide = !isPhoneLayout(), st = metroState(), hdr = (): HTMLElement => q('metro-hdr')
       if (done) return snap && settingsStore.get().bpm !== snap.set.bpm // 접은 뒤엔 ♩ 숫자를 밀어 보게 — 밀었으면 되돌아간다고 알린다(기준음과 같은 말)
@@ -239,11 +240,11 @@ function holeRect(s: Step): DOMRect | null {
   const els = s.target?.().filter(e => e && e.offsetParent !== null) ?? []
   if (!els.length) return null
   const rs = els.map(e => e.getBoundingClientRect()), p = s.pad ?? 6
-  const x0 = Math.min(...rs.map(r => r.left)) - p, y0 = Math.min(...rs.map(r => r.top)) - p
-  const x1 = Math.max(...rs.map(r => r.right)) + p, y1 = Math.max(...rs.map(r => r.bottom)) + p
-  // 화면 끝의 버튼(☰·⚙)은 여백을 더하면 화면 밖으로 나가 테두리가 잘렸다 — 테두리(2 px)까지 화면 안에 들게
-  const m = 3, l = Math.max(m, x0), t = Math.max(m, y0), r = Math.min(innerWidth - m, x1), b = Math.min(innerHeight - m, y1)
-  return new DOMRect(l, t, r - l, b - t)
+  const L = Math.min(...rs.map(r => r.left)), T = Math.min(...rs.map(r => r.top)), R = Math.max(...rs.map(r => r.right)), B = Math.max(...rs.map(r => r.bottom))
+  // 화면 끝의 버튼(☰·⚙)은 여백을 더하면 테두리(2 px)가 화면 밖으로 잘렸다 — 한쪽만 자르면 네모가 쏠리므로, 양쪽 여백을 똑같이 줄여 대상이 가운데에 남게
+  // 대상이 화면 끝에 붙어 있으면 여백이 음수가 된다 — 네모가 대상 안쪽으로 똑같이 줄어 테두리까지 화면 안에 든다
+  const m = 3, px = Math.min(p, L - m, innerWidth - m - R), py = Math.min(p, T - m, innerHeight - m - B)
+  return new DOMRect(L - px, T - py, R - L + 2 * px, B - T + 2 * py)
 }
 /** 안전 영역(노치·홈 막대) — 말풍선이 그 안으로 들어가지 않게 */
 let insets = { top: 0, bottom: 0 }

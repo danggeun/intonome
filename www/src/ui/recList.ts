@@ -22,41 +22,81 @@ export function displayName(item: RecItem): string {
   return `${fmtMonthDay(+m[2]!, +m[3]!, getLang())} ${m[4]}:${m[5]}` + (nums.length ? ` (${nums.join('-')})` : '') + (m[7] ? ` ${m[7]}` : '')
 }
 const players: Record<number, HTMLAudioElement> = {}
+/** 재생 전에 옮겨 둔 위치 — 재생이 시작돼 미디어 정보가 온 뒤에 넣는다. 정보도 없는 새 Audio 에 바로 넣으면
+ *  안드로이드의 webm 녹음(길이·탐색 정보 없음)에서 재생이 아예 멈출 수 있다(2.9.3 회귀) */
+const pendingSeek: Record<number, number> = {}
+/** Web Audio(레벨 보정)를 거쳐 재생했더니 시간이 안 가던 녹음 — 다음부터는 바로 재생한다 */
+const plainOnly = new Set<string>()
+/** 손가락으로 잡고 있는 목록 슬라이더(번호), 없으면 -1 */
+let holding = -1
 function setPlayBtn(idx: number, playing: boolean): void { const b = document.getElementById('rec-pb-' + idx); if (b) { setGlyph(b, playing ? 'pause' : 'play'); b.setAttribute('aria-label', tr(playing ? 'ed.pause' : 'ed.play')); b.classList.toggle('playing', playing) } }
 function getPlayer(idx: number): HTMLAudioElement {
   let a = players[idx]
   if (!a) {
     const item = recListStore.get().items[idx]!
-    a = new Audio(item.url)
-    attachGain(a, item.peak) // 레벨 보정 · 첫 채널을 양쪽 귀로(audio/playback)
-    a.ontimeupdate = () => {
+    const el = new Audio(item.url)
+    if (!plainOnly.has(item.url)) attachGain(el, item.peak) // 레벨 보정 · 첫 채널을 양쪽 귀로(audio/playback)
+    el.ontimeupdate = () => {
+      if (players[idx] !== el) return
       const sk = document.getElementById('rec-seek-' + idx) as HTMLInputElement | null, tm = document.getElementById('rec-time-' + idx)
-      if (sk && a!.duration) { sk.max = String(trustedDuration(item.dur, a!.duration)); sk.value = String(a!.currentTime) } // 미디어가 말하는 길이는 녹음 길이로 거른다(core/recPolicy) — Chromium webm 은 Infinity 거나 안드로이드에선 수십 시간
-      if (tm) tm.textContent = fmtT(a!.currentTime)
+      if (sk && holding !== idx) { sk.max = String(trustedDuration(item.dur, el.duration) || +sk.max || 1); sk.value = String(el.currentTime) } // 미디어가 말하는 길이는 녹음 길이로 거른다(core/recPolicy) — Chromium webm 은 Infinity 거나 안드로이드에선 수십 시간
+      if (tm) tm.textContent = fmtT(el.currentTime)
     }
-    a.onended = () => {
-      afterStop(a!)
+    el.onended = () => {
+      if (players[idx] !== el) return
+      afterStop(el)
       setPlayBtn(idx, false)
       const sk = document.getElementById('rec-seek-' + idx) as HTMLInputElement | null; if (sk) sk.value = '0'
       const tm = document.getElementById('rec-time-' + idx); if (tm) tm.textContent = fmtT(0)
-      a!.currentTime = 0
+      el.currentTime = 0
     }
-    players[idx] = a
+    players[idx] = el; a = el
   }
   return a
+}
+function startPlay(idx: number, a: HTMLAudioElement): void {
+  beforePlay(a); setPlayBtn(idx, true)
+  const at = pendingSeek[idx]
+  if (at !== undefined) {
+    delete pendingSeek[idx]
+    const apply = (): void => { try { a.currentTime = at } catch { /* 탐색할 수 없는 파일 — 처음부터 */ } }
+    if (a.readyState >= 1) apply(); else a.addEventListener('loadedmetadata', apply, { once: true })
+  }
+  a.play().catch(() => { if (players[idx] !== a) return; afterStop(a); setPlayBtn(idx, false); toast(tr('common.cantPlay')) })
+  // 1.5 초 지나도 시간이 안 가면(오디오 컨텍스트가 멈춰 있거나 기기가 Web Audio 경로로 이 파일을 못 돌림) 바로 재생으로 다시 —
+  // 안드로이드에서 ▶ 를 눌러도 00:00 에 멈춰 있던 증상. 레벨 보정은 빠지지만 소리가 나는 쪽이 낫다
+  watchStall(idx, a, at ?? a.currentTime, 0)
+}
+/** 재생을 눌렀는데 시간이 안 가는지 본다. 불러오는 중·옮기는 중이면 조금 더 기다리고(최대 6 초),
+ *  레벨 보정 경로에서 멈췄으면 한 번만 바로 재생으로 바꾼다. 바로 재생도 안 가면 되풀이하지 않고 '재생할 수 없어요' */
+function watchStall(idx: number, a: HTMLAudioElement, t0: number, tries: number): void {
+  setTimeout(() => {
+    if (players[idx] !== a || a.paused || Math.abs(a.currentTime - t0) > 0.05) return
+    if ((a.seeking || a.readyState < 3) && tries < 3) { watchStall(idx, a, a.currentTime, tries + 1); return }
+    const item = recListStore.get().items[idx]; if (!item) return
+    if (plainOnly.has(item.url)) { a.pause(); afterStop(a); setPlayBtn(idx, false); toast(tr('common.cantPlay')); return }
+    plainOnly.add(item.url)
+    const at = a.currentTime
+    releaseAudio(a); delete players[idx]
+    if (at > 0) pendingSeek[idx] = at
+    startPlay(idx, getPlayer(idx))
+  }, 1500)
 }
 function playPause(idx: number): void {
   const a = getPlayer(idx)
   for (const k of Object.keys(players)) { const i = +k; if (i !== idx && !players[i]!.paused) { players[i]!.pause(); afterStop(players[i]!); setPlayBtn(i, false) } }
-  if (a.paused) { beforePlay(a); setPlayBtn(idx, true); a.play().catch(() => { afterStop(a); setPlayBtn(idx, false); toast(tr('common.cantPlay')) }) } else { a.pause(); afterStop(a); setPlayBtn(idx, false) }
+  if (a.paused) startPlay(idx, a); else { a.pause(); afterStop(a); setPlayBtn(idx, false) }
 }
-/** 위치 옮기기. 재생 전(방금 만든 Audio 는 duration 이 NaN)에도 그 자리를 시작 위치로 — 전엔 조건에 걸려 무시되고 0 초부터 재생됐다(슬라이더는 이미 그 자리를 가리키는데) */
+/** 위치 옮기기. 미디어 정보가 이미 있으면 바로, 아직 재생 전이면 기억했다가 재생을 시작하며 넣는다(슬라이더는 이미 그 자리를 가리킨다) */
 function seek(idx: number): void {
-  const sk = document.getElementById('rec-seek-' + idx) as HTMLInputElement | null, a = getPlayer(idx), item = recListStore.get().items[idx]
+  const sk = document.getElementById('rec-seek-' + idx) as HTMLInputElement | null, item = recListStore.get().items[idx]
   if (!sk || !item) return
-  const max = a.duration ? trustedDuration(item.dur, a.duration) : item.dur
-  a.currentTime = Math.min(+sk.value, max) // 메타데이터 전에 넣으면 시작 위치가 된다(HTML 미디어 규격의 default playback start position)
-  const tm = document.getElementById('rec-time-' + idx); if (tm) tm.textContent = fmtT(Math.min(+sk.value, max))
+  const a = players[idx], max = a && a.readyState >= 1 ? trustedDuration(item.dur, a.duration) || item.dur : item.dur
+  const v = Math.min(+sk.value, max || +sk.value)
+  if (a && a.readyState >= 1) { try { a.currentTime = v } catch { /* 탐색 불가 */ } }
+  else if (a && !a.paused) a.addEventListener('loadedmetadata', () => { try { a.currentTime = v } catch { /* 탐색 불가 */ } }, { once: true }) // ▶ 직후 정보가 오기 전
+  else pendingSeek[idx] = v
+  const tm = document.getElementById('rec-time-' + idx); if (tm) tm.textContent = fmtT(v)
 }
 /** iOS: await 를 거친 뒤에는 탭의 활성화 창이 지나 공유 시트가 거부된다 → 토스트를 띄우고 그 탭 안에서 saveFile. 그 외는 바로 저장 */
 export function handOff(blob: Blob, name: string): void {
@@ -69,21 +109,24 @@ let converting = false // 변환은 10 분에 Float32 ≈ 115 MB — 연타로 �
 export async function downloadRec(item: RecItem): Promise<void> {
   if (recExt(item) === 'webm' && (isIOS() || item.dur <= DECODE_MAX_SEC)) {
     if (item.dur > DECODE_MAX_SEC) { toast(tr('rec.tooLongConvert')); return }
-    toast(tr('rec.converting'))
     if (converting) return
     converting = true
+    // 변환은 보통 1 초 안에 끝난다 — 그때는 안내 없이 바로 저장(웹앱은 브라우저 다운로드 알림과 겹쳐 두 개가 떴다). 오래 걸릴 때만 알린다
+    const slow = setTimeout(() => toast(tr('rec.converting')), 1000)
     try {
       const arrayBuf = await (await fetch(item.url)).arrayBuffer()
       const decoded = await new OfflineAudioContext(1, 1, 48000).decodeAudioData(arrayBuf)
       handOff(new Blob([bufToWav(decoded)], { type: 'audio/wav' }), 'intonome_' + item.name + '.wav')
     } catch (e) { toast(tr('rec.convertFailed', { e: e instanceof Error ? e.message : String(e) })) }
-    finally { converting = false }
+    finally { clearTimeout(slow); converting = false }
     return
   }
   const r = await saveFile(item.blob, recFileName(item)); if (!r.ok) toast(tr('common.saveFailed', { e: r.error }))
 }
 /** src 도 비운다 — WebView 는 동시 미디어 플레이어 수에 상한이 있어 붙잡고 있으면 재생이 조용히 실패한다 */
 function stopPlayer(idx: number): void { const a = players[idx]; if (a) { releaseAudio(a); delete players[idx] } }
+/** 편집기를 열 때 — 목록에서 듣던 소리가 편집기 소리와 겹치지 않게 멈춘다(위치는 둔다) */
+export function stopListPlayers(): void { for (const k of Object.keys(players)) { const i = +k, a = players[i]!; if (!a.paused) { a.pause(); afterStop(a); setPlayBtn(i, false) } } }
 
 /** 목록 메타 한 줄: 편집 흔적(북마크 n · A-B)과 삭제 예고. link 는 탭할 수 있는 꼬리('남기기' / '자동 삭제 안 함'), 없으면 null */
 function itemMeta(item: RecItem, now = Date.now()): { text: string; link: string | null } {
@@ -153,6 +196,7 @@ function renderItem(item: RecItem, idx: number, defaultOpen: boolean): HTMLEleme
 
 function render(): void {
   for (const k of Object.keys(players)) { releaseAudio(players[+k]!); delete players[+k] }
+  for (const k of Object.keys(pendingSeek)) delete pendingSeek[+k] // 목록을 다시 그리면 번호가 바뀐다
   const list = q('rec-list'); list.innerHTML = ''
   const items = recListStore.get().items
   if (items.length === 0) { const e = document.createElement('div'); e.id = 'rec-empty'; e.textContent = tr('rec.empty'); list.appendChild(e); return }
@@ -198,6 +242,9 @@ export function mountRecList(openEditor: (item: RecItem) => void, beforeDelete: 
     }
   })
   on(list, 'input', (e: Event) => { const t = e.target as HTMLElement; if (t.dataset.action === 'seek') seek(+t.dataset.idx!) })
+  // 슬라이더를 잡고 있는 동안은 재생 위치가 손가락 아래 동그라미를 옮기지 않는다
+  on(list, 'pointerdown', (e: Event) => { const t = e.target as HTMLElement; if (t.dataset.action === 'seek') holding = +t.dataset.idx! })
+  for (const ev of ['pointerup', 'pointercancel']) on(window, ev, () => { holding = -1 })
   recListStore.select(s => s.rev, render, { immediate: true }) // 녹음이 하나도 없으면 저장소 복원이 rev 를 올리지 않는다 — 빈 목록 안내는 여기서
   onLangChange(render)
   settingsStore.select(s => s.autoDelete, () => { const st = recListStore.get(); recListStore.set({ rev: st.rev + 1 }) }) // 보관 설정이 바뀌면 예고문 갱신

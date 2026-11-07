@@ -1080,6 +1080,11 @@ await scenario('first-run guide: the metronome step also goes round with buttons
   assert.equal(s.title, '이제 아래로 내려 보세요', '크게 버튼으로도 다음 단계'); assert.match(s.body, /∨를 눌러도 돼요$/)
   await sizeTap(p); assert.equal((await tour(p)).title, '한 번 더 내려 보세요')
   await sizeTap(p); assert.equal((await tour(p)).title, '좋아요')
+  // '좋아요(♩ 숫자를 밀어 보세요)' 에서는 숫자만 열려 있다 — ∧ 를 눌러도·카드를 밀어도 다시 펼쳐지지 않는다(말풍선과 화면이 어긋났다, 2.9.6)
+  const sb = await p.evaluate(() => { const r = document.getElementById('metro-size-btn').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } })
+  await p.mouse.click(sb.x, sb.y); await sleep(p, 500)
+  assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), true, 'still folded')
+  assert.equal((await tour(p)).title, '좋아요')
 }, { fresh: true, locale: 'ko-KR' })
 await scenario('first-run guide (wide screen): the bubble does not cover the metronome; ∧ goes to the full view and back', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitTour(p)
@@ -1168,16 +1173,14 @@ await scenario('rec: start/stop → list item, persists reload, rename persists,
   await p.reload(); await sleep(p, 1200); assert.equal((await names()).length, 1, 'restored from IndexedDB')
   await p.click('#menu-btn'); await p.click('[data-action="edit"][data-idx="0"]'); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('editor-page').style.display), 'flex')
-  p.once('dialog', d => d.accept('가'.repeat(60))) // C6: 60자 입력 → 40자로 잘린다
-  await p.click('#ed-title-edit'); await sleep(p, 300)
+  await p.click('#ed-title-edit'); await p.fill('#ed-title-input', '가'.repeat(60)); await p.keyboard.press('Enter'); await sleep(p, 300) // C6: 60자 입력 → 40자로 잘린다 (2.9.6: 브라우저 창 대신 앱 안 입력칸)
   assert.equal(await p.evaluate(() => document.getElementById('editor-title-display').textContent.length), 40, '이름 40자 상한')
   // C6: 40자 이름은 카드를 넓히거나 여러 줄로 흐르지 않고 한 줄 말줄임으로 잘린다
   const nm = await p.evaluate(() => { const n = document.querySelector('#rec-list .rec-item-name'), it = n.closest('.rec-item'); return { clipped: n.scrollWidth > n.clientWidth, h: n.offsetHeight, over: it.scrollWidth > it.clientWidth } })
   assert.equal(nm.clipped, true, '한 줄 말줄임 (여러 줄로 흐르지 않는다)')
   assert.equal(nm.over, false, '카드 가로 넘침 없음')
   assert.ok(nm.h < 30, '한 줄 높이: ' + nm.h)
-  p.once('dialog', d => d.accept('연습곡A'))
-  await p.click('#ed-title-edit'); await sleep(p, 300)
+  await p.click('#ed-title-edit'); await p.fill('#ed-title-input', '연습곡A'); await p.keyboard.press('Enter'); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('editor-title-display').textContent), '연습곡A')
   await p.click('#ed-back-btn'); await sleep(p, 200)
   assert.equal(await p.evaluate(() => document.getElementById('menu-overlay').classList.contains('open')), true, 'back to menu')
@@ -1231,10 +1234,10 @@ await scenario('rec: keep — always offered while auto-delete is on, the countd
   assert.match(await meta(), /^\d일 후 삭제 · 남기기$/, '예고 + 남기기: ' + await meta())
   if (process.env.GP_SHOT) await p.screenshot({ path: process.env.GP_SHOT.replace('.png', '_warn.png') })
   await p.click('#rec-list .rec-keep-link'); await sleep(p, 300)
-  assert.equal(await meta(), '자동 삭제 안 함', '남긴 뒤 표시')
+  assert.equal(await meta(), '계속 보관', '남긴 뒤 표시')
   if (process.env.GP_SHOT) { await sleep(p, 3000); await p.screenshot({ path: process.env.GP_SHOT.replace('.png', '_kept.png') }) }
   await p.reload(); await sleep(p, 1500); await p.click('#menu-btn'); await sleep(p, 400)
-  assert.equal(await meta(), '자동 삭제 안 함', '리로드 후에도 유지 (meta 에 저장)')
+  assert.equal(await meta(), '계속 보관', '리로드 후에도 유지 (meta 에 저장)')
   // 자동 삭제 설정을 끄면 표시가 사라진다 (지킬 게 없다) — 플래그는 남는다
   await p.click('.menu-close-btn'); await sleep(p, 300); await p.click('#settings-hdr-btn'); await sleep(p, 300)
   await p.click('#autodelete-steps .step-btn[data-v="0"]'); await sleep(p, 300)
@@ -1243,7 +1246,7 @@ await scenario('rec: keep — always offered while auto-delete is on, the countd
   await p.click('.menu-close-btn'); await sleep(p, 300); await p.click('#settings-hdr-btn'); await sleep(p, 300)
   await p.click('#autodelete-steps .step-btn[data-v="1"]'); await sleep(p, 300)
   await p.click('#settings-back-btn'); await sleep(p, 300); await p.click('#menu-btn'); await sleep(p, 400)
-  assert.equal(await meta(), '자동 삭제 안 함', '다시 켜면 플래그가 살아 있다')
+  assert.equal(await meta(), '계속 보관', '다시 켜면 플래그가 살아 있다')
   await p.click('#rec-list .rec-keep-link'); await sleep(p, 300)
   assert.match(await meta(), /^\d일 후 삭제 · 남기기$/, '해제하면 예고로 돌아간다')
   // 31일 전 = 기한 지난 항목을 남긴 상태에서 해제하면 미리 알린다 (되돌리기)
@@ -1256,11 +1259,11 @@ await scenario('rec: keep — always offered while auto-delete is on, the countd
     await new Promise(r => { tx.oncomplete = r }); db.close()
   })
   await p.reload(); await sleep(p, 1500); await p.click('#menu-btn'); await sleep(p, 400)
-  assert.equal(await meta(), '자동 삭제 안 함', '기한이 지나도 남긴 항목은 로드된다')
+  assert.equal(await meta(), '계속 보관', '기한이 지나도 남긴 항목은 로드된다')
   await p.click('#rec-list .rec-keep-link'); await sleep(p, 300)
   assert.match(await p.evaluate(() => document.getElementById('toast').textContent), /실행 취소/, '기한 지난 해제는 경고 토스트')
   await p.click('#toast'); await sleep(p, 300)
-  assert.equal(await meta(), '자동 삭제 안 함', '되돌리기로 다시 남김')
+  assert.equal(await meta(), '계속 보관', '되돌리기로 다시 남김')
 })
 
 await scenario('editor: A/B/loop/bookmark flows', 'violin_A4.wav', async p => {
@@ -1309,11 +1312,11 @@ await scenario('editor: other speeds play through the app time stretch — speed
   /** 벽시계 0.8 s 동안 재생 위치가 간 비율 */
   const speed = () => p.evaluate(async () => { const a = window.__tt.editor().audio, t0 = performance.now(), c0 = a.currentTime; await new Promise(r => setTimeout(r, 800)); return (a.currentTime - c0) / ((performance.now() - t0) / 1000) })
   const tap = () => p.click('#ed-speed-val')
-  // 디코드가 끝나기 전에 바꾼 속도도 지킨다: 한 태스크에서 세 번 탭(1.0 → 0.5 → 0.7 → 0.85) — 디코드는 그 뒤에 끝난다
-  await p.evaluate(() => { const b = document.getElementById('ed-speed-val'); b.click(); b.click(); b.click() })
+  // 디코드가 끝나기 전에 바꾼 속도도 지킨다: 바로 한 번 탭(1.0 → 0.75) — 디코드는 그 뒤에 끝난다
+  await p.evaluate(() => { document.getElementById('ed-speed-val').click() })
   await p.click('#ed-play-btn')
   await waitUntil(p, () => window.__tt.playback().sources.includes('worklet'), 5000, 'stretch player playing')
-  let v = await speed(); assert.ok(v > 0.65 && v < 1.05, `0.85× → 위치는 초당 0.85 s: ${v.toFixed(2)}`)
+  let v = await speed(); assert.ok(v > 0.6 && v < 0.95, `0.75× → 위치는 초당 0.75 s: ${v.toFixed(2)}`)
   await tap() // 1.0×: <audio> 로 넘어가며 이어 재생
   const before = await p.evaluate(() => window.__tt.editor().audio.currentTime)
   await waitUntil(p, () => window.__tt.playback().sources.join() === 'element', 2000, 'back to the audio element')
@@ -1321,10 +1324,10 @@ await scenario('editor: other speeds play through the app time stretch — speed
   assert.ok(Math.abs(after - before) < 0.4, `넘어갈 때 위치를 잇는다: ${before.toFixed(2)} → ${after.toFixed(2)}`)
   assert.equal(await p.evaluate(() => window.__tt.editor().audio.paused), false)
   await p.evaluate(() => { window.__tt.editor().audio.currentTime = 0.2 }) // 끝에 닿지 않게
-  await tap(); await waitUntil(p, () => window.__tt.playback().sources.join() === 'worklet', 2000, 'stretch again') // 0.5×
-  v = await speed(); assert.ok(v > 0.35 && v < 0.65, `0.5×: ${v.toFixed(2)}`)
-  await tap(); await sleep(p, 100); v = await speed() // 0.7× — 재생 중 같은 재생기에서
-  assert.equal(await src(), 'worklet'); assert.ok(v > 0.5 && v < 0.9, `0.7×: ${v.toFixed(2)}`)
+  await tap(); await waitUntil(p, () => window.__tt.playback().sources.join() === 'worklet', 2000, 'stretch again') // 다시 0.75×(마지막 연습 속도)
+  v = await speed(); assert.ok(v > 0.6 && v < 0.9, `0.75×: ${v.toFixed(2)}`)
+  await p.evaluate(() => { const s = document.getElementById('ed-speed'); s.value = '0.5'; s.dispatchEvent(new Event('input')); s.dispatchEvent(new Event('change')) }); await sleep(p, 100); v = await speed() // 0.5× — 재생 중 같은 재생기에서
+  assert.equal(await src(), 'worklet'); assert.ok(v > 0.35 && v < 0.65, `0.5×: ${v.toFixed(2)}`)
   // 슬라이더가 1.0 을 지나가도(<audio> 로 갔다가 곧바로 돌아옴) 배속 재생기가 '재생 중' 으로 남는다 — 화면 꺼짐 방지·연습 시간이 이것을 본다
   await p.evaluate(() => { const s = document.getElementById('ed-speed'); for (const x of ['1', '1.05', '0.7']) { s.value = x; s.dispatchEvent(new Event('input')) } })
   await sleep(p, 300)
@@ -1461,7 +1464,7 @@ await scenario('timer in the header: shows while timing, fill = played ÷ elapse
   assert.equal(s.played, await p.evaluate(() => document.getElementById('timer-detected').textContent), '안 = 메뉴의 소리 낸 시간')
   const [pl, el] = [s.played, s.elapsed].map(x => { const [m, sec] = x.split(':').map(Number); return m * 60 + sec })
   assert.ok(Math.abs(s.fill - pl / el) < 0.12, `칸이 소리 낸 ÷ 경과(${(pl / el).toFixed(2)})만큼: ${s.fill.toFixed(2)}`)
-  assert.match(s.label, /소리 낸 시간 \d\d:\d\d, 경과 시간 \d\d:\d\d/)
+  assert.match(s.label, /연주 시간 \d\d:\d\d, 경과 시간 \d\d:\d\d/)
   // 눌러도 드론 · REC 와 겹치지 않는다
   const box = await p.evaluate(() => [document.getElementById('hdr-timer').getBoundingClientRect().right, document.getElementById('drone-btn').getBoundingClientRect().left])
   assert.ok(box[0] <= box[1], '타이머 칸이 DRONE 에 닿지 않는다')
@@ -1688,20 +1691,24 @@ await scenario('ux: editor pause glyph ❚❚ (not ■), loop cycles off → on 
   await p.click('#ed-back-btn'); await sleep(p, 100)
   assert.equal(await p.evaluate(() => document.getElementById('editor-page').classList.contains('open')), false)
 })
-await scenario('ux: speed label tap cycles 1.0→0.5→0.7→0.85→1.0 and is remembered per recording (reload)', 'violin_A4.wav', async p => {
+await scenario('ux: speed label tap toggles 1.0 ↔ the last practice speed (0.75 first) and the speed is remembered per recording (reload)', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#rec-hdr-btn'); await sleep(p, 1500); await p.click('#rec-hdr-btn'); await sleep(p, 800)
   await p.click('#menu-btn'); await p.click('[data-action="edit"][data-idx="0"]'); await sleep(p, 1200)
   const val = () => p.evaluate(() => document.getElementById('ed-speed-val').textContent)
-  await p.click('#ed-speed-val'); assert.equal(await val(), '0.5×')
-  await p.click('#ed-speed-val'); assert.equal(await val(), '0.7×')
-  await p.click('#ed-speed-val'); assert.equal(await val(), '0.85×')
-  assert.equal(await p.evaluate(() => document.getElementById('ed-speed').value), '0.85', 'slider follows')
-  assert.equal(await p.evaluate(() => window.__tt.editor().audio.playbackRate), 0.85)
+  await p.click('#ed-speed-val'); assert.equal(await val(), '0.75×', '처음 누르면 연습 속도 0.75')
+  await p.click('#ed-speed-val'); assert.equal(await val(), '1.0×', '한 번 더 누르면 바로 원래 속도')
+  await p.evaluate(() => { const s = document.getElementById('ed-speed'); s.value = '0.6'; s.dispatchEvent(new Event('input', { bubbles: true })); s.dispatchEvent(new Event('change', { bubbles: true })) })
+  assert.equal(await val(), '0.6×', '슬라이더로 0.6')
+  await p.click('#ed-speed-val'); assert.equal(await val(), '1.0×')
+  await p.click('#ed-speed-val'); assert.equal(await val(), '0.6×', '마지막에 쓴 연습 속도로 돌아간다')
+  assert.equal(await p.evaluate(() => document.getElementById('ed-speed').value), '0.6', 'slider follows')
+  assert.equal(await p.evaluate(() => window.__tt.editor().audio.playbackRate), 0.6)
   await sleep(p, 300); await p.reload(); await sleep(p, 1500)
   await p.click('#menu-btn'); await p.click('[data-action="edit"][data-idx="0"]'); await sleep(p, 1200)
-  assert.equal(await val(), '0.85×', 'speed restored from meta')
+  assert.equal(await val(), '0.6×', 'speed restored from meta')
   await p.click('#ed-speed-val'); assert.equal(await val(), '1.0×')
+  await p.click('#ed-speed-val'); assert.equal(await val(), '0.6×', '되살린 속도가 연습 속도')
 })
 await scenario('ux: edge swipe goes back — menu, settings, editor; ignored from the middle, vertical or too short', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
@@ -2048,6 +2055,78 @@ await scenario('recording: non-iOS keeps webm (Android unchanged) and the extens
   if (!probe.aac) assert.ok(info.isWebm, '비 iOS + AAC 불가 → webm 이어야 한다')
 })
 
+// 안드로이드 실기기(2.9.5): 목록의 ▶ 를 눌러도 시간이 00:00 에 멈춰 있었다 — Web Audio 경로가 멈춰 있으면(컨텍스트가 안 깨어남) <audio> 도 안 간다.
+// 그때는 1.5 초 안에 바로 재생으로 바꿔 이어 가야 한다. 재생 전에 옮긴 위치는 재생이 시작된 뒤에 들어가야 한다
+// 녹음 기능 점검(2.9.6): 재생 중 A 를 찍고 검은 동그라미를 끌면 A 가 끌려가고 동그라미는 제자리로 튀었다 · 목록 소리와 편집기 소리가 겹쳤다 ·
+// 지운 B 가 'B 00:03.0' 으로 남았다 · 이름 바꾸기가 브라우저 창이었다
+await scenario('editor: after A is set while playing, dragging the knob seeks (A stays; A moves by its label); list playback stops when the editor opens; B text resets; rename is in-app', 'violin_scale_Amaj.wav', async p => {
+  p.on('dialog', d => { throw new Error('a browser dialog opened: ' + d.message()) })
+  await p.goto(URL_); await waitNote(p, t => t.note !== '--', 6000)
+  await p.click('#rec-hdr-btn'); await sleep(p, 7000); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 듣기')
+  await p.click('#menu-btn'); await sleep(p, 400)
+  await p.click('#rec-pb-0'); await sleep(p, 600)
+  await p.click('[data-action="edit"][data-idx="0"]')
+  await waitUntil(p, () => !document.getElementById('ed-play-btn').disabled, 5000, 'editor ready')
+  assert.equal(await p.evaluate(() => document.getElementById('rec-pb-0').dataset.glyph), 'play', 'opening the editor stops the list player')
+  await p.click('#ed-play-btn'); await sleep(p, 1200)
+  await p.click('#ed-a-btn'); await sleep(p, 100)
+  const a0 = await p.evaluate(() => window.__tt.editor().ptA)
+  // 동그라미에서 오른쪽으로 80 px 끌기
+  const knob = await p.evaluate(() => { const r = document.getElementById('ed-pos-handle').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } })
+  await p.mouse.move(knob.x, knob.y); await p.mouse.down(); for (let i = 1; i <= 8; i++) { await p.mouse.move(knob.x + i * 10, knob.y); await sleep(p, 30) }
+  const during = await p.evaluate(() => parseFloat(document.getElementById('ed-pos-handle').style.left))
+  await p.mouse.up(); await sleep(p, 150)
+  const st = await p.evaluate(() => ({ a: window.__tt.editor().ptA, t: window.__tt.editor().audio.currentTime, left: parseFloat(document.getElementById('ed-pos-handle').style.left) }))
+  assert.equal(st.a, a0, 'A did not move')
+  assert.ok(st.t > a0 + 0.8, `the knob drag seeked forward: A ${a0.toFixed(2)} → ${st.t.toFixed(2)}`)
+  assert.ok(Math.abs(st.left - during) < 6, `no jump back on release: ${during} → ${st.left}`)
+  // A 는 글자표(A)를 잡아 끈다
+  await p.click('#ed-play-btn'); await sleep(p, 200)
+  const lbl = await p.evaluate(() => { const r = document.querySelector('#ed-a-handle .ed-handle-lbl').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } })
+  await p.mouse.move(lbl.x, lbl.y); await p.mouse.down(); for (let i = 1; i <= 4; i++) await p.mouse.move(lbl.x - i * 8, lbl.y); await p.mouse.up(); await sleep(p, 100)
+  assert.ok(await p.evaluate(a0 => window.__tt.editor().ptA < a0 - 0.1, a0), 'A moves when dragged by its label')
+  // 겹친 경우: 재생 위치를 A 와 같은 자리에 두고 글자표를 끌면 A 가, 아래(막대)를 끌면 재생 위치가 움직인다
+  const a1 = await p.evaluate(() => { const e = window.__tt.editor(); e.audio.currentTime = e.ptA; return e.ptA }); await sleep(p, 300)
+  const l2 = await p.evaluate(() => { const r = document.querySelector('#ed-a-handle .ed-handle-lbl').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } })
+  await p.mouse.move(l2.x, l2.y); await p.mouse.down(); for (let i = 1; i <= 4; i++) await p.mouse.move(l2.x + i * 8, l2.y); await p.mouse.up(); await sleep(p, 100)
+  const ov = await p.evaluate(() => ({ a: window.__tt.editor().ptA, t: window.__tt.editor().audio.currentTime }))
+  assert.ok(ov.a > a1 + 0.1 && Math.abs(ov.t - a1) < 0.05, `overlapping: the label drags A (${a1.toFixed(2)} → ${ov.a.toFixed(2)}), the position stays (${ov.t.toFixed(2)})`)
+  // B 찍고 → A 지움 → 다시 A: B 글자는 'B —', B 조절 버튼은 숨김
+  await p.evaluate(() => { window.__tt.editor().audio.currentTime = 4 }); await p.click('#ed-b-btn'); await sleep(p, 100)
+  assert.match(await p.evaluate(() => document.getElementById('ed-b-time').textContent), /^B \d/)
+  await p.click('#ed-a-btn'); await sleep(p, 100); await p.click('#ed-a-btn'); await sleep(p, 100)
+  assert.equal(await p.evaluate(() => document.getElementById('ed-b-time').textContent), 'B —')
+  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('ed-b-nudge-r')).visibility), 'hidden')
+  // 이름 바꾸기: 앱 안 입력칸, 엔터로 저장
+  await p.click('#ed-title-edit')
+  assert.equal(await p.evaluate(() => !document.getElementById('ed-title-input').hidden && document.activeElement?.id === 'ed-title-input'), true, 'the name turns into a focused input')
+  await p.fill('#ed-title-input', '레슨 11월'); await p.keyboard.press('Enter'); await sleep(p, 200)
+  assert.equal(await p.evaluate(() => document.getElementById('editor-title-display').textContent), '레슨 11월')
+  // Esc 는 취소
+  await p.click('#ed-title-edit'); await p.fill('#ed-title-input', '버림'); await p.keyboard.press('Escape'); await sleep(p, 100)
+  assert.equal(await p.evaluate(() => document.getElementById('editor-title-display').textContent), '레슨 11월')
+  await p.click('#ed-back-btn'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.querySelector('#rec-list .rec-item-name').textContent), '레슨 11월')
+})
+await scenario('playback: the list player keeps going when the audio route is stuck, and a position set before play is where it starts', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#rec-hdr-btn'); await sleep(p, 4000); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 듣기')
+  await p.click('#menu-btn'); await sleep(p, 500)
+  const st = () => p.evaluate(() => ({ v: +document.getElementById('rec-seek-0').value, t: document.getElementById('rec-time-0').textContent, g: document.getElementById('rec-pb-0').dataset.glyph }))
+  // 1) 컨텍스트를 멈추고 다시 켜지지 않게 → ▶
+  await p.evaluate(async () => { const ac = window.__tt.ac(); await ac.suspend(); ac.resume = () => new Promise(() => {}) })
+  await p.click('#rec-pb-0')
+  await waitUntil(p, () => +document.getElementById('rec-seek-0').value > 0.5, 4000, 'the list player moves even with a stuck audio route')
+  assert.equal((await st()).g, 'pause')
+  await p.click('#rec-pb-0'); await sleep(p, 200)
+  // 2) 다른 녹음 없이 다시: 재생 전에 2 초로 옮기고 ▶ → 2 초부터
+  await p.evaluate(() => { const s = document.getElementById('rec-seek-0'); s.value = '0'; s.dispatchEvent(new Event('input', { bubbles: true })) })
+  await p.evaluate(() => { const s = document.getElementById('rec-seek-0'); s.value = '2'; s.dispatchEvent(new Event('input', { bubbles: true })) })
+  assert.equal((await st()).t, '00:02', 'the time follows the slider before play')
+  await p.click('#rec-pb-0'); await sleep(p, 700)
+  const s1 = await st(); assert.ok(s1.v >= 2 && s1.v < 3.6, `starts from 2 s: ${s1.v}`)
+  await p.click('#rec-pb-0')
+})
 await scenario('playback: a webm whose media duration is garbage (Android Chrome: hours for seconds) — the list seek bar, the editor length and seeking use the recorded length', 'violin_A4.wav', async p => {
   // 안드로이드 크롬이 MediaRecorder webm 의 길이를 엉뚱한 유한값으로 보고하는 것을 흉내 낸다 (실기기: 47 초 → 4500:20 · 8652:07)
   await p.addInitScript(() => { const d = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'duration'); Object.defineProperty(HTMLMediaElement.prototype, 'duration', { configurable: true, get() { const v = d.get.call(this); return String(this.currentSrc || this.src).startsWith('blob:') ? 270020 : v } }) })

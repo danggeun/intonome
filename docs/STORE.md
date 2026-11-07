@@ -101,7 +101,7 @@ Afinador y metrónomo para violín, viola, chelo y contrabajo. Mira tu vibrato
 · 원하는 구간만 잘라서 WAV 로 저장·공유
 
 ■ 연습 타이머
-· 켜 둔 시간이 아니라 실제로 소리 낸 시간을 잽니다
+· 켜 둔 시간이 아니라 실제로 연주한 시간을 잽니다
 · 잡음은 빼고, 악기 소리가 난 시간만 셉니다
 
 ■ 개인정보
