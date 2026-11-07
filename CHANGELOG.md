@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.5] - 2026-11-07
+Shorter words where 2.9.4 still made you read twice, and three small fixes.
+
+Words (all six languages)
+- Settings: Tolerance is "the range that shows green"; Tuner response has no description (the title and Slow / Normal / Fast say it); Note names: "the note names shown large on the tuner"; Keep recordings in one sentence
+- First-run guide: back to the short 2.9.2 lines for the first note and "Close anytime"; the reference step just says to set the A your group uses; after trying the A or the tempo, "it goes back when you tap Next"; REC says where recordings are kept and for how long, and in the Android app that leaving the app stops the recording
+
+Fixes
+- Undo notices (timer reset, deleted recording) stay 5 seconds again; 2.9.3 kept them at least 7. A mouse over the notice or keyboard focus on it still holds it; a finger brushing it on a phone no longer can
+- First-run guide: the highlight around ☰ and ⚙ stays inside the screen (its edge was cut off on every phone)
+- The collapsed metronome's ▶ is outlined while stopped and red only while it plays, like REC, so it no longer pulls the eye away from the tuner; the expanded and metronome-only views keep the red button
+
 ## [2.9.4] - 2026-11-07
 Words only: settings descriptions and a few notices say what a thing is or does in one read, in all six languages. No behaviour changes.
 
