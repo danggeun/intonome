@@ -5,7 +5,7 @@ const MAX_TOASTS = 3
 /** 페이드아웃 시간 (style.css 의 .toast transition 과 같아야 한다) */
 const FADE_MS = 260
 
-type Slot = { el: HTMLDivElement; timer: ReturnType<typeof setTimeout>; msg: string; actionable: boolean }
+type Slot = { el: HTMLElement; timer: ReturnType<typeof setTimeout>; msg: string; actionable: boolean }
 const slots: Slot[] = []
 
 /** 넘칠 때 내보낼 인덱스 — 액션 없는 가장 오래된 것 우선(액션 토스트는 놓치면 데이터가 사라진다), 전부 액션이면 가장 오래된 것 */
@@ -55,11 +55,17 @@ export function toast(msg: string, ms = 2500, action?: () => void): void {
     if (same) { clearTimeout(same.timer); same.timer = setTimeout(() => drop(same), ms); return }
   }
   const host = q('toast-host')
-  const el = document.createElement('div')
+  // 누를 수 있는 안내(실행 취소·탭해서 듣기)는 진짜 버튼 — 화면 읽기·키보드로 닿고, 포커스·손가락이 올라가 있는 동안은 사라지지 않는다. 읽고 누를 시간도 넉넉히(7 초 이상)
+  const el = document.createElement(action ? 'button' : 'div')
   el.className = 'toast'; el.textContent = msg
   if (action) el.classList.add('actionable')
-  const slot: Slot = { el, timer: setTimeout(() => drop(slot), ms), msg, actionable: !!action }
+  const life = action ? Math.max(ms, 7000) : ms
+  const slot: Slot = { el, timer: setTimeout(() => drop(slot), life), msg, actionable: !!action }
   el.onclick = action ? () => { action(); drop(slot) } : null
+  if (action) {
+    const hold = (): void => clearTimeout(slot.timer), resume = (): void => { clearTimeout(slot.timer); slot.timer = setTimeout(() => drop(slot), 3000) }
+    el.addEventListener('focus', hold); el.addEventListener('blur', resume); el.addEventListener('pointerenter', hold); el.addEventListener('pointerleave', resume)
+  }
   host.appendChild(el)
   slots.push(slot); markLatest()
   // 시작값(opacity 0)을 확정한 뒤 .show 로 페이드인

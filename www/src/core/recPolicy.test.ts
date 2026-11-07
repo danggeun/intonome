@@ -13,13 +13,13 @@ describe('expires', () => {
 })
 
 describe('warnDaysLeft', () => {
-  test('last-7-days boundary — notice at 6 days left, quiet at 7', () => {
+  test('shown for the whole 30 days, not only the last week — a fresh recording says 29 or 30 days', () => {
     expect(warnDaysLeft(NOW - 24 * day, false, true, NOW)).toBe(6)
-    expect(warnDaysLeft(NOW - 23 * day, false, true, NOW)).toBe(null)
+    expect(warnDaysLeft(NOW - 23 * day, false, true, NOW)).toBe(7)
+    expect(warnDaysLeft(NOW - 1000, false, true, NOW)).toBe(29)
   })
   test('3 days left', () => expect(warnDaysLeft(NOW - 27 * day, false, true, NOW)).toBe(3))
   test('deletes today', () => expect(warnDaysLeft(NOW - 30 * day + 1000, false, true, NOW)).toBe(0))
-  test('quiet at 8 days left', () => expect(warnDaysLeft(NOW - 22 * day, false, true, NOW)).toBe(null))
   test('no notice for kept items', () => expect(warnDaysLeft(NOW - 27 * day, true, true, NOW)).toBe(null))
   test('no notice with auto-delete off', () => expect(warnDaysLeft(NOW - 27 * day, false, false, NOW)).toBe(null))
 })

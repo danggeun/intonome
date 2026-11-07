@@ -29,6 +29,7 @@ export function privacyHtml(lang: Lang): string {
   const inline = (t: string): string => esc(t)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/&lt;(https?:\/\/[^\s&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+    .replace(/&lt;([^\s&@<>]+@[^\s&<>]+)&gt;/g, '<a href="mailto:$1">$1</a>') // 연락처 이메일 — 누르면 메일 앱
     .replace(/\s*·\s*\[[^\]]+\]\(#[^)]*\)/g, '') // 영/한 건너뛰기 링크는 뺀다(화면은 한 언어만)
   const out: string[] = []; let list: string[] = []; let first = true
   const flush = (): void => { if (list.length) { out.push(`<ul>${list.join('')}</ul>`); list = [] } }

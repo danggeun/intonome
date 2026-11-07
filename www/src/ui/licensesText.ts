@@ -10,15 +10,15 @@ https://github.com/danggeun/intonome`
 /** 각 항목: 이름 · 쓰임 · 저작권 고지 · 라이선스 종류 */
 export const NOTICES: ReadonlyArray<{ name: string; use: string; copyright: string; license: 'OFL' | 'MIT' }> = [
   { name: 'DM Mono', use: 'Numbers and note names', copyright: 'Copyright 2020 The DM Mono Project Authors (https://www.github.com/googlefonts/dm-mono)', license: 'OFL' },
-  { name: 'Bravura', use: 'Note glyphs in the metronome, traced as outlines (scripts/gen-note-glyphs.py)', copyright: 'Copyright \u00a9 2026, Steinberg Media Technologies GmbH (http://www.steinberg.net/), with Reserved Font Name "Bravura".', license: 'OFL' },
+  { name: 'Bravura', use: 'Note glyphs in the metronome, traced as outlines (scripts/gen-note-glyphs.py)', copyright: 'Copyright \u00a9 2019, Steinberg Media Technologies GmbH (http://www.steinberg.net/), with Reserved Font Name "Bravura".', license: 'OFL' },
   { name: 'Bricolage Grotesque', use: 'The Intonome wordmark, embedded as outlines', copyright: 'Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage)', license: 'OFL' },
-  { name: 'Capacitor (@capacitor/core, android, app, filesystem, haptics, share, status-bar)', use: 'Android app shell', copyright: 'Copyright (c) 2017-present Drifty Co.', license: 'MIT' },
+  { name: 'Capacitor (@capacitor/core, android, app, filesystem, haptics, share, status-bar, text-zoom)', use: 'Android app shell', copyright: 'Copyright (c) 2017-present Drifty Co.', license: 'MIT' },
   { name: 'Workbox', use: 'Offline cache (service worker)', copyright: 'Copyright 2018 Google LLC', license: 'MIT' },
 ]
 
-export const OFL_TEXT = `-----------------------------------------------------------
+export const OFL_TEXT = `------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
------------------------------------------------------------
+------------------------------------
 
 PREAMBLE
 The goals of the Open Font License (OFL) are to stimulate worldwide
@@ -124,5 +124,5 @@ THE SOFTWARE.`
 /** 화면에 보일 전문 하나 — 고지 목록 뒤에 라이선스 전문(OFL · MIT)을 한 번씩 */
 export function licensesText(): string {
   const items = NOTICES.map(n => `${n.name}\n${n.use}\n${n.copyright}\nLicense: ${n.license === 'OFL' ? 'SIL Open Font License 1.1' : 'MIT License'}`).join('\n\n')
-  return `${APP_LICENSE}\n\n${items}\n\n\n${OFL_TEXT}\n\n\n-----------------------------------------------------------\nMIT License\n-----------------------------------------------------------\n\n${MIT_TEXT}`
+  return `${APP_LICENSE}\n\n${items}\n\n\n${OFL_TEXT}\n\n\n------------------------------------\nMIT License\n------------------------------------\n\n${MIT_TEXT}`
 }

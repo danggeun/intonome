@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { hzToMidi, midiToHz, centsFrom, noteName, octaveOf, splitAccidental, ENHARMONIC, noteLabel } from './note.ts'
+import { hzToMidi, midiToHz, centsFrom, noteName, octaveOf, splitAccidental, ENHARMONIC, noteLabel, droneName } from './note.ts'
 
 describe('note math', () => {
   test('A4 440 → midi 69, Korean name "라", octave 4', () => {
@@ -35,5 +35,18 @@ describe('noteLabel — the secondary line is the other system', () => {
       expect(secondary.length).toBeLessThanOrEqual(5)
       for (const part of secondary.split('/')) expect(part).not.toBe(name)
     }
+  })
+})
+
+describe('droneName — string-practice spellings for the five black keys', () => {
+  test('letters: C♯ E♭ F♯ A♭ B♭', () => expect([1, 3, 6, 8, 10].map(pc => droneName(pc, 'en', 'en'))).toEqual(['C♯', 'E♭', 'F♯', 'A♭', 'B♭']))
+  test('Korean solfège', () => expect([1, 3, 6, 8, 10].map(pc => droneName(pc, 'ko', 'ko'))).toEqual(['도♯', '미♭', '파♯', '라♭', '시♭']))
+  test('Japanese and Spanish solfège', () => {
+    expect([3, 10].map(pc => droneName(pc, 'ko', 'ja'))).toEqual(['ミ♭', 'シ♭'])
+    expect([3, 10].map(pc => droneName(pc, 'ko', 'es'))).toEqual(['Mi♭', 'Si♭'])
+  })
+  test('Chinese is always letters; white keys unchanged', () => {
+    expect(droneName(10, 'ko', 'zh-Hans')).toBe('B♭')
+    expect(droneName(0, 'ko', 'ko')).toBe('도'); expect(droneName(9, 'en', 'en')).toBe('A')
   })
 })

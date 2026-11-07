@@ -52,7 +52,7 @@ async function scenario(name, wav, fn, { fresh = false, ...ctxOpts } = {}) {
   catch (e) { results.push([name, 'FAIL: ' + (e.message || e).toString().split('\n').slice(0, 3).join(' / ')]) }
   await browser.close()
 }
-const tunerText = p => p.evaluate(() => ({ note: document.getElementById('tuner-note').textContent, acc: document.getElementById('tuner-acc').textContent, oct: document.getElementById('tuner-oct').textContent, cents: document.getElementById('tuner-cents').textContent, inTune: document.getElementById('tuner-card').classList.contains('in-tune') }))
+const tunerText = p => p.evaluate(() => ({ note: document.getElementById('tuner-note').textContent, acc: document.getElementById('tuner-acc').textContent, oct: document.getElementById('tuner-oct').textContent, cents: document.getElementById('tuner-cents').textContent.replace('\u2212', '-'), inTune: document.getElementById('tuner-card').classList.contains('in-tune') }))
 const waitNote = async (p, pred, ms = 4000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { const t = await tunerText(p); if (pred(t)) return t; await p.waitForTimeout(100) } throw new Error('note not reached: ' + JSON.stringify(await tunerText(p))) }
 const sleep = (p, ms) => p.waitForTimeout(ms)
 /** BPM 숫자 끌기를 천천히(5 px / 100 ms = 0.05 px/ms) — 끌기 감도는 손가락 속도를 따르므로(core/metro/dragRate) 천천히면 1 BPM = 6 px 로 정해진다 */
@@ -294,8 +294,8 @@ await scenario('metro: full mode adds −5/+5 at both ends — steps of 5, clamp
   await swipeUp(p) // → 전용 (위로 밀어서)
   assert.deepEqual(await shown(), ['flex', 'flex'], '전용 모드에만')
   const order = await p.evaluate(() => [...document.querySelectorAll('#metro-btn-row > button')].filter(b => getComputedStyle(b).display !== 'none')
-    .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map(b => b.textContent))
-  assert.deepEqual(order, ['−5', '−', '', '+', '+5'], '재생이 가운데(글리프는 SVG 라 글자가 없다), 5 단위가 양 끝')
+    .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map(b => b.dataset.step || b.id))
+  assert.deepEqual(order, ['-5', '-1', 'metro-play-btn', '1', '5'], '재생이 가운데, 5 단위가 양 끝')
   await p.click('.m-adj5[data-step="5"]'); assert.equal(await bpm(), 85)
   await p.click('.m-adj5[data-step="-5"]'); await p.click('.m-adj5[data-step="-5"]'); assert.equal(await bpm(), 75)
   for (let i = 0; i < 30; i++) await p.click('.m-adj5[data-step="5"]'); assert.equal(await bpm(), 200, 'clamp max')
@@ -392,7 +392,8 @@ await scenario('metro: full-mode dial — BPM follows the ring, stops at the end
   assert.equal(await p.evaluate(() => document.getElementById('dial-name').textContent), 'Andante')
   // 링을 돌린다: 중심 기준 각도를 +27° 만큼 (= 20 BPM) 시계 방향으로, 여러 번에 나눠서
   const rot = async (deg, steps = 12) => {
-    const c = await p.evaluate(() => { const r = document.getElementById('dial').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width * 0.37 } })
+    // 링 중심은 SVG 가 실제로 그린 (160,160) — 상자 가운데가 아니다(viewBox 320×290, 상자가 길쭉하면 위아래 여백)
+    const c = await p.evaluate(() => { const svg = document.getElementById('dial-svg'), m = svg.getScreenCTM(), pt = new DOMPoint(160, 160).matrixTransform(m); return { x: pt.x, y: pt.y, r: 112 * m.a } })
     const at = a => ({ x: c.x + c.r * Math.sin(a * Math.PI / 180), y: c.y - c.r * Math.cos(a * Math.PI / 180) })
     let a = 0; const p0 = at(a)
     await p.mouse.move(p0.x, p0.y); await p.mouse.down()
@@ -416,8 +417,8 @@ await scenario('metro: full-mode dial — BPM follows the ring, stops at the end
   // 배치: 위에서부터 LED → 다이얼 → [−5 − ▶ + +5] → 음량 → 박자표 → 분할, 재생이 가운데
   const ys = await p.evaluate(() => ['sweep-leds', 'dial', 'metro-play-btn', 'metro-vol-pad', 'ts-grid', 'sd-grid'].map(id => document.getElementById(id).getBoundingClientRect().top))
   for (let i = 1; i < ys.length; i++) assert.ok(ys[i] > ys[i - 1], `순서: ${ys}`)
-  const xs = await p.evaluate(() => { const b = Array.from(document.querySelectorAll('#metro-btn-row button')); return b.map(e => [e.id || e.textContent, Math.round(e.getBoundingClientRect().left)]).sort((a, b) => a[1] - b[1]).map(e => e[0]) })
-  assert.deepEqual(xs, ['−5', '−', 'metro-play-btn', '+', '+5'])
+  const xs = await p.evaluate(() => { const b = Array.from(document.querySelectorAll('#metro-btn-row button')); return b.map(e => [e.id || e.dataset.step, Math.round(e.getBoundingClientRect().left)]).sort((a, b) => a[1] - b[1]).map(e => e[0]) })
+  assert.deepEqual(xs, ['-5', '-1', 'metro-play-btn', '1', '5'])
   await p.click('#metro-size-btn')
 })
 // 카드 끌기: 손가락을 따라 높이가 바뀌고, 조금 끌다 멈춰 놓으면 제자리, 충분히 끌면 다음 단계. 위아래 모두
@@ -602,7 +603,7 @@ await scenario('metro: on a wide screen the size button goes expanded ⇄ full f
   assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('tuner-card')).display), 'flex')
   await swipeDown(p); assert.deepEqual(await btn(), [true, '메트로놈만 크게 보기'], '아래로 밀어도 접힘 상태로 가지 않는다')
   assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('metro-full-btn')).display), 'none', '넓은 화면엔 크게 버튼이 없다 — ∧ 가 그 일을 한다')
-  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('metro-hdr-label')).visibility), 'visible', '넓은 화면 펼침의 헤더 ♩80 은 그대로')
+  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('metro-hdr-label')).visibility), 'visible', '넓은 화면 펼침의 헤더 ♩80 은 그대로(처음 안내가 거기를 가리킨다)')
 }, { viewport: { width: 900, height: 900 } })
 
 // 화면 크기 행렬 — 펼침2 는 어떤 화면에서도 스크롤·넘침이 없고 글자가 읽혀야 한다.
@@ -627,7 +628,7 @@ for (const [name, w, h, top, bot] of LAYOUT_MATRIX) await scenario(`layout: full
     const body = document.getElementById('metro-body'), bcs = getComputedStyle(body), bb = body.getBoundingClientRect()
     const btns = Array.from(document.querySelectorAll('#metro-btn-row > button, #metro-adj-pad > button')).filter(b => b.offsetParent && getComputedStyle(b).display !== 'none').map(b => b.getBoundingClientRect())
     const btnOverflow = Math.max(0, ...btns.map(v => Math.max(bb.left + parseFloat(bcs.paddingLeft) - v.left, v.right - (bb.right - parseFloat(bcs.paddingRight)))))
-    const adj5 = Array.from(document.querySelectorAll('#metro-card.full [data-step]')).filter(b => b.offsetParent && getComputedStyle(b).display !== 'none').length
+    const adj5 = Array.from(document.querySelectorAll('#metro-card.full .m-adj5, #metro-card.full .m-adj5-pad')).filter(b => b.offsetParent && getComputedStyle(b).display !== 'none').length
     return { btnOverflow, adj5, overflowY: clip.scrollHeight - clip.clientHeight, segOverflow: Math.max(0, ...segs.map(s => s.right - card.right)), glyphOverflow: Math.max(0, ...glyphs),
       dial: dial.width, numBoxH: num.height, names, lastRowInside: last.bottom <= card.bottom + 0.5 && last.bottom <= window.innerHeight,
       hdr: getComputedStyle(document.getElementById('hdr')).display, logo: document.getElementById('logo') }
@@ -658,15 +659,16 @@ await scenario('settings: the bottom links — contact opens the mail app, priva
   await p.click('#settings-hdr-btn'); await sleep(p, 300)
   assert.deepEqual(await p.evaluate(() => { const a = document.getElementById('contact-link'); return [a.getAttribute('href'), a.target] }), ['mailto:intonome.app@gmail.com?subject=Intonome', ''])
   // 40 px 히트 (보이는 크기는 글자만) · 가운데 항목(문의)은 워드마크 축 위
-  const geo = await p.evaluate(() => ['privacy-btn', 'contact-link', 'licenses-btn', 'settings-wordmark'].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.height), r.left + r.width / 2] }))
+  const geo = await p.evaluate(() => ['privacy-btn', 'contact-link', 'licenses-btn', 'settings-wordmark'].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.height), r.left + r.width / 2 - (id === 'settings-wordmark' ? new DOMMatrix(getComputedStyle(r && document.getElementById(id)).transform).m41 : 0)] })) // 워드마크는 잉크 보정(translateX)을 뺀 상자 축
   assert.ok(geo.slice(0, 3).every(([h]) => h >= 40), '40 px: ' + geo.map(g => g[0]))
   assert.ok(Math.abs(geo[1][1] - geo[3][1]) < 1, `contact centred on the wordmark axis: ${geo[1][1]} vs ${geo[3][1]}`)
   assert.equal(await p.evaluate(() => document.getElementById('settings-links').classList.contains('stack')), false, 'Korean: one line')
   // 점(·)은 두 글자 사이 한가운데(2.9.0: 바깥쪽만 gap 4 px 라 「문의」 쪽으로 쏠림) · 버전은 무게중심 보정으로 축보다 약 1.4 px 왼쪽(글자 상자 기준)
   const dots = await p.evaluate(() => { const tx = e => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect() }; const [a, c, b] = ['privacy-btn', 'contact-link', 'licenses-btn'].map(id => tx(document.getElementById(id))); const [d1, d2] = [...document.querySelectorAll('#settings-links .sl-dot')].map(e => tx(e)); return [d1.left - a.right, c.left - d1.right, d2.left - c.right, b.left - d2.right] })
   assert.ok(Math.abs(dots[0] - dots[1]) < 1 && Math.abs(dots[2] - dots[3]) < 1, 'dots midway between words: ' + dots.map(v => v.toFixed(1)))
-  const ver = await p.evaluate(() => { const r = document.createRange(); r.selectNodeContents(document.getElementById('settings-version')); const v = r.getBoundingClientRect(), w = document.getElementById('settings-wordmark').getBoundingClientRect(); return (v.left + v.width / 2) - (w.left + w.width / 2) })
-  assert.ok(ver < -1 && ver > -2, 'version optically centred (box ~1.4 px left of the axis): ' + ver.toFixed(2))
+  // 버전은 잉크 무게중심으로 맞춘다(ui/settings inkCenter) — 끝 숫자에 따라 옮기는 양이 다르므로 값이 아니라 '옮겼다' 와 범위를 본다
+  const ver = await p.evaluate(() => { const m = getComputedStyle(document.getElementById('settings-version')).transform; return m === 'none' ? null : new DOMMatrix(m).m41 })
+  assert.ok(ver !== null && Math.abs(ver) > 0.1 && Math.abs(ver) < 3, 'version shifted to its ink centre: ' + ver)
   // 언어 카드는 맨 아래 「사용 안내」 바로 위(2.9.1) — 거기서 언어를 바꿔도 손가락 아래 카드가 안 뛴다: 푸터 높이 고정(min-height) + 바꾸기 전후 위치 맞춤(ui/settings keepInPlace). 2.9.0 배치였다면 ja → ko 에서 약 80 px
   assert.equal(await p.evaluate(() => document.getElementById('lang-steps').closest('.setting-row').nextElementSibling.contains(document.getElementById('tour-replay-btn'))), true, 'language card sits right above the guide card')
   for (const [to, back] of [['3', '0'], ['1', '0']]) {
@@ -681,9 +683,13 @@ await scenario('settings: the bottom links — contact opens the mail app, priva
   }
   // 한 줄 푸터는 한 줄 높이 그대로(2.9.1 의 상시 min-height 는 아래가 늘어져 보여 버림) · 잠시 둔 아래 여백은 설정을 닫으면 사라진다
   assert.equal(await p.evaluate(() => document.getElementById('settings-links').getBoundingClientRect().height), 40, 'one-line footer is one line tall')
-  await p.click('#settings-back-btn'); await sleep(p, 400)
-  assert.equal(await p.evaluate(() => document.getElementById('settings-inner').style.getPropertyValue('--settings-slack')), '', 'slack cleared when settings close')
-  await p.click('#settings-hdr-btn'); await sleep(p, 300)
+  // 닫히며 사라지는 동안 화면이 내려가지 않는다(2.9.2 는 닫는 순간 여백을 지워 약 80 px 툭 내려갔다) · 여백은 다음에 열 때 지운다
+  const topBefore = await p.evaluate(() => document.getElementById('lang-steps').getBoundingClientRect().top)
+  await p.evaluate(() => document.getElementById('settings-back-btn').click()); await sleep(p, 60) // p.click 은 버튼을 보이게 맨 위로 스크롤해 버린다 — 사람은 스크롤 없이 X(또는 뒤로가기)를 누른다
+  const topClosing = await p.evaluate(() => document.getElementById('lang-steps').getBoundingClientRect().top)
+  assert.ok(Math.abs(topClosing - topBefore) < 1, `no jump while closing: ${(topClosing - topBefore).toFixed(1)} px`)
+  await sleep(p, 400); await p.click('#settings-hdr-btn'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.getElementById('settings-inner').style.getPropertyValue('--settings-slack')), '', 'slack cleared when settings open again')
   // 개인정보처리방침 — 앱 안 화면, 한국어 절만
   await p.click('#privacy-btn'); await sleep(p, 300)
   assert.equal(await p.evaluate(() => document.getElementById('privacy-page').classList.contains('open')), true)
@@ -1069,18 +1075,20 @@ await scenario('first-run guide: the metronome step also goes round with buttons
   for (let k = 0; k < 5; k++) await tourNext(p)
   assert.equal((await tour(p)).title, '메트로놈은 위로 밀어 보세요')
   await sizeTap(p); let s = await tour(p)
-  assert.equal(s.title, '한 번 더 올려 보세요'); assert.equal(s.body, '메트로놈만 크게 볼 수 있어요. 왼쪽 위 버튼을 눌러도 돼요')
+  assert.equal(s.title, '한 번 더 올려 보세요'); assert.equal(s.body, '메트로놈만 크게 볼 수 있어요. 카드 왼쪽 위 버튼을 눌러도 돼요')
   await p.click('#metro-full-btn'); await settled(p); s = await tour(p)
   assert.equal(s.title, '이제 아래로 내려 보세요', '크게 버튼으로도 다음 단계'); assert.match(s.body, /∨를 눌러도 돼요$/)
   await sizeTap(p); assert.equal((await tour(p)).title, '한 번 더 내려 보세요')
   await sizeTap(p); assert.equal((await tour(p)).title, '좋아요')
 }, { fresh: true, locale: 'ko-KR' })
-await scenario('first-run guide (wide screen): the bubble sits beside the tall metronome; ∧ goes to the full view and back', 'violin_A4.wav', async p => {
+await scenario('first-run guide (wide screen): the bubble does not cover the metronome; ∧ goes to the full view and back', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitTour(p)
   for (let k = 0; k < 5; k++) await tourNext(p)
   assert.equal((await tour(p)).body, '메트로놈만 크게 볼 수 있어요. ∧를 눌러도 돼요')
-  const r = await p.evaluate(() => { const c = document.querySelector('#tour .tour-card').getBoundingClientRect(), m = document.getElementById('metro-card').getBoundingClientRect(); return { cardRight: c.right, metroLeft: m.left, side: document.querySelector('#tour .tour-card').classList.contains('side-l') } })
-  assert.ok(r.side && r.cardRight <= r.metroLeft, '말풍선이 메트로놈을 가리지 않는다: ' + JSON.stringify(r))
+  // 2.9.3: 넓은 화면의 메트로놈 카드는 내용 높이만큼(늘이지 않는다) → 말풍선은 옆이든 아래든 카드와 겹치지만 않으면 된다
+  const r = await p.evaluate(() => { const c = document.querySelector('#tour .tour-card').getBoundingClientRect(), m = document.getElementById('metro-card').getBoundingClientRect(); return { c: [c.left, c.top, c.right, c.bottom], m: [m.left, m.top, m.right, m.bottom] } })
+  const apart = r.c[2] <= r.m[0] || r.c[0] >= r.m[2] || r.c[3] <= r.m[1] || r.c[1] >= r.m[3]
+  assert.ok(apart, '말풍선이 메트로놈을 가리지 않는다: ' + JSON.stringify(r))
   await sizeTap(p); assert.equal((await tour(p)).title, '이제 아래로 내려 보세요')
   await sizeTap(p); assert.equal((await tour(p)).title, '좋아요')
 }, { fresh: true, locale: 'ko-KR', viewport: { width: 900, height: 1000 }, isMobile: false })
@@ -1192,7 +1200,7 @@ await scenario('rec: two deletes in a row → each undo toast stays alive', 'vio
   await p.click('[data-action="delete"][data-idx="0"]'); await sleep(p, 200)
   await p.click('[data-action="delete"][data-idx="0"]'); await sleep(p, 200)
   assert.equal((await names()).length, 0)
-  assert.equal(await p.evaluate(() => document.querySelectorAll('#toast-host .toast.show.actionable').length), 2, '실행 취소 토스트 2개가 동시에 떠 있다')
+  assert.equal(await p.evaluate(() => [...document.querySelectorAll('#toast-host .toast.show.actionable')].filter(t => t.textContent.includes('실행 취소')).length), 2, '실행 취소 토스트 2개가 동시에 떠 있다(녹음 완료 토스트는 따로)')
   await p.click('#toast'); await sleep(p, 400) // 가장 최근 = 두 번째 삭제
   assert.equal((await names()).length, 1, '두 번째 실행 취소')
   await p.click('#toast'); await sleep(p, 400) // 남아 있던 첫 번째 토스트
@@ -1210,8 +1218,8 @@ await scenario('rec: keep — always offered while auto-delete is on, the countd
   const meta = () => p.evaluate(() => document.querySelector('#rec-list .rec-item-meta').textContent)
   const link = () => p.evaluate(() => { const l = document.querySelector('#rec-list .rec-keep-link'); return l ? l.textContent : null })
   assert.equal(await p.evaluate(() => document.querySelectorAll('#rec-list .rec-item-btn').length), 3, '버튼 줄은 편집·다운로드·삭제 셋뿐')
-  assert.equal(await link(), '남기기', '예고 전에도 남길 수 있다 (2.5.7 까지는 마지막 7 일에만)'); assert.equal(await meta(), '남기기', '예고 글은 아직 없다')
-  // 녹음을 27일 전으로 돌려 예고 구간(마지막 7일)에 넣는다
+  assert.equal(await link(), '남기기', '예고 전에도 남길 수 있다 (2.5.7 까지는 마지막 7 일에만)'); assert.equal(await meta(), '29일 후 삭제 · 남기기', '자동 삭제는 처음부터 보인다 — 2.9.2 까지는 마지막 7일에만')
+  // 녹음을 27일 전으로 돌린다 — 남은 날이 줄어든다
   await p.evaluate(async () => {
     const db = await new Promise(r => { const q = indexedDB.open('intonome_rec', 4); q.onsuccess = () => r(q.result) })
     const tx = db.transaction('recordings', 'readwrite'), st = tx.objectStore('recordings')
@@ -1730,11 +1738,11 @@ await scenario('ux: list meta shows bookmarks n · A-B after editing', 'violin_A
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#rec-hdr-btn'); await sleep(p, 2200); await p.click('#rec-hdr-btn'); await sleep(p, 800)
   const meta = () => p.evaluate(() => document.querySelector('#rec-list .rec-item-meta').textContent)
-  await p.click('#menu-btn'); assert.equal(await meta(), '남기기', 'nothing to say but the keep link (auto-delete is on)')
+  await p.click('#menu-btn'); assert.match(await meta(), /^\d+일 후 삭제 · 남기기$/, '자동 삭제가 켜져 있으면 남은 날이 늘 보인다(2.9.3)')
   await p.click('[data-action="edit"][data-idx="0"]'); await sleep(p, 1200)
   await p.click('#ed-play-btn'); await sleep(p, 500); await p.click('#ed-bm-add-btn'); await sleep(p, 300); await p.click('#ed-a-btn'); await sleep(p, 500); await p.click('#ed-b-btn'); await sleep(p, 300)
   await p.click('#ed-back-btn'); await sleep(p, 300)
-  assert.equal(await meta(), '북마크 1 · A-B · 남기기')
+  assert.match(await meta(), /^북마크 1 · A-B · \d+일 후 삭제 · 남기기$/)
   assert.equal(await p.evaluate(() => document.getElementById('rec-detail-0').classList.contains('open')), true, 'list not re-rendered (expanded state kept)')
   await p.click('.rec-play-btn'); await sleep(p, 200); assert.equal(await p.evaluate(() => document.querySelector('.rec-play-btn').dataset.glyph), 'pause', 'list pause glyph'); await p.click('.rec-play-btn')
   await p.click('.menu-close-btn'); await sleep(p, 200)
@@ -1840,7 +1848,7 @@ await scenario('lifecycle: a notice that arrives while hidden is shown on return
   await setVisibility(p, 'visible'); await waitToast(p, '숨김 중 안내')
   await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 시작')
   await sleep(p, 1200); await p.click('#rec-hdr-btn')
-  await waitToast(p, '녹음 완료'); assert.equal(await p.evaluate(() => document.querySelectorAll('.rec-item').length), 1)
+  await waitToast(p, '녹음 완료 · 눌러서 듣기'); assert.equal(await p.evaluate(() => document.querySelectorAll('.rec-item').length), 1)
 })
 await scenario('lifecycle: back after a call stopped the audio while hidden, and it will not resume → the tuner says to tap (it sat silent)', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
@@ -1859,7 +1867,7 @@ await scenario('rec: the system muting the mic pauses the recording — a blip c
   await p.click('#rec-hdr-btn'); await sleep(p, 2000)
   await mute('mute'); await sleep(p, 400); await mute('unmute'); await sleep(p, 1600)
   assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true, '짧은 막힘은 녹음을 끝내지 않는다')
-  await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료')
+  await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 듣기')
   assert.deepEqual(await items(), ['00:04'], '이어 녹음한 막힘은 길이에서 빠진다')
   // 긴 막힘(화면을 끄거나 전화): 숨김 중에 막히고 3 s 뒤 돌아오면 막힌 시점까지 저장하고 끝, 돌아와서 알린다
   await p.click('#rec-hdr-btn'); await sleep(p, 2200)
@@ -2044,7 +2052,7 @@ await scenario('playback: a webm whose media duration is garbage (Android Chrome
   // 안드로이드 크롬이 MediaRecorder webm 의 길이를 엉뚱한 유한값으로 보고하는 것을 흉내 낸다 (실기기: 47 초 → 4500:20 · 8652:07)
   await p.addInitScript(() => { const d = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'duration'); Object.defineProperty(HTMLMediaElement.prototype, 'duration', { configurable: true, get() { const v = d.get.call(this); return String(this.currentSrc || this.src).startsWith('blob:') ? 270020 : v } }) })
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
-  await p.click('#rec-hdr-btn'); await sleep(p, 3200); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료')
+  await p.click('#rec-hdr-btn'); await sleep(p, 3200); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 듣기')
   await p.click('#menu-btn'); await sleep(p, 300)
   const dur = await p.evaluate(() => document.querySelector('.rec-item-dur').textContent); assert.match(dur, /^00:0[34]$/, '목록의 길이: ' + dur)
   await p.click('#rec-pb-0'); await sleep(p, 800)

@@ -9,5 +9,10 @@
   "android": {
     "minWebViewVersion": 94,
     "allowMixedContent": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "style": "DARK"
+    }
   }
 }

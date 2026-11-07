@@ -43,3 +43,13 @@ export function octaveOf(midi: number): number { return Math.floor(midi / 12) - 
 export function splitAccidental(name: KrNote): { base: string; acc: '' | '♯' } {
   return { base: name.replace('♯', ''), acc: name.includes('♯') ? '♯' : '' }
 }
+
+/** 드론 음 이름 — 현악 조성 관행대로 검은 건반 다섯을 C♯ · E♭ · F♯ · A♭ · B♭ 로(같은 체계 안에서 이명동음만 고른다).
+ *  음계 연습은 B♭·E♭·A♭ 장조가 기본이라 D♯·G♯·A♯ 드론을 찾는 사람은 드물다(출시 전 점검, 원어민 교정자 셋이 따로 짚음). C♯·F♯ 는 샵이 흔한 쪽 */
+const DRONE_FLAT = new Set([3, 8, 10])
+export function droneName(pc: number, system: NoteNames, lang: Lang): string {
+  const i = ((pc % 12) + 12) % 12
+  const name = system === 'en' || lettersOnly(lang) ? EN[i]! : solfegeOf(lang)[i]!
+  if (!DRONE_FLAT.has(i)) return name
+  return (system === 'en' || lettersOnly(lang) ? EN_ENHARMONIC[name] : solfegeEnharmonic(lang, name)) ?? name
+}

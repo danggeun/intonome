@@ -168,12 +168,12 @@ function renderEmpty(): void {
   setHz('')
   q('tuner-card').classList.remove('in-tune')
 }
-/** 스크린리더에는 1 초에 한 번, 음이름이나 센트가 바뀌었을 때만 — 매 프레임 읽으면 말이 끊이지 않는다 */
-let srText = '', srAt = 0
-function announce(text: string): void {
+/** 스크린리더에는 음이 바뀌거나 맞음/안 맞음이 바뀔 때만(그때의 센트를 함께), 1 초에 한 번까지 — 센트가 바뀔 때마다 읽으면 연주 내내 말이 끊이지 않았다 */
+let srKey = '', srAt = 0
+function announce(text: string, key = text): void {
   const now = performance.now()
-  if (text === srText || (text && now - srAt < 1000)) return // 비우는 건 바로
-  srText = text; srAt = now; q('tuner-sr').textContent = text
+  if (key === srKey || (text && now - srAt < 1000)) return // 비우는 건 바로
+  srKey = key; srAt = now; q('tuner-sr').textContent = text
 }
 /** readCents = 사람이 읽는 숫자(차분한 값), inTune 도 그 숫자로 정해진다 */
 function renderNote(midi: number, readCents: number, inTune: boolean, hz: number, cents: number): void {
@@ -184,9 +184,9 @@ function renderNote(midi: number, readCents: number, inTune: boolean, hz: number
   setText('tuner-oct', String(octaveOf(midi)))
   setText('tuner-enharmonic', secondary)
   q('tuner-card').classList.toggle('in-tune', inTune)
-  setText('tuner-cents', (readCents > 0 ? '+' : '') + readCents + ' ¢')
+  setText('tuner-cents', (readCents > 0 ? '+' : readCents < 0 ? '−' : '') + Math.abs(readCents) + ' ¢') // 빼기는 U+2212 — 하이픈은 + 보다 짧고 높아 「−8」 과 「+12」 의 부호 모양이 달랐다
   setHz(fmtHz(calmHz(hz, cents, readCents))) // Hz 도 숫자와 같은 값 — 숫자가 바뀔 때만 같이 바뀐다
-  announce(`${name}${octaveOf(midi)} ${readCents > 0 ? '+' : ''}${readCents}${inTune ? ' ' + t('tuner.srInTune') : ''}`)
+  announce(`${name}${octaveOf(midi)} ${readCents > 0 ? '+' : ''}${readCents}${inTune ? ' ' + t('tuner.srInTune') : ''}`, `${name}${octaveOf(midi)}|${inTune}`)
 }
 
 /** 시작 버튼. 카드 어디를 눌러도 onTap. sub 는 버튼 아래 한 줄 안내(없으면 비움). onTap 이 true 면 거둔다 */

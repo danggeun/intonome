@@ -16,7 +16,7 @@ export function mountRecHeader(openMic: () => Promise<boolean>): void {
   sessionStore.select(s => s.recording, rec => {
     // 시작은 상태 전이에서. 메트로놈이 울리던 중이면 소리가 꺼진다는 것도 (클릭이 녹음에 섞이지 않게 — audio/metronome). '완료' 는 저장이 끝난 뒤 녹음 쪽이 알린다
     if (rec) toast(tr(metroStore.get().playing ? 'rec.startedMetroSilent' : 'rec.started'))
-    q('rec-hdr-btn').classList.toggle('rec-on', rec)
+    q('rec-hdr-btn').classList.toggle('rec-on', rec); q('rec-hdr-btn').setAttribute('aria-pressed', String(rec)) // 화면 읽기에 녹음 중인지
     const t = q('hdr-rec-time'); t.classList.toggle('show', rec); t.textContent = fmt(0)
   })
   // 녹음 중에 메트로놈을 켜면 소리 없이 시작된다 — 고장으로 오해하지 않게

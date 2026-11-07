@@ -1,6 +1,6 @@
 /**
  * 메트로놈 카드 UI — BPM 표시/드래그, 박자·세분 버튼, LED 줄, 강박 flash, 접기/펼치기.
- * 접힘은 CSS grid(0fr/1fr) 트랜지션. 폰 레이아웃에서는 사용자가 접었을 때만 접힌다.
+ * 접힘은 CSS grid(0fr/1fr) 트랜지션. 폰 레이아웃은 시작 250 ms 뒤 접히고, 넓은 화면·전용 모드는 늘 펼쳐져 있다.
  */
 import { CFG, metroStore, settingsStore, type SubDiv, type TimeSig } from '../state/index.ts'
 import { setBPM, adjBPM, setTimeSig, setSubDiv, setMetroVol, toggleMetro } from '../audio/metronome.ts'
@@ -142,6 +142,7 @@ function isCollapsedNow(): boolean { return stateNow() === 'c' }
 function applyCollapse(): void {
   const effective = isCollapsedNow()
   q('metro-body-wrap').classList.toggle('collapsed', effective)
+  q('metro-body-clip').inert = effective // 접혀 보이지 않는 −·+·▶·박자 버튼이 화면 읽기·Tab 으로는 그대로 읽히고 눌렸다
   if (effective) clearDots()
 }
 
@@ -172,8 +173,7 @@ export function mountMetro(): void {
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) on(b, ev, stop)
     on(b, 'click', () => { if (repeated) { repeated = false; return } adjBPM(step()) })
   }
-  qsa<HTMLElement>('.m-adj, .m-adj-pad').forEach(b => repeatable(b, () => b.textContent === '−' ? -1 : 1))
-  qsa<HTMLElement>('[data-step]').forEach(b => repeatable(b, () => +b.dataset.step!)) // 전용 모드의 −5·+5
+  qsa<HTMLElement>('[data-step]').forEach(b => repeatable(b, () => +b.dataset.step!)) // −·+(1) 과 전용 모드의 −5·+5 — 글리프가 SVG 라 글자로 가르지 않는다
   const volMain = q<HTMLInputElement>('metro-vol'), volPad = q<HTMLInputElement>('metro-vol-pad-input')
   on(volMain, 'input', () => { setMetroVol(+volMain.value); volPad.value = volMain.value })
   on(volPad, 'input', () => { setMetroVol(+volPad.value); volMain.value = volPad.value })
@@ -190,7 +190,7 @@ export function mountMetro(): void {
   })
 
   // 상태 → 화면
-  settingsStore.select(s => s.bpm, bpm => { q('metro-bpm').textContent = String(bpm); q('metro-hdr-bpm').textContent = String(bpm); setDialBpm(bpm); q('dial').setAttribute('aria-valuenow', String(bpm)) }, { immediate: true })
+  settingsStore.select(s => s.bpm, bpm => { announceBpm(bpm); q('metro-bpm').textContent = String(bpm); q('metro-hdr-bpm').textContent = String(bpm); setDialBpm(bpm); q('dial').setAttribute('aria-valuenow', String(bpm)) }, { immediate: true })
   onDialChange(dragBPM)
   settingsStore.select(s => s.metroVol, v => { volMain.value = String(v); volPad.value = String(v) }, { immediate: true })
   settingsStore.select(s => s.timeSig, ts => {
@@ -206,6 +206,7 @@ export function mountMetro(): void {
 
   metroStore.select(s => s.playing, playing => {
     setGlyph(q('metro-play-btn'), playing ? 'stop' : 'play'); setGlyph(q('metro-play-hdr-btn'), playing ? 'stop' : 'play')
+    playLabels()
     syncLayout()
     if (playing) buildBeatVis(); else sweepStop()
     applyCollapse()
@@ -336,3 +337,19 @@ function focusSoon(id: string): void {
   const tick = (): void => { if (getComputedStyle(el).visibility === 'visible' && el.offsetParent !== null) el.focus(); else if (performance.now() - t0 < 900) requestAnimationFrame(tick) }
   requestAnimationFrame(tick)
 }
+
+/** 재생 버튼 이름은 지금 누르면 일어날 일 — 「재생/정지」 하나였다 */
+function playLabels(): void {
+  const k = metroStore.get().playing ? 'metro.stop' : 'metro.play'
+  for (const id of ['metro-play-btn', 'metro-play-hdr-btn']) q(id).setAttribute('aria-label', t(k))
+}
+onLangChange(playLabels)
+/** −·+·끌기로 바뀐 빠르기를 화면 읽기에 — 멈춘 뒤 0.6 초에 한 번(끄는 동안 숫자마다 읽지 않게) */
+let bpmSrTimer: ReturnType<typeof setTimeout> | undefined, bpmSrReady = false
+export function announceBpm(bpm: number): void {
+  if (!bpmSrReady) { bpmSrReady = true; return } // 시작할 때의 값은 읽지 않는다
+  if (document.activeElement?.id === 'dial') return // 다이얼(slider)은 스크린 리더가 값을 직접 읽는다 — 두 번 읽지 않게
+  clearTimeout(bpmSrTimer)
+  bpmSrTimer = setTimeout(() => { const sr = document.getElementById('metro-sr'); if (sr) sr.textContent = t('metro.bpmNow', { bpm }) }, 600)
+}
+

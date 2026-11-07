@@ -66,7 +66,7 @@
       <!-- 드론: 꺼져 있으면 누르면 음 고르기, 켜져 있으면(빨간 음이름) 누르면 끔 — A 듣기·REC·메트로놈과 같은 규칙 -->
       <button id="drone-btn" class="compact-btn caps" aria-label="드론 음 고르기" aria-haspopup="dialog" aria-expanded="false">DRONE</button>
       <!-- 녹음 중엔 REC 글자 자리에 흐르는 시간 (글자는 화면 읽기용으로 남는다) -->
-      <button id="rec-hdr-btn" class="compact-btn caps"><span id="rec-hdr-dot"></span><span id="rec-hdr-label">REC</span><span id="hdr-rec-time">00:00</span></button>
+      <button id="rec-hdr-btn" aria-pressed="false" class="compact-btn caps"><span id="rec-hdr-dot"></span><span id="rec-hdr-label">REC</span><span id="hdr-rec-time">00:00</span></button>
       <button id="settings-hdr-btn" aria-label="설정" data-t-aria="hdr.settings"><svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.5"/><path d="M8.3 4.14L8.75 2.1A8 8 0 0 1 11.25 2.1L11.7 4.14A6.1 6.1 0 0 1 12.94 4.66L14.7 3.53A8 8 0 0 1 16.47 5.3L15.34 7.06A6.1 6.1 0 0 1 15.86 8.3L17.9 8.75A8 8 0 0 1 17.9 11.25L15.86 11.7A6.1 6.1 0 0 1 15.34 12.94L16.47 14.7A8 8 0 0 1 14.7 16.47L12.94 15.34A6.1 6.1 0 0 1 11.7 15.86L11.25 17.9A8 8 0 0 1 8.75 17.9L8.3 15.86A6.1 6.1 0 0 1 7.06 15.34L5.3 16.47A8 8 0 0 1 3.53 14.7L4.66 12.94A6.1 6.1 0 0 1 4.14 11.7L2.1 11.25A8 8 0 0 1 2.1 8.75L4.14 8.3A6.1 6.1 0 0 1 4.66 7.06L3.53 5.3A8 8 0 0 1 5.3 3.53L7.06 4.66A6.1 6.1 0 0 1 8.3 4.14Z"/></svg></button>
     </div>
   </div>
@@ -79,8 +79,8 @@
         <span id="tuner-label">TUNER</span>
         <div id="tuner-hdr-right">
           <button id="ref-a-btn" class="compact-btn" aria-label="기준음 A 듣기" data-t="tuner.playA" data-t-aria="tuner.playAAria">A 듣기</button>
-          <div id="ref-row" role="slider" tabindex="0" aria-label="기준음 A" data-t-aria="tuner.refAria" aria-valuemin="410" aria-valuemax="466" aria-valuenow="442" aria-valuetext="442 Hz">
-            <span id="ref-lbl">A =</span>
+          <div id="ref-row" role="slider" tabindex="0" aria-label="기준음 A (헤르츠)" data-t-aria="tuner.refAria" aria-valuemin="410" aria-valuemax="466" aria-valuenow="442" aria-valuetext="442 Hz">
+            <span id="ref-lbl" data-t="tuner.refLbl">A =</span>
             <div id="ref-drum-outer"><div id="ref-drum-sel"></div><div id="ref-drum-inner"></div></div>
           </div>
         </div>
@@ -119,7 +119,7 @@
         <span id="metro-hdr-title">METRONOME</span>
         <div id="beat-vis"></div>
         <div id="metro-hdr-right">
-          <button id="metro-play-hdr-btn" aria-label="메트로놈 재생/정지" data-t-aria="metro.playStop" data-glyph="play"><svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.95 4.65c0-1.1 1.2-1.8 2.1-1.2l12.3 7.3c.9.6.9 1.9 0 2.5L8.05 20.55c-.9.6-2.1-.1-2.1-1.2Z"/></svg></button>
+          <button id="metro-play-hdr-btn" aria-label="메트로놈 재생" data-glyph="play"><svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.95 4.65c0-1.1 1.2-1.8 2.1-1.2l12.3 7.3c.9.6.9 1.9 0 2.5L8.05 20.55c-.9.6-2.1-.1-2.1-1.2Z"/></svg></button>
           <!-- 크기 버튼: 접힘 ⇄ 펼침, 펼침2 에서는 펼침으로. 펼침2 는 카드를 위로 끌어서(넓은 화면은 버튼으로). 글리프는 다음 목적지의 방향(ui/metro.ts) -->
           <button id="metro-size-btn" aria-label="메트로놈 펼치기">
             <svg class="nav-glyph chev" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>
@@ -142,32 +142,32 @@
           </div>
           <div id="metro-adj-col">
             <div id="metro-btn-row">
-              <button class="m-adj" aria-label="BPM 내리기" data-t-aria="metro.bpmDown">−</button>
-              <button class="m-adj" aria-label="BPM 올리기" data-t-aria="metro.bpmUp">+</button>
-              <button id="metro-play-btn" aria-label="메트로놈 재생/정지" data-t-aria="metro.playStop" data-glyph="play"><svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.95 4.65c0-1.1 1.2-1.8 2.1-1.2l12.3 7.3c.9.6.9 1.9 0 2.5L8.05 20.55c-.9.6-2.1-.1-2.1-1.2Z"/></svg></button>
+              <button class="m-adj" data-step="-1" aria-label="BPM 내리기" data-t-aria="metro.bpmDown"><svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="2" rx="1"/></svg></button>
+              <button class="m-adj" data-step="1" aria-label="BPM 올리기" data-t-aria="metro.bpmUp"><svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="2" rx="1"/><rect x="11" y="5" width="2" height="14" rx="1"/></svg></button>
+              <button id="metro-play-btn" aria-label="메트로놈 재생" data-glyph="play"><svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.95 4.65c0-1.1 1.2-1.8 2.1-1.2l12.3 7.3c.9.6.9 1.9 0 2.5L8.05 20.55c-.9.6-2.1-.1-2.1-1.2Z"/></svg></button>
               <!-- 5 단위는 전용 모드에서만 양 끝에 — DOM 은 뒤에 두고 자리는 CSS order 로(−·+·▶ 순서는 그대로) -->
               <button class="m-adj5" data-step="-5" aria-label="BPM 5 내리기" data-t-aria="metro.bpmDown5">−5</button>
               <button class="m-adj5" data-step="5" aria-label="BPM 5 올리기" data-t-aria="metro.bpmUp5">+5</button>
             </div>
             <div id="metro-vol-row">
-              <span class="m-vol-lbl" data-t="common.volume">음량</span>
-              <input type="range" id="metro-vol" min="0" max="1" step="0.05" value="0.7">
+              <span class="m-vol-lbl" id="metro-vol-lbl" data-t="common.volume">음량</span>
+              <input type="range" id="metro-vol" aria-labelledby="metro-vol-lbl" min="0" max="1" step="0.05" value="0.7">
             </div>
           </div>
         </div>
         <div id="metro-adj-pad" style="display:none;">
-          <button class="m-adj-pad">−</button>
-          <button class="m-adj-pad">+</button>
+          <button class="m-adj-pad" data-step="-1" aria-label="BPM 내리기" data-t-aria="metro.bpmDown"><svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="2" rx="1"/></svg></button>
+          <button class="m-adj-pad" data-step="1" aria-label="BPM 올리기" data-t-aria="metro.bpmUp"><svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="2" rx="1"/><rect x="11" y="5" width="2" height="14" rx="1"/></svg></button>
           <button class="m-adj5-pad" data-step="-5" aria-label="BPM 5 내리기" data-t-aria="metro.bpmDown5">−5</button>
           <button class="m-adj5-pad" data-step="5" aria-label="BPM 5 올리기" data-t-aria="metro.bpmUp5">+5</button>
         </div>
         <div id="metro-vol-pad" style="display:none;align-items:center;gap:8px;">
-          <span class="m-vol-lbl" data-t="common.volume">음량</span>
-          <input type="range" id="metro-vol-pad-input" min="0" max="1" step="0.05" value="0.7">
+          <span class="m-vol-lbl" id="metro-vol-pad-lbl" data-t="common.volume">음량</span>
+          <input type="range" id="metro-vol-pad-input" aria-labelledby="metro-vol-pad-lbl" min="0" max="1" step="0.05" value="0.7">
         </div>
         <div id="metro-grids-wrap">
           <div class="m-grid" id="ts-grid">
-            <button class="m-seg" data-ts="1" aria-label="박자표 없음 — 정박만" data-t="metro.tsNone" data-t-aria="metro.tsNoneAria">없음</button>
+            <button class="m-seg" data-ts="1" aria-label="박자표 없음, 정박만" data-t="metro.tsNone" data-t-aria="metro.tsNoneAria">없음</button>
             <button class="m-seg" data-ts="2">2/4</button>
             <button class="m-seg" data-ts="3">3/4</button>
             <button class="m-seg on" data-ts="4">4/4</button>
@@ -196,10 +196,10 @@
 
 <!-- 풀스크린 메뉴 -->
 <div id="menu-overlay">
-  <div id="menu-panel">
+  <div id="menu-panel" role="dialog" aria-modal="true" aria-labelledby="menu-title">
     <div class="menu-top">
-      <span class="menu-title-txt" data-t="menu.title">메뉴</span>
-      <div style="display:flex;align-items:center;gap:8px;margin-right:-6px;">
+      <span class="menu-title-txt" id="menu-title" role="heading" aria-level="1" data-t="menu.title">메뉴</span>
+      <div style="display:flex;align-items:center;gap:8px;">
         <button class="menu-close-btn" aria-label="닫기" data-t-aria="common.close"><svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16"/></svg></button>
       </div>
     </div>
@@ -227,16 +227,16 @@
 </div>
 
 <!-- 설정 페이지 -->
-<div id="settings-page">
+<div id="settings-page" role="dialog" aria-modal="true" aria-labelledby="settings-title">
   <div id="settings-inner">
     <!-- 메뉴와 같은 모양: 제목 왼쪽, 닫기 X 오른쪽 위. 헤더에서 바로 열 수도 있어 '뒤로' 가 아니라 '닫기' -->
     <div class="settings-top">
-      <span class="settings-title" data-t="set.title">설정</span>
+      <span class="settings-title" id="settings-title" role="heading" aria-level="1" data-t="set.title">설정</span>
       <button class="settings-close" id="settings-back-btn" aria-label="닫기" data-t-aria="common.close"><svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16"/></svg></button>
     </div>
 
     <div class="setting-row">
-      <span class="setting-lbl" data-t="set.theme">화면</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.theme">화면</span>
       <span class="setting-desc" data-t="set.themeDesc">밝은 곳에서는 라이트가 잘 보여요</span>
       <div class="step-row" id="theme-steps">
         <button class="step-btn on" data-v="0" data-t="set.dark">다크</button>
@@ -246,8 +246,8 @@
 
     <!-- 허용 오차 -->
     <div class="setting-row">
-      <span class="setting-lbl" data-t="set.tol">허용 오차</span>
-      <span class="setting-desc" data-t="set.tolDesc">이 안에 들면 초록으로 표시돼요 (cents)</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.tol">허용 오차</span>
+      <span class="setting-desc" data-t="set.tolDesc">이 안에 들면 초록이 돼요(단위 cents). 조율은 ±5, 연습은 ±10이나 ±15가 편해요</span>
       <div class="step-row" id="cents-steps">
         <button class="step-btn" data-v="5">±5</button>
         <button class="step-btn on" data-v="10">±10</button>
@@ -257,8 +257,8 @@
 
     <!-- 튜너 반응 속도 -->
     <div class="setting-row">
-      <span class="setting-lbl" data-t="set.speed">튜너 반응 속도</span>
-      <span class="setting-desc" data-t="set.speedDesc">빠를수록 음정 변화에 바로 반응해요</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.speed">튜너 반응 속도</span>
+      <span class="setting-desc" data-t="set.speedDesc">선과 바늘이 음정 변화를 따라오는 속도예요. 숫자는 늘 차분해요</span>
       <div class="step-row" id="smooth-steps">
         <button class="step-btn" data-v="1" data-t="set.slow">느림</button>
         <button class="step-btn on" data-v="2" data-t="common.normal">보통</button>
@@ -268,8 +268,8 @@
 
     <!-- 마이크 감도 -->
     <div class="setting-row">
-      <span class="setting-lbl" data-t="set.sens">마이크 감도</span>
-      <span class="setting-desc" data-t="set.sensDesc">작은 소리까지 잡으려면 '높음'을 선택해요</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.sens">마이크 감도</span>
+      <span class="setting-desc" data-t="set.sensDesc">작은 소리까지 잡으려면 '높음', 시끄러운 곳에서는 '낮음'</span>
       <div class="step-row" id="rms-steps">
         <button class="step-btn" data-v="1" data-t="common.low">낮음</button>
         <button class="step-btn on" data-v="2" data-t="common.normal">보통</button>
@@ -279,7 +279,7 @@
 
     <!-- 음이름 표기 -->
     <div class="setting-row" id="notenames-row">
-      <span class="setting-lbl" data-t="set.names">음이름 표기</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.names">음이름 표기</span>
       <span class="setting-desc" data-t="set.namesDesc">선택하지 않은 쪽은 작게 함께 보여요</span>
       <div class="step-row" id="notenames-steps">
         <button class="step-btn on" data-v="0" data-t="set.solfege">도레미</button>
@@ -289,7 +289,7 @@
 
     <!-- A 듣기 높이 — 악기 A 선의 옥타브 -->
     <div class="setting-row">
-      <span class="setting-lbl" data-t="set.aPitch">A 듣기 높이</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.aPitch">A 듣기 높이</span>
       <span class="setting-desc" data-t="set.aPitchDesc">바이올린·비올라는 A4, 첼로는 A3, 콘트라베이스는 A2</span>
       <div class="step-row" id="apitch-steps">
         <button class="step-btn on" data-v="4">A4</button>
@@ -300,8 +300,8 @@
 
     <!-- 화면 항상 켜짐 -->
     <div class="setting-row">
-      <span class="setting-lbl" data-t="set.wake">화면 항상 켜짐</span>
-      <span class="setting-desc" data-t="set.wakeDesc">연습 중 화면이 꺼지지 않아요. 끄면 화면이 꺼질 때 메트로놈과 드론이 멈춰요</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.wake">화면 항상 켜짐</span>
+      <span class="setting-desc" data-t="set.wakeDesc">연습 중 화면이 꺼지지 않아요. 이 설정을 끄면, 화면이 꺼질 때 메트로놈과 드론이 멈춰요</span>
       <div class="step-row" id="wakelock-steps">
         <button class="step-btn on" data-v="1" data-t="common.on">켜짐</button>
         <button class="step-btn" data-v="0" data-t="common.off">꺼짐</button>
@@ -310,7 +310,7 @@
 
     <!-- 진동 피드백: 끌어서 값을 바꿀 때 한 칸마다 톡. 진동을 낼 수 없는 곳에서는 settings.ts 가 숨긴다 -->
     <div class="setting-row" id="haptics-row">
-      <span class="setting-lbl" data-t="set.haptics">진동 피드백</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.haptics">진동 피드백</span>
       <span class="setting-desc" data-t="set.hapticsDesc">다이얼, BPM, 기준음을 끌어서 바꿀 때 한 칸마다 가볍게 울려요</span>
       <div class="step-row" id="haptics-steps">
         <button class="step-btn on" data-v="1" data-t="common.on">켜짐</button>
@@ -320,8 +320,8 @@
 
     <!-- 녹음 보관 -->
     <div class="setting-row">
-      <span class="setting-lbl" data-t="set.keep">녹음 보관</span>
-      <span class="setting-desc" data-t="set.keepDesc">30일이면 오래된 녹음을 자동으로 지워요. 필요한 건 다운로드로 보관해요</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.keep">녹음 보관</span>
+      <span class="setting-desc" data-t="set.keepDesc">'30일'을 고르면 30일이 지난 녹음을 자동으로 지워요. 남길 녹음은 목록에서 '남기기'를 눌러요</span>
       <div class="step-row" id="autodelete-steps">
         <button class="step-btn on" data-v="1" data-t="set.keep30">30일</button>
         <button class="step-btn" data-v="0" data-t="set.keepForever">계속</button>
@@ -330,7 +330,7 @@
 
     <!-- 전체화면 — 브라우저 탭에서 쓸 때만 뜻이 있다. 설치 앱·홈 화면 웹앱에서는 main.ts 가 숨긴다 -->
     <div class="setting-row" id="fullscreen-row">
-      <span class="setting-lbl" data-t="set.fs">전체화면</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.fs">전체화면</span>
       <span class="setting-desc" data-t="set.fsDesc">브라우저에서 쓸 때 주소창을 숨겨요. 홈 화면에 추가했으면 이미 전체화면이에요</span>
       <div class="step-row" id="fullscreen-steps">
         <button class="step-btn" data-v="1" data-t="common.on">켜짐</button>
@@ -340,7 +340,7 @@
 
     <!-- 언어 — 맨 아래 「사용 안내」 바로 위: 첫 실행이 폰 언어로 정해져 바꿀 일이 드물고, 3×2 여섯 칸이 커서 맨 위에 두면 연습 중에 만지는 튜너 설정이 밀린다. 아이콘 없음(다른 카드와 같은 모양) — 이름이 제 글자라 엉뚱한 언어에서도 찾을 수 있다 -->
     <div class="setting-row">
-      <span class="setting-lbl" data-t="set.lang">언어</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.lang">언어</span>
       <div class="step-row" id="lang-steps">
         <button class="step-btn on" data-v="0" lang="ko">한국어</button>
         <button class="step-btn" data-v="1" lang="en">English</button>
@@ -353,11 +353,9 @@
 
     <!-- 처음 안내 다시 보기 — 설정을 닫고 안내를 처음부터 연다 (ui/tour.ts) -->
     <div class="setting-row">
-      <span class="setting-lbl" data-t="set.tour">사용 안내</span>
+      <span class="setting-lbl" role="heading" aria-level="2" data-t="set.tour">사용 안내</span>
       <span class="setting-desc" data-t="set.tourDesc">처음 실행할 때 본 안내를 다시 볼 수 있어요</span>
-      <div class="step-row">
-        <button class="step-btn" id="tour-replay-btn" data-t="set.tourBtn">다시 보기</button>
-      </div>
+      <button class="menu-btn-sm" id="tour-replay-btn" data-t="set.tourBtn">다시 보기</button>
     </div>
 
     <svg id="settings-wordmark" viewBox="10.3 -99.0 668.7 101.1" role="img" aria-label="Intonome"><path d="M10.3 0V-99H34.9V0ZM50.2 0V-47.7V-79.2H69.8L70 -55.9H73Q75 -64.3 78.6 -70Q82.2 -75.8 87.8 -78.5Q93.3 -81.3 100.8 -81.3Q114.8 -81.3 122 -71.5Q129.3 -61.8 129.3 -40.5V0H105V-37.8Q105 -50.1 101.5 -55.7Q97.9 -61.3 91 -61.3Q85.3 -61.3 81.7 -57.9Q78 -54.4 76.2 -48.8Q74.4 -43 74.4 -36V0ZM173.1 1.9Q159.2 1.9 152.6 -5.5Q146 -12.9 146 -29.2V-60.3H134.7L135.2 -79H143.2Q148.1 -79.2 150.5 -80.5Q153 -81.9 153.6 -85.6L155.6 -96.8H169.2V-79.2H188.2V-59.5H169.2V-30.3Q169.2 -25.2 171.7 -22.8Q174.2 -20.4 179.2 -20.4Q182.1 -20.4 184.6 -21Q187.2 -21.6 188.8 -22.6V-0.3Q184.1 1.2 180.1 1.6Q176.1 1.9 173.1 1.9ZM235.1 2.1Q223.1 2.1 213.8 -2.5Q204.6 -7.2 199.4 -16.5Q194.1 -25.8 194.1 -39.8Q194.1 -53.7 199.4 -62.9Q204.6 -72.1 213.9 -76.7Q223.2 -81.3 235.2 -81.3Q247.2 -81.3 256.5 -76.7Q265.8 -72 271.1 -62.8Q276.3 -53.5 276.3 -39.6Q276.3 -25.3 270.9 -16Q265.5 -6.8 256.1 -2.3Q246.8 2.1 235.1 2.1ZM235.8 -15.4Q241.2 -15.4 244.8 -17.9Q248.4 -20.4 250.2 -25.5Q252 -30.6 252 -38.1Q252 -46 250.1 -51.5Q248.1 -57 244.3 -59.9Q240.5 -62.8 234.5 -62.8Q229.4 -62.8 225.7 -60.4Q222 -57.9 220.2 -52.8Q218.4 -47.7 218.4 -40Q218.4 -27.8 223 -21.6Q227.6 -15.4 235.8 -15.4ZM285.9 0V-47.7V-79.2H305.4L305.7 -55.9H308.7Q310.7 -64.3 314.2 -70Q317.9 -75.8 323.4 -78.5Q329 -81.3 336.5 -81.3Q350.4 -81.3 357.7 -71.5Q365 -61.8 365 -40.5V0H340.7V-37.8Q340.7 -50.1 337.1 -55.7Q333.6 -61.3 326.7 -61.3Q321 -61.3 317.3 -57.9Q313.7 -54.4 311.9 -48.8Q310.1 -43 310.1 -36V0ZM414.3 2.1Q402.3 2.1 393.1 -2.5Q383.9 -7.2 378.6 -16.5Q373.4 -25.8 373.4 -39.8Q373.4 -53.7 378.6 -62.9Q383.9 -72.1 393.1 -76.7Q402.4 -81.3 414.4 -81.3Q426.4 -81.3 435.8 -76.7Q445.1 -72 450.3 -62.8Q455.6 -53.5 455.6 -39.6Q455.6 -25.3 450.1 -16Q444.8 -6.8 435.4 -2.3Q426 2.1 414.3 2.1ZM415.1 -15.4Q420.4 -15.4 424 -17.9Q427.6 -20.4 429.4 -25.5Q431.2 -30.6 431.2 -38.1Q431.2 -46 429.3 -51.5Q427.4 -57 423.5 -59.9Q419.7 -62.8 413.7 -62.8Q408.6 -62.8 404.9 -60.4Q401.2 -57.9 399.5 -52.8Q397.7 -47.7 397.7 -40Q397.7 -27.8 402.2 -21.6Q406.8 -15.4 415.1 -15.4ZM465.2 0V-51.1V-79.2H484.2L484.5 -55.9H487.5Q489.6 -64.5 493.1 -70.1Q496.5 -75.8 501.5 -78.5Q506.4 -81.3 513 -81.3Q519.9 -81.3 524.5 -78.4Q529.1 -75.5 531.8 -69.8Q534.5 -64.2 535.4 -55.9H537.9Q540.3 -64.8 544.2 -70.4Q548.1 -76 553.5 -78.7Q558.9 -81.3 565.2 -81.3Q572 -81.3 577 -78.7Q582 -76 585.4 -70.9Q588.8 -65.7 590.4 -58Q592 -50.2 592 -40V0H567.8V-37Q567.8 -45 566.5 -50.2Q565.2 -55.5 562.5 -58.1Q559.8 -60.8 555.6 -60.8Q550.8 -60.8 547.4 -57.6Q544.1 -54.4 542.2 -48.8Q540.5 -43.2 540.5 -36.1V0H516.8V-36.6Q516.8 -44.9 515.3 -50.1Q513.9 -55.4 511.1 -58Q508.4 -60.8 504.2 -60.8Q499.4 -60.8 496.1 -57.6Q492.8 -54.4 491 -48.8Q489.3 -43.2 489.3 -36.1V0ZM642.8 2.1Q632.8 2.1 625 -0.5Q617.2 -3.1 611.8 -8.2Q606.3 -13.3 603.4 -20.8Q600.6 -28.3 600.6 -38.1Q600.6 -47.5 603.4 -55.5Q606.1 -63.4 611.3 -69.2Q616.5 -75 624.1 -78.2Q631.6 -81.3 641.1 -81.3Q650.7 -81.3 658 -78.2Q665.2 -75.1 670 -69.1Q674.7 -63.1 676.9 -54.5Q679.2 -45.9 678.4 -34.8L616.5 -34.4V-46.9L664.6 -47.4L656.1 -41.5Q657.1 -49 655.2 -53.8Q653.2 -58.5 649.5 -60.7Q645.8 -62.8 641.4 -62.8Q636.1 -62.8 632.2 -60Q628.2 -57.1 625.9 -51.8Q623.7 -46.4 623.7 -38.5Q623.7 -26.2 629 -20.7Q634.3 -15.1 642.6 -15.1Q646.6 -15.1 649.3 -16.3Q652 -17.4 653.8 -19.1Q655.5 -20.8 656.5 -22.9Q657.4 -25.1 658 -27L679 -22.5Q677.8 -16.9 675.2 -12.4Q672.6 -7.9 668.2 -4.6Q663.8 -1.3 657.5 0.4Q651.3 2.1 642.8 2.1Z"/></svg>
@@ -372,11 +370,11 @@
   </div>
 </div>
 
-<!-- 개인정보처리방침 — 설정 위에 덮인다. 내용은 저장소의 PRIVACY.md(영/한)를 빌드 때 그대로 싣는다(ui/about.ts) -->
-<div id="privacy-page" class="doc-page">
+<!-- 개인정보처리방침 — 설정 위에 덮인다. 내용은 저장소의 PRIVACY.md(6개 언어 절)를 빌드 때 그대로 싣고, 지금 언어의 절만 보인다(ui/about.ts) -->
+<div id="privacy-page" class="doc-page" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
   <div id="privacy-inner" class="doc-inner">
     <div class="settings-top">
-      <span class="settings-title" data-t="set.privacy">개인정보처리방침</span>
+      <span class="settings-title" id="privacy-title" role="heading" aria-level="1" data-t="set.privacy">개인정보처리방침</span>
       <button class="settings-close" id="privacy-close-btn" aria-label="닫기" data-t-aria="common.close"><svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16"/></svg></button>
     </div>
     <div id="privacy-text" class="doc-text"></div>
@@ -384,10 +382,10 @@
 </div>
 
 <!-- 오픈소스 라이선스 — 설정 위에 덮인다. 내용은 ui/licensesText.ts(영문 법률 문서) -->
-<div id="licenses-page" class="doc-page">
+<div id="licenses-page" class="doc-page" role="dialog" aria-modal="true" aria-labelledby="licenses-title">
   <div id="licenses-inner" class="doc-inner">
     <div class="settings-top">
-      <span class="settings-title" data-t="set.licenses">오픈소스 라이선스</span>
+      <span class="settings-title" id="licenses-title" role="heading" aria-level="1" data-t="set.licenses">오픈소스 라이선스</span>
       <button class="settings-close" id="licenses-close-btn" aria-label="닫기" data-t-aria="common.close"><svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16"/></svg></button>
     </div>
     <pre id="licenses-text" lang="en"></pre>
@@ -417,16 +415,17 @@
 </div>
 
 <div id="toast-host" role="status" aria-live="polite"></div>
+<div id="metro-sr" class="sr-only" aria-live="polite" aria-atomic="true"></div><!-- 템포 읽어 주기 — 튜너 카드 밖(전용 모드에서 튜너 카드는 display:none) -->
 
 <script type="module" src="/src/main.ts"></script>
 
 <!-- 편집 페이지 -->
-<div id="editor-page">
+<div id="editor-page" role="dialog" aria-modal="true" aria-labelledby="ed-nav-title">
   <div id="ed-inner">
     <div id="ed-top">
       <div id="ed-nav">
         <button id="ed-back-btn" aria-label="뒤로" data-t-aria="common.back"><svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><path d="M17 10H3M9 4l-6 6 6 6"/></svg></button>
-        <span id="ed-nav-title" data-t="ed.title">편집</span>
+        <span id="ed-nav-title" role="heading" aria-level="1" data-t="ed.title">편집</span>
       </div>
       <div id="ed-file-row">
         <span id="editor-title-display"></span><button id="ed-title-edit" class="compact-btn" data-t="ed.rename">이름 바꾸기</button>
@@ -469,7 +468,7 @@
           <span id="ed-speed-lbl" data-t="ed.speed">재생 속도</span>
           <button id="ed-speed-val" class="compact-btn">1.0×</button>
         </div>
-        <input type="range" id="ed-speed" min="0.5" max="1.5" step="0.05" value="1.0">
+        <input type="range" id="ed-speed" aria-labelledby="ed-speed-lbl" min="0.5" max="1.5" step="0.05" value="1.0">
       </div>
     </div>
     <div id="ed-ab-row">

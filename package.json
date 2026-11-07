@@ -1,6 +1,6 @@
 {
   "name": "intonome",
-  "version": "2.9.2",
+  "version": "2.9.3",
   "description": "Intonome — tuner, metronome, drone and practice recorder for string players (PWA + Capacitor Android)",
   "private": true,
   "license": "MIT",
@@ -45,7 +45,8 @@
     "@capacitor/filesystem": "^8.1.3",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/share": "^8.0.1",
-    "@capacitor/status-bar": "^8.0.2"
+    "@capacitor/status-bar": "^8.0.2",
+    "@capacitor/text-zoom": "^8.0.1"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

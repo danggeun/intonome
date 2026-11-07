@@ -1,8 +1,6 @@
 /** 녹음 보관 정책. persist(삭제)와 ui(예고)가 같은 값·같은 함수를 본다 */
 const REC_TTL_DAYS = 30
 export const REC_TTL = REC_TTL_DAYS * 24 * 60 * 60 * 1000
-/** 삭제 예고를 보이기 시작하는 남은 일수 */
-const REC_WARN_DAYS = 7
 
 /** 지금 자동 삭제 대상인가. autoDelete 꺼짐·keep·ts 없는 구버전 행은 지우지 않는다 */
 export function expires(ts: number | undefined, keep: boolean | undefined, autoDelete: boolean, now: number): boolean {
@@ -10,11 +8,12 @@ export function expires(ts: number | undefined, keep: boolean | undefined, autoD
   return now - ts > REC_TTL
 }
 
-/** 삭제 예고에 쓸 남은 일수. 마지막 REC_WARN_DAYS 일이 아니면 null. floor 라 24시간 미만은 0 = '오늘' */
+/** 목록에 보일 남은 일수(자동 삭제 대상이 아니면 null). floor 라 24시간 미만은 0 = '오늘'.
+ *  2.9.2 까지는 마지막 7일만 보였다 — 자동 삭제가 기본으로 켜져 있는데 그 전엔 알 길이 없어, 몇 주 뒤 찾는 녹음이 이미 없었다(출시 전 점검). 이제 늘 「n일 후 삭제 · 남기기」 */
 export function warnDaysLeft(ts: number | undefined, keep: boolean | undefined, autoDelete: boolean, now: number): number | null {
   if (!autoDelete || keep || typeof ts !== 'number') return null
   const d = Math.max(0, Math.floor((ts + REC_TTL - now) / 86400000))
-  return d < REC_WARN_DAYS ? d : null
+  return d
 }
 
 /** 녹음 파일을 통째로 디코드하는 일(구간 WAV 저장 · webm → WAV 변환 · 편집기 배속 재생)의 상한 (s). 10 분 = 48 kHz 스테레오 PCM 약 230 MB

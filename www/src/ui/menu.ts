@@ -12,8 +12,8 @@ export function showMenuInstant(): void {
 }
 export function hideMenu(): void { q('menu-overlay').classList.remove('open') }
 export function openMenu(): void { q('menu-overlay').classList.add('open') }
-const openSettings = (): void => q('settings-page').classList.add('open')
-export const closeSettings = (): void => { q('settings-page').classList.remove('open'); clearSettingsSlack() }
+const openSettings = (): void => { clearSettingsSlack(); q('settings-page').classList.add('open') } // 언어를 바꾸며 붙인 아래 여백은 다음에 열 때 지운다 — 닫을 때 지우면 사라지는 동안 화면이 툭 내려갔다(2.9.2)
+export const closeSettings = (): void => q('settings-page').classList.remove('open')
 
 /** 화면을 덮고 있는 오버레이가 있는가 — 전역 단축키(Space)는 지금 보이는 화면의 것 */
 export const overlayOpen = (): boolean =>
@@ -48,7 +48,7 @@ export function mountMenu(): void {
     for (const [el, cls] of layers) el.toggleAttribute('inert', !!next && el !== next && el.classList.contains(cls))
     if (next !== topEl) {
       if (next) { if (!next.contains(document.activeElement)) { const f = next.querySelector<HTMLElement>(top![2]); if (f) { f.tabIndex = -1; f.focus({ preventScroll: true }) } } }
-      else if (opener && opener.isConnected) { opener.focus({ preventScroll: true }); opener = null } // 전부 닫힘 — 열었던 버튼으로
+      else if (opener) { (opener.isConnected ? opener : document.getElementById('menu-btn'))?.focus({ preventScroll: true }); opener = null } // 전부 닫힘 — 열었던 버튼으로(토스트처럼 사라진 버튼이면 ☰)
       topEl = next
     }
   }

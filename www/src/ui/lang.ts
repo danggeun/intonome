@@ -21,6 +21,6 @@ export function mountLang(): void {
     applyStatic()
     q('notenames-row').hidden = lettersOnly(lang) // 영어·중국어에서는 음이름이 C D E 하나뿐이다
     for (const f of refreshers) f()
-    root.classList.remove('i18n-pending') // index.html 이 영어일 때 붙인다 — 한국어 문구가 한 프레임 보이지 않게
+    root.classList.remove('i18n-pending') // index.html 의 html 에 늘 붙어 있다(한국어 첫 그림만 index.html 이 바로 푼다) — 정적 한국어 문구가 다른 언어 화면에 한 프레임 보이지 않게
   }, { immediate: true })
 }

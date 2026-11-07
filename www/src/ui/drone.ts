@@ -4,7 +4,7 @@
  */
 import { droneStore, settingsStore } from '../state/index.ts'
 import { startDrone, stopDrone } from '../audio/refTone.ts'
-import { EN, solfegeOf } from '../core/note.ts'
+import { droneName } from '../core/note.ts'
 import { q, qsa, on, setOn } from './dom.ts'
 import { getLang, t } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
@@ -12,7 +12,7 @@ import { toast } from './toast.ts'
 
 const HINT_KEY = 'intonome.hint.drone' // 창을 처음 열 때 한 번만 안내
 
-const noteName = (pc: number): string => (settingsStore.get().noteNames === 'en' ? EN : solfegeOf(getLang()))[pc]! // 영어·중국어는 계이름 열이 곧 C D E
+const noteName = (pc: number): string => droneName(pc, settingsStore.get().noteNames, getLang()) // 영어·중국어는 C D E, 검은 건반은 C♯ E♭ F♯ A♭ B♭
 
 export const dronePopOpen = (): boolean => q('drone-pop').classList.contains('open')
 
@@ -22,6 +22,7 @@ function openPop(): void {
   const pop = q('drone-pop')
   pop.style.top = `${hdr.bottom + 4}px`; pop.style.left = `${card.left}px`; pop.style.right = `${window.innerWidth - card.right}px`
   pop.classList.add('open'); q('drone-pop-bg').classList.add('open'); q('drone-btn').setAttribute('aria-expanded', 'true')
+  requestAnimationFrame(() => qsa<HTMLElement>('.drone-note-btn')[0]?.focus({ preventScroll: true })) // 창 안으로 포커스 — 화면 읽기가 음 버튼을 찾아 헤매지 않게
   let first = false
   try { if (!localStorage.getItem(HINT_KEY)) { localStorage.setItem(HINT_KEY, '1'); first = true } } catch { /* 저장이 막히면 띄우지 않는다 — 매번 뜨지 않게 */ }
   if (first) toast(t('drone.hint'), 4000)
@@ -29,6 +30,7 @@ function openPop(): void {
 /** 처음 안내가 같은 말을 이미 했다 — 창을 처음 열 때의 안내를 띄우지 않는다 */
 export function skipDroneHint(): void { try { localStorage.setItem(HINT_KEY, '1') } catch { /* 한 번 더 뜰 뿐 */ } }
 export function closeDronePop(): void {
+  if (q('drone-pop').contains(document.activeElement)) q('drone-btn').focus({ preventScroll: true }) // 연 버튼으로 돌려준다
   q('drone-pop').classList.remove('open'); q('drone-pop-bg').classList.remove('open'); q('drone-btn').setAttribute('aria-expanded', 'false')
 }
 

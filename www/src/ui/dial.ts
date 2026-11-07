@@ -10,6 +10,9 @@ import { q, on } from './dom.ts'
 const NS = 'http://www.w3.org/2000/svg'
 // viewBox 320 기준 반지름: 링·채움·바늘 112, 눈금 시작 119, 숫자 133, 템포 이름(링 안쪽) 94
 const C = 160, R_RING = 112, R_TICK0 = 119, R_NUM = 133, R_NAME = 94
+/** 그림 높이 — 호가 아래로 열려 있어(±135°) 아래 끝 숫자가 y≈264 에서 끝난다. 정사각형(320)이면 아래 약 56 칸이 비어 다이얼이 위로 쏠려 보였다(전용 화면, 위 여백 50 px · 아래 79 px).
+ *  290 으로 잘라 그림 덩어리를 상자 가운데로. 중심(C)은 그대로 160 — 화면 좌표의 중심은 높이의 160/290 */
+export const VB_H = 290
 const A0 = -135, A1 = 135
 
 /** 숫자를 눈금 바깥쪽으로 붙인다 — 중심에서 본 방향에 따라 정렬점을 바꾼다 */
@@ -34,7 +37,7 @@ export function buildDial(): void {
   built = true
   const { bpmMin: min, bpmMax: max } = CFG.metro
   const svg = q<HTMLElement>('dial-svg') as unknown as SVGSVGElement
-  svg.setAttribute('viewBox', '0 0 320 320')
+  svg.setAttribute('viewBox', `0 0 320 ${VB_H}`)
 
   // 트랙
   svg.appendChild(el('path', { d: arcPath(C, C, R_RING, A0, A1), class: 'dial-track' }))
@@ -70,16 +73,18 @@ export function buildDial(): void {
 
 /** 다이얼 크기는 폰마다 다르고(217~320 px) SVG 글자는 user unit 이라 같이 줄어든다 → 실제 px 를 재서 CSS 변수로 글자 크기를 고정 */
 function attachTypography(host: HTMLElement): void {
-  const apply = (px: number): void => {
+  const apply = (px: number, h: number): void => {
     if (!(px > 0)) return // display:none(전용 모드 밖)이면 0 — 마지막 값을 유지
+    // 가운데 숫자 칸의 높이 = 링 중심 y × 2 → 그 칸의 가운데가 링 중심(상자가 320:290 보다 길쭉해도)
+    host.style.setProperty('--dial-c2', (dialGeom(px, h).cy * 2).toFixed(1) + 'px')
     const t = dialTypography(px)
     host.style.setProperty('--dial-px', px.toFixed(1))
     host.style.setProperty('--dial-num-units', t.numUnits.toFixed(2))
     host.style.setProperty('--dial-name-units', t.nameUnits.toFixed(2))
     host.classList.toggle('no-names', !t.showNames)
   }
-  if (typeof ResizeObserver === 'undefined') { apply(host.getBoundingClientRect().width); return } // 아주 옛 브라우저 — 한 번만
-  new ResizeObserver(entries => { for (const e of entries) apply(e.contentRect.width) }).observe(host)
+  if (typeof ResizeObserver === 'undefined') { const r = host.getBoundingClientRect(); apply(r.width, r.height); return } // 아주 옛 브라우저 — 한 번만
+  new ResizeObserver(entries => { for (const e of entries) apply(e.contentRect.width, e.contentRect.height) }).observe(host)
 }
 
 /** BPM → 바늘·채움·숫자·용어 */
@@ -93,6 +98,13 @@ export function setDialBpm(bpm: number): void {
   q('dial-name').textContent = tempoName(bpm)
 }
 
+/** SVG 는 상자 안에 비율을 지켜 가운데 놓인다(meet). 전용 모드에서 다이얼은 flex 로 키가 커지고 폭은 320 에 막혀
+ * 상자가 320:290 보다 길쭉해질 수 있다 → 높이 비율로 잡으면 중심이 아래로 샌다. 실제 배율 s 와 링 중심(위에서 cy) */
+export function dialGeom(w: number, h: number): { s: number, cy: number } {
+  const s = Math.min(w / 320, h / VB_H)
+  return { s, cy: (h - VB_H * s) / 2 + C * s }
+}
+
 let onChange: ((bpm: number) => void) | null = null
 export function onDialChange(fn: (bpm: number) => void): void { onChange = fn }
 
@@ -101,7 +113,7 @@ export function onDialChange(fn: (bpm: number) => void): void { onChange = fn }
 const INNER = 0.55
 function attachRotate(host: HTMLElement): void {
   let active = false, lastA = 0, acc = 0, base = 0, vertical: ReturnType<typeof createBpmDrag> | null = null
-  const center = () => { const r = host.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, ring: r.width / 2 * (R_RING / C) } }
+  const center = () => { const r = host.getBoundingClientRect(), g = dialGeom(r.width, r.height); return { x: r.left + r.width / 2, y: r.top + g.cy, ring: R_RING * g.s } }
   on(host, 'pointerdown', (e: PointerEvent) => {
     active = true; acc = 0; base = +q('dial-bpm').textContent!
     const c = center(); lastA = pointToAngle(e.clientX - c.x, e.clientY - c.y)

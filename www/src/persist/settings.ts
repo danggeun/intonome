@@ -1,4 +1,4 @@
-/** 설정 영속화 (localStorage). 스키마 v2 + v1 마이그레이션 */
+/** 설정 영속화 (localStorage). 스키마 v3 — 읽을 때 v2·v1 을 옮겨 온다 */
 import { settingsStore, RMS_LEVELS, V1_RMS_LEVELS, V201_RMS_LEVELS, SMOOTH_LEVELS, V246_SMOOTH_LEVELS, CFG, type Settings, type SubDiv, type TimeSig } from '../state/index.ts'
 import { t, isLang } from '../core/i18n/index.ts'
 import { notice } from '../core/notice.ts'

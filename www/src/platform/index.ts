@@ -39,6 +39,8 @@ export function setStatusBarTheme(theme: 'dark' | 'light', bg: string): void {
     StatusBar.setStyle({ style: theme === 'light' ? Style.Light : Style.Dark }).catch(() => {})
     StatusBar.setBackgroundColor({ color: bg }).catch(() => {}) // Android 15 엣지투엣지에서는 무시됨 (투명 상태바)
   }).catch(() => {})
+  // 아래 내비게이션 바(제스처 막대·세 버튼)의 아이콘 색도 앱 테마로 — Capacitor 8 SystemBars 는 기본으로 폰 테마를 따라서, 폰 라이트 + 앱 다크면 어두운 아이콘이 어두운 바탕에 묻혔다
+  import('@capacitor/core').then(({ SystemBars, SystemBarsStyle }) => { SystemBars.setStyle({ style: theme === 'light' ? SystemBarsStyle.Light : SystemBarsStyle.Dark }).catch(() => {}) }).catch(() => {})
 }
 
 /** 앱에서 뒤로가기: handler 가 true 를 돌려주면 소비, 아니면 앱을 백그라운드로 (종료 대신) */
@@ -184,3 +186,22 @@ export async function saveFile(blob: Blob, name: string): Promise<{ ok: true } |
 
 /** 폰 레이아웃 여부 */
 export const isPhoneLayout = (): boolean => window.innerWidth < 700
+
+/** 시스템 글꼴 크기(안드로이드 앱). WebView 는 기본으로 시스템 배율만큼 '글자만' 키운다(상자는 그대로) — 100~200 % 가 그대로 들어오면
+ *  한 화면짜리 이 앱은 버튼 글자가 넘치고 아래 조작이 화면 밖으로 밀린다. 그래서 WebView 배율은 100 % 로 두고, 시스템 배율을 읽어
+ *  앱의 글자 단계(--fs-*)에만 최대 1.3 배까지 반영한다 — 큰 글꼴을 쓰는 사람의 글자는 커지고, 배치는 깨지지 않는다. 앱으로 돌아올 때 다시 읽는다 */
+export const FONT_SCALE_MAX = 1.3
+export const FONT_SCALE_MIN = 0.85 // 작게 쓰는 사람도 그대로(2.9.2 까지 WebView 가 그렇게 했다)
+export function fontScaleFor(system: number): number { return Number.isFinite(system) && system > 0 ? Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, Math.round(system * 100) / 100)) : 1 }
+export function applyFontScale(): void {
+  if (!isNative()) return // 웹앱은 브라우저가 다룬다
+  const apply = (): void => {
+    import('@capacitor/text-zoom').then(async ({ TextZoom }) => {
+      const { value } = await TextZoom.getPreferred()
+      await TextZoom.set({ value: 1 })
+      document.documentElement.style.setProperty('--fs-scale', String(fontScaleFor(value)))
+    }).catch(() => {})
+  }
+  apply()
+  import('@capacitor/app').then(({ App }) => { void App.addListener('resume', apply) }).catch(() => {})
+}

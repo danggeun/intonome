@@ -47,7 +47,7 @@ function updateZoomBtn(): void { const ok = ed.ptA !== null && ed.ptB !== null; 
 const dur = () => ed.audio ? ed.audio.duration : (ed.item?.dur ?? 0)
 const loopStart = () => loopStartOf(ed.ptA, ed.loop)
 // 편집기의 정지는 위치를 유지하는 일시정지 ❚❚
-function setPlayGlyph(playing: boolean): void { const b = q('ed-play-btn'); setGlyph(b, playing ? 'pause' : 'play'); b.classList.toggle('playing', playing) }
+function setPlayGlyph(playing: boolean): void { const b = q('ed-play-btn'); setGlyph(b, playing ? 'pause' : 'play'); b.setAttribute('aria-label', tr(playing ? 'ed.pause' : 'ed.play')); b.classList.toggle('playing', playing) }
 
 function setPosUI(t: number): void {
   const d = dur(); if (!d) return

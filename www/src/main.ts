@@ -13,7 +13,7 @@ import { openMic, closeMic, onMic, A, resumeIfRunning, setIdleCheck, onContextSt
 import { startAnalysis, lastFrameMs, metroCalibMs } from './audio/analysis.ts'
 import { playbackActive, playbackDiag, onPlaybackChange } from './audio/playback.ts'
 import { restoreRecordings, recoverInProgress, backdateRecFile } from './audio/recorder.ts'
-import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton } from './platform/index.ts'
+import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton, applyFontScale } from './platform/index.ts'
 import { q, qsa, on, setOn } from './ui/dom.ts'
 import { toast } from './ui/toast.ts'
 import { mountTuner, showTapHint, hideTapHint, setHistSec, histDiag, retheme, setMicOpener, showMicOff } from './ui/tuner.ts'
@@ -27,7 +27,7 @@ import { mountMetro } from './ui/metro.ts'
 import { mountRefPanel } from './ui/refPanel.ts'
 import { mountDrone, dronePopOpen, closeDronePop } from './ui/drone.ts'
 import { stopDrone, stopRefNote } from './audio/refTone.ts'
-import { mountMenu, hideMenu, closeSettings, overlayOpen } from './ui/menu.ts'
+import { mountMenu, hideMenu, closeSettings, overlayOpen, openMenu } from './ui/menu.ts'
 import { mountSettings } from './ui/settings.ts'
 import { mountTimer, stopTimer } from './ui/timer.ts'
 import { mountAbout, closeDoc } from './ui/about.ts'
@@ -36,13 +36,13 @@ import { mountRecHeader } from './ui/recHeader.ts'
 import { mountRecList } from './ui/recList.ts'
 import { mountEditor, openEditor, closeEditorIfEditing, closeEditor, isEditorOpen, editorDiag } from './ui/editor.ts'
 import { hideLaunch } from './ui/launch.ts'
-import { mountTour, tourActive, endTour } from './ui/tour.ts'
+import { mountTour, tourActive, endTour, startTourWithoutMic } from './ui/tour.ts'
 import { stopMetro } from './audio/metronome.ts'
 import { stopRec } from './audio/recorder.ts'
 import { sessionStore } from './state/index.ts'
 import { registerSW } from 'virtual:pwa-register'
 
-initStatusBar(); fitStandaloneHeight()
+initStatusBar(); fitStandaloneHeight(); applyFontScale()
 
 const newInstall = isNewInstall() // 처음 안내용 — 아래 clearLegacyStorage 가 남기는 표식을 보기 전에
 clearLegacyStorage()
@@ -89,7 +89,8 @@ mountMicPopup(tryOpenMic); onMicRetryFailed(() => toast(t('mic.retryFailed'), 50
 mountRecHeader(() => tryOpenMic(true)) // REC 가 마이크를 켠다 — 직접 누른 것이므로 차단이면 안내
 setMicOpener(() => startInGesture()) // 꺼진 채 남은 튜너의 시작 버튼 (정의는 아래 — 누를 때 부른다)
 const droneOn = (): boolean => droneStore.get().pitchClass !== null
-onNotice(toast) // audio·persist·platform 이 알리는 한 줄은 모두 토스트로
+// audio·persist·platform 이 알리는 한 줄은 모두 토스트로. 녹음 완료만은 눌러서 바로 목록으로 — 「완료」 뿐이면 어디서 듣는지 몰랐다
+onNotice((msg, ms) => { if (msg === t('rec.done')) toast(t('rec.doneTap'), 4000, openMenu); else toast(msg, ms) })
 // 녹음 재생도 유휴가 아니다 — 재생이 보정 게인 그래프를 타면 컨텍스트가 잠들 때 무음이 된다
 setIdleCheck(() => !metroStore.get().playing && !refToneStore.get().active && !droneOn() && !playbackActive())
 startAnalysis()
@@ -221,10 +222,11 @@ const startInGesture = async (): Promise<boolean> => {
 }
 void (async () => {
   const state = await micPermission()
-  if (state === 'denied') { showMicPopup(true); showMicOff(); return }
+  if (state === 'denied') { showMicPopup(true); showMicOff(); startTourWithoutMic(); return }
   if (isIOS() && !isNative() && settingsStore.get().wakeLock) { showTapHint(startInGesture, 'tuner.startSub'); return }
   if (await tryOpenMic()) return
-  showTapHint(startInGesture)
+  showTapHint(startInGesture, 'tuner.startSub') // 왜 눌러야 하는지 한 줄 — 전엔 버튼만 있었다
+  startTourWithoutMic()
 })()
 
 // 녹음 복원. 브라우저 탭(비설치 PWA)은 디스크가 차면 IndexedDB 를 비울 수 있다 — 영속 저장을 한 번 요청해 둔다(거절돼도 동작은 같다)

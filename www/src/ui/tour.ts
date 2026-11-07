@@ -60,7 +60,7 @@ const STEPS: Step[] = [
   // 마이크가 꺼져 있으면 음 자리에 시작 버튼이 뜬다 — 눌러서 켤 수 있게 열어 둔다
   { key: 'note', target: () => [q('tuner-note-row')], pad: 6, radius: 14, open: true, task: true,
     view: () => done ? { title: 'tour.noteDone', body: 'tour.noteDoneBody', gesture: 'none', vars: { tol: settingsStore.get().tolCents } }
-      : { title: 'tour.note', body: 'tour.noteBody', gesture: 'none' } },
+      : { title: 'tour.note', body: 'tour.noteBody', gesture: 'none', vars: { tol: settingsStore.get().tolCents } } }, // 소리를 안 내고 「다음」 만 눌러도 숫자·초록의 뜻을 본다
   { key: 'trace', target: () => [q('tuner-history')], pad: 4, radius: 12,
     view: () => ({ title: 'tour.trace', body: 'tour.traceBody', gesture: 'none' }) },
   { key: 'ref', target: () => [q('ref-row')], pad: 2, radius: 10, open: true, task: true,
@@ -106,7 +106,7 @@ function build(): Layer {
   const blocks = [0, 1, 2, 3].map(() => el('div', 'tour-block', box))
   const cover = el('div', 'tour-block', box) // 보여 주기만 하는 단계: 구멍 위에도 막(투명)
   const pulse = el('div', 'tour-pulse', box); el('i', '', pulse); el('i', '', pulse)
-  const card = el('div', 'tour-card', box); card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.setAttribute('aria-live', 'polite'); card.tabIndex = -1
+  const card = el('div', 'tour-card', box); card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.tabIndex = -1 // aria-live 는 두지 않는다 — 단계마다 카드로 포커스가 오며 읽히는데 live 까지 있으면 두 번 읽혔다
   const caret = el('div', 'tour-caret', card)
   const icon = el('img', 'tour-icon', card) as HTMLImageElement; icon.src = 'icons/icon-192.png'; icon.alt = ''
   const title = el('div', 'tour-title', card), body = el('div', 'tour-body', card)
@@ -228,7 +228,7 @@ function render(swap = false): void {
   L.card.classList.toggle('end', i === LAST); L.icon.hidden = i !== LAST
   L.hint.textContent = t('tour.skipHint'); L.hint.hidden = i !== 0
   Array.from(L.dots.children).forEach((d, k) => d.classList.toggle('on', k === i)) // 지금 점이 길어지며 옮겨 간다
-  L.dots.setAttribute('aria-label', t('tour.progress', { n: Math.min(i + 1, LAST), total: LAST }))
+  L.dots.setAttribute('aria-label', t('tour.progressAria', { n: Math.min(i + 1, LAST), total: LAST })) // 「3 / 9」 는 「3 슬래시 9」 로 읽혔다
   L.pulse.className = 'tour-pulse g-' + v.gesture
   layout(true)
   if (swap) focusCard()
@@ -261,7 +261,7 @@ function layout(force = false): void {
   if (!L) return
   const s = STEPS[i]!, v = s.view(), vw = window.innerWidth, vh = window.innerHeight
   const hidden = overlayOpen() || isEditorOpen()
-  if (hidden !== wasHidden) { wasHidden = hidden; L.box.classList.toggle('hide', hidden); force = true }
+  if (hidden !== wasHidden) { wasHidden = hidden; L.box.classList.toggle('hide', hidden); force = true; if (!hidden) requestAnimationFrame(focusCard) } // 가려졌다 다시 보이면 포커스도 말풍선으로(마이크 팝업 뒤에서 시작한 안내)
   if (hidden) { restoreBar(); setInert(false); return }
   setInert(!s.open) // 보여 주기만 하는 단계: 키보드·스크린 리더로도 뒤의 버튼(REC 등)에 닿지 않게
   const h = holeRect(s)
@@ -354,4 +354,9 @@ export function mountTour(o: { pending: boolean; onDone: () => void }): void {
   // 튜너가 처음 켜지면 — 화면이 자리 잡은 뒤(폰은 메트로놈이 250 ms 뒤 접힌다). 마이크가 켜질 때까지 기다린다(그 전에 다시 보기로 열었다 닫았으면 안 띄운다)
   autoArmed = true
   tunerStore.select(s => s.micReady, ready => { if (ready && autoArmed) setTimeout(() => { if (autoArmed) startTour(o.onDone) }, 900) }, { immediate: true })
+  armedDone = o.onDone
 }
+let armedDone: (() => void) | undefined
+/** 마이크가 안 켜졌을 때(거부·막힘·실패)도 첫 안내는 띄운다 — 전엔 마이크를 기다리기만 해서, 거부한 사람은 안내를 못 보고 나중에 허용하는 순간 갑자기 떴다.
+ *  첫 단계(음이름)는 음 자리의 「시작」 버튼을 밝혀 두므로 거기서 켤 수 있다 */
+export function startTourWithoutMic(): void { if (autoArmed) setTimeout(() => { if (autoArmed) startTour(armedDone) }, 900) }
