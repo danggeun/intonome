@@ -2,6 +2,21 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.4] - 2026-11-07
+Words only: settings descriptions and a few notices say what a thing is or does in one read, in all six languages. No behaviour changes.
+
+Settings
+- Each description says what the setting does, without advice ("±5 for tuning…"), if-then sentences ("when this is off…") or screen jargon ("the line and the needle"); Tuner response: how quickly the display reacts to pitch changes; Note names: the names shown large on the tuner; Play A octave: a plain list of instruments and their A, without "is" sentences or brackets; Tolerance: how many cents off still shows green; Keep screen on and Full screen in one plain line
+- Appearance has no description, like Language (Dark / Light says it)
+
+Notices and guide
+- Korean uses one verb for tapping ("누르다"); four notices said "탭"
+- Keeping a recording and undoing it: "won't be deleted automatically" / "will be deleted after 30 days" (it read as if it was being deleted now)
+- Drone: the first-time notice says how to stop it (tap DRONE at the top again)
+- Editor: the empty bookmark line names the "+ Add" button and what it does
+- First-run guide: the A and tempo you try during the guide go back when you tap Next, said in one sentence; "Close anytime" uses the same verb as the close button
+- Japanese uses タップ for every tap; Chinese 点按 everywhere; a few other wordings aligned (recording kept past 30 days, "saved up to that point" after an error)
+
 ## [2.9.3] - 2026-11-07
 The last pass before the Play release: a full review of every screen in six languages, both themes, phone and tablet widths, plus independent reviews of the store text, privacy policy, accessibility and the first ten minutes of use. Nothing blocked release; this fixes what a careful eye would notice.
 
