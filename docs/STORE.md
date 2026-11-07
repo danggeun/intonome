@@ -8,7 +8,7 @@ There are English, Korean, Japanese, Simplified Chinese, Traditional Chinese and
 | Field | Value |
 |---|---|
 | App name | see below (per language) |
-| Default language | English (en-US); add Korean (ko-KR), Japanese (ja-JP), Simplified Chinese (zh-CN), Traditional Chinese (zh-TW), Spanish (es-419 and es-ES, same text) |
+| Default language | English (en-US); add Korean (ko-KR), Japanese (ja-JP), Simplified Chinese (zh-CN), Traditional Chinese (zh-TW and zh-HK, same text — without zh-HK, phones in Hong Kong get the English listing), Spanish (es-419 and es-ES, same text) |
 | App or game | App |
 | Free or paid | Free |
 | Category | Music & Audio |
@@ -52,7 +52,7 @@ The 80 characters that search indexes and that show before "More". Instrument na
 ```
 
 ```
-Tuner & metronome for strings that shows your vibrato. Drone, recorder. No ads.
+Violin, viola, cello & bass tuner + metronome that shows your vibrato. No ads
 ```
 
 ```
@@ -60,7 +60,7 @@ Tuner & metronome for strings that shows your vibrato. Drone, recorder. No ads.
 ```
 
 ```
-小提琴、中提琴、大提琴、低音提琴的调音器与节拍器。能看见揉弦的调音器、持续音、录音。无广告，可离线使用
+小提琴、中提琴、大提琴、低音提琴调音器＋节拍器。看得见揉弦的音高曲线，持续音，录音。无广告，可离线使用
 ```
 
 ```
@@ -68,7 +68,7 @@ Tuner & metronome for strings that shows your vibrato. Drone, recorder. No ads.
 ```
 
 ```
-Afinador y metrónomo para violín, viola y chelo. Ve tu vibrato. Sin anuncios
+Afinador y metrónomo para violín, viola, chelo y contrabajo. Mira tu vibrato
 ```
 
 ## Full description (Korean)
@@ -78,12 +78,12 @@ Afinador y metrónomo para violín, viola y chelo. Ve tu vibrato. Sin anuncios
 튜너와 메트로놈이 한 화면에 있고, 드론을 켜 두고 음정을 잡거나 연습을 녹음해 바로 들어볼 수 있습니다.
 
 ■ 튜너
-· 콘트라베이스 E1(40Hz)부터 바이올린 고음까지
+· 콘트라베이스 E1(41Hz)부터 바이올린 고음까지
 · 기준음 A = 410–466Hz (바로크 415 포함)
 · 허용 오차 ±5·±10·±15 센트 조절
 · 음이름 도레미 / C D E, 이명동음 함께 표시
 · 최근 음정이 어떻게 흔들렸는지 화면에 남습니다
-· 드론이나 A 듣기가 울려도 앱 소리에는 반응하지 않고 연주하는 음만 읽습니다
+· 드론이나 A 듣기를 켠 채로도 연주하는 음을 읽습니다(드론과 같은 음은 이어폰으로)
 
 ■ 메트로놈
 · 2/4 · 3/4 · 4/4 · 6/8, 셋잇단 포함 세분 4종
@@ -118,12 +118,12 @@ A tuner and metronome for violin, viola, cello and double bass. No ads, no accou
 The tuner and metronome share one screen. Practice your intonation over a drone, or record yourself and listen back right away.
 
 ■ Tuner
-· From double bass E1 (40 Hz) to the top of the violin
+· From double bass E1 (41 Hz) to the top of the violin
 · Reference A = 410–466 Hz (including Baroque 415)
 · Tolerance of ±5, ±10 or ±15 cents
 · Letter note names with enharmonics
 · A trace shows how your pitch moved over the last few seconds
-· Ignores its own drone and Play A and keeps reading you
+· Keeps reading you over its own drone and Play A (for the same note as the drone, use earphones)
 
 ■ Metronome
 · 2/4 · 3/4 · 4/4 · 6/8, four subdivisions including triplets
@@ -158,12 +158,12 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 チューナーとメトロノームが同じ画面にあり、ドローンを鳴らしたまま音程を合わせたり、練習を録音してすぐ聴き返したりできます。
 
 ■ チューナー
-· コントラバスの E1 (40Hz) からバイオリンの高音まで
+· コントラバスの E1 (41Hz) からバイオリンの高音まで
 · 基準音 A = 410〜466Hz (バロックの 415 を含む)
 · 許容範囲は ±5・±10・±15 セント
 · 音名はドレミ / C D E、異名同音も表示
 · ここ数秒の音程の動きが線で画面に残ります
-· ドローンや A の音が鳴っていてもアプリの音には反応せず、演奏している音だけを読みます
+· ドローンや A の音を鳴らしたままでも、演奏している音を読み取ります (ドローンと同じ音を弾くときはイヤホンで)
 
 ■ メトロノーム
 · 2/4 · 3/4 · 4/4 · 6/8、3連符を含む4種類の分割
@@ -198,12 +198,12 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 调音器和节拍器在同一个界面上。可以开着持续音练音准，也可以把练习录下来马上回听。
 
 ■ 调音器
-· 从低音提琴的 E1（40 Hz）到小提琴的高音区
+· 从低音提琴的 E1（41 Hz）到小提琴的高音区
 · 标准音 A = 410–466 Hz（包括巴洛克的 415）
 · 允许误差 ±5、±10、±15 音分
 · 音名 C D E，并显示等音（如 A♯/B♭）
 · 最近几秒的音高变化会以一条线留在屏幕上
-· 持续音或 A 音响着的时候，也只识别你演奏的音，不受应用自身声音的影响
+· 开着持续音或 A 音时，也能识别你演奏的音（与持续音同音时，请戴耳机）
 
 ■ 节拍器
 · 2/4 · 3/4 · 4/4 · 6/8，四种细分，包括三连音
@@ -238,12 +238,12 @@ The tuner and metronome share one screen. Practice your intonation over a drone,
 調音器和節拍器在同一個畫面上。可以開著持續音練音準，也可以把練習錄下來馬上重聽。
 
 ■ 調音器
-· 從低音提琴的 E1（40 Hz）到小提琴的高音區
+· 從低音提琴的 E1（41 Hz）到小提琴的高音區
 · 標準音 A = 410–466 Hz（包括巴洛克的 415）
 · 容許誤差 ±5、±10、±15 音分
 · 音名 C D E，並顯示等音（如 A♯/B♭）
 · 最近幾秒的音高變化會以一條線留在螢幕上
-· 持續音或 A 音響著的時候，也只辨識你演奏的音，不受 App 自身聲音的影響
+· 持續音或 A 音響著時，也能讀出你演奏的音（與持續音同音時，請戴耳機）
 
 ■ 節拍器
 · 2/4 · 3/4 · 4/4 · 6/8，四種細分，包括三連音
@@ -278,12 +278,12 @@ Afinador y metrónomo para practicar violín, viola, violonchelo y contrabajo. S
 El afinador y el metrónomo comparten una sola pantalla. Practica tu afinación sobre una nota pedal, o grábate y escúchate al momento.
 
 ■ Afinador
-· Desde el Mi1 del contrabajo (40 Hz) hasta lo más agudo del violín
+· Desde el Mi grave del contrabajo (41 Hz) hasta lo más agudo del violín
 · La de referencia = 410–466 Hz (incluido el 415 barroco)
 · Tolerancia de ±5, ±10 o ±15 cents
 · Nombres de nota Do Re Mi o C D E, con enarmónicos
 · Una línea muestra cómo se movió tu afinación en los últimos segundos
-· Ignora su propia nota pedal y el La de referencia y sigue leyéndote a ti
+· Sigue leyendo tu nota mientras suena la nota pedal o el La (para tocar la misma nota que la nota pedal, usa auriculares)
 
 ■ Metrónomo
 · 2/4 · 3/4 · 4/4 · 6/8, cuatro subdivisiones, tresillos incluidos
@@ -292,7 +292,7 @@ El afinador y el metrónomo comparten una sola pantalla. Practica tu afinación 
 · Se silencia al grabar; los pulsos siguen en pantalla
 
 ■ Oír el La y nota pedal
-· El La en la octava de tu instrumento (La4 violín y viola, La3 violonchelo, La2 contrabajo)
+· El La en la octava de tu instrumento (A4 violín y viola, A3 violonchelo, A2 contrabajo)
 · Mantén cualquiera de las 12 notas como nota pedal y afina tus intervalos sobre ella
 
 ■ Grabación y edición
@@ -328,9 +328,9 @@ Upload in this order; the first two and a half are what a phone shows under the 
 |---|---|---|---|---|---|---|---|
 | 1 | Tuner, A with the vibrato trace (A = 442 in the Korean, Japanese, Traditional Chinese and Spanish sets, 440 in English and Simplified Chinese) | 비브라토가 보이는 튜너 / 현악기 튜너 · 메트로놈 | Tuner that shows vibrato / Tuner & metronome for strings | ビブラートが見えるチューナー / 弦楽器のチューナー・メトロノーム | 能看见揉弦的调音器 / 弦乐调音器 · 节拍器 | 看得見揉弦的調音器 / 弦樂調音器 · 節拍器 | Un afinador que muestra el vibrato / Afinador y metrónomo para cuerdas |
 | 2 | Tuner + metronome, a steady A (no vibrato), 4/4 with eighths running | 튜너와 메트로놈을 한 화면에 / 메트로놈 켜 둔 채 음정 확인 | Tuner and metronome / Check pitch with the click running | チューナーとメトロノームを1画面に / メトロノームを鳴らしたまま音程を確認 | 调音器和节拍器在同一屏 / 开着节拍器看音准 | 調音器和節拍器在同一個畫面 / 開著節拍器看音準 | Afinador y metrónomo juntos / Mira la afinación con el metrónomo sonando |
-| 3 | Full-size metronome at 96, frozen on the downbeat | 메트로놈만 크게 / 2/4~6/8 · 셋잇단 · 템포 ±5 | Metronome, full size / 2/4–6/8 · triplets · ±5 BPM | メトロノームだけを大きく / 2/4〜6/8 · 3連符 · テンポ ±5 | 放大节拍器 / 2/4–6/8 · 三连音 · 速度 ±5 | 放大節拍器 / 2/4–6/8 · 三連音 · 速度 ±5 | Metrónomo a tamaño completo / 2/4–6/8 · tresillos · ±5 BPM |
-| 4 | Drone C on, G (the fifth) held in tune | 드론 켜 놓고 음정 잡기 / 드론 소리는 빼고 연주하는 음만 읽어요 | Play against a drone / It hears you, not the drone | ドローンを鳴らして音程合わせ / ドローンの音は拾わず、演奏した音だけを読みます | 开着持续音练音准 / 只听你的音，不听持续音 | 開著持續音練音準 / 只聽你的音，不聽持續音 | Toca sobre una nota pedal / Te escucha a ti, no a la nota pedal |
-| 5 | Light theme | 라이트 테마도 / 광고 없음 · 오프라인 · 무료 | Light theme too / No ads · Offline · Free | ライトテーマも / 広告なし · オフライン · 無料 | 也有浅色主题 / 无广告 · 离线 · 免费 | 也有淺色主題 / 無廣告 · 離線 · 免費 | También en tema claro / Sin anuncios · Sin conexión · Gratis |
+| 3 | Full-size metronome at 96, frozen on the downbeat | 메트로놈만 크게 / 2/4~6/8 · 셋잇단 · 템포 ±5 | Big metronome / 2/4 to 6/8 · triplets · ±5 BPM | メトロノームだけを大きく / 2/4〜6/8 · 3連符 · テンポ ±5 | 放大节拍器 / 2/4–6/8 · 三连音 · 速度 ±5 | 放大節拍器 / 2/4–6/8 · 三連音 · 速度 ±5 | Metrónomo a tamaño completo / 2/4–6/8 · tresillos · ±5 BPM |
+| 4 | Drone C on, G (the fifth) held in tune | 드론 켜 놓고 음정 잡기 / 드론이 울려도 내 음이 보여요 | Play against a drone / Your pitch, read over the drone | ドローンを鳴らして音程合わせ / ドローンを鳴らしたまま、弾いた音を読み取ります | 开着持续音练音准 / 持续音响着，也能读出你的音 | 開著持續音練音準 / 持續音響著，也看得到你的音準 | Toca sobre una nota pedal / Lee tu nota sobre la nota pedal |
+| 5 | Light theme | 라이트 테마도 / 광고 없음 · 오프라인 | Light theme too / No ads · Offline | ライトテーマも / 広告なし · オフライン | 也有浅色主题 / 无广告 · 离线 | 也有淺色主題 / 無廣告 · 離線 | También en tema claro / Sin anuncios · Sin conexión |
 
 Recording, editor and timer are described in the text but not pictured: list screens do not sell, and five images read in one swipe. The screenshot baselines in `test-assets/screens/baseline/` (780 × 1688) are for visual checks and do not meet the 2:1 rule.
 

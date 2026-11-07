@@ -16,6 +16,7 @@ describe('privacy policy page (PRIVACY.md rendered in-app)', () => {
     expect(en.startsWith('<p class="doc-meta">Last updated: ')).toBe(true)
     expect(en).toMatch(/<ul><li>Mic input is <strong>analyzed in real time and discarded immediately<\/strong>/)
     expect(en).toContain('<a href="https://github.com/danggeun/intonome/issues" target="_blank" rel="noopener">https://github.com/danggeun/intonome/issues</a>')
+    expect(en).toContain('<a href="mailto:intonome.app@gmail.com">intonome.app@gmail.com</a>') // 스토어와 같은 연락처
     expect(en).not.toMatch(/\*\*|^#|\n- |\[한국어\]|&lt;https/m)
     expect(en).not.toContain('<h1') // the page title is the screen title
   })

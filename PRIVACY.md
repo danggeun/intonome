@@ -1,6 +1,6 @@
 # Intonome Privacy Policy
 
-Last updated: 2026-11-05 · [한국어](#intonome-개인정보처리방침) · [日本語](#intonome-プライバシーポリシー) · [简体中文](#intonome-隐私政策) · [繁體中文](#intonome-隱私權政策) · [Español](#política-de-privacidad-de-intonome)
+Last updated: 2026-11-07 · [한국어](#intonome-개인정보처리방침) · [日本語](#intonome-プライバシーポリシー) · [简体中文](#intonome-隐私政策) · [繁體中文](#intonome-隱私權政策) · [Español](#política-de-privacidad-de-intonome)
 
 ## Summary
 
@@ -12,15 +12,15 @@ The app needs microphone permission to analyze pitch and measure practice time.
 
 - Mic input is **analyzed in real time and discarded immediately**. Nothing is stored unless you tap record.
 - All analysis happens on the device. No speech recognition service or external API is used.
-- The app releases the mic when it is hidden, and closes it after 15 minutes without sound.
+- The app releases the mic when it goes to the background (in the web app, a recording in progress keeps the mic so it can continue), and closes it after 15 minutes without sound.
 
 ## Recordings
 
 Files you create with the record button are kept only in the browser storage (IndexedDB) or the app's storage on your device.
 
 - They are never uploaded. We cannot see them.
-- By default they are deleted after 30 days; you can turn this off in Settings. Individual recordings can be excluded with "Keep".
-- A file leaves the app only when you choose "Download" or "Share", and you choose where it goes.
+- By default they are deleted after 30 days; choose "Forever" under Settings › Keep recordings to keep them. Individual recordings can be excluded with "Keep".
+- A file leaves the app only when you choose "Download" (web) or "Save / Share" (Android app), and you choose where it goes. Sharing from the Android app keeps one temporary copy in the app's own cache until the next share.
 
 ## Settings
 
@@ -36,7 +36,7 @@ The web app downloads only its own files (HTML, scripts, fonts, icons). Every re
 
 ## Children
 
-The app collects no personal information, so it is safe to use at any age.
+The app is not directed at children under 13 and collects no personal information from anyone, including children.
 
 ## Deleting data
 
@@ -48,13 +48,17 @@ Changes to this policy are recorded in this file and the repository history.
 
 ## Contact
 
+<intonome.app@gmail.com>
+
+If you email us, your address and message are used only to reply.
+
 <https://github.com/danggeun/intonome/issues>
 
 ---
 
 # Intonome 개인정보처리방침
 
-최종 수정일: 2026-11-05
+최종 수정일: 2026-11-07
 
 ## 요약
 
@@ -66,15 +70,15 @@ Changes to this policy are recorded in this file and the repository history.
 
 - 마이크 입력은 **실시간으로 분석된 뒤 즉시 폐기**됩니다. 녹음 버튼을 누르지 않는 한 어디에도 저장되지 않습니다.
 - 분석은 전부 기기 안에서 이뤄집니다. 음성 인식 서비스나 외부 API 를 쓰지 않습니다.
-- 화면이 가려지면 앱은 마이크를 놓습니다. 15분 동안 소리가 없으면 마이크를 닫습니다.
+- 화면이 가려지면 앱은 마이크를 놓습니다(웹 앱에서 녹음 중일 때는 녹음이 이어지도록 마이크를 유지합니다). 15분 동안 소리가 없으면 마이크를 닫습니다.
 
 ## 녹음
 
 녹음 버튼을 눌러 만든 파일은 기기의 브라우저 저장소(IndexedDB) 또는 앱 저장 영역에만 보관됩니다.
 
 - 서버로 업로드되지 않습니다. 저희는 그 파일을 볼 수 없습니다.
-- 기본적으로 30일 뒤 자동 삭제되며, 설정에서 끌 수 있습니다. 개별 녹음은 '남기기'로 자동 삭제에서 제외할 수 있습니다.
-- 사용자가 직접 '다운로드' 또는 '공유'를 실행할 때만 파일이 앱 밖으로 나갑니다. 어디로 보낼지는 사용자가 고릅니다.
+- 기본적으로 30일 뒤 자동 삭제되며, 설정 › 녹음 보관에서 '계속'을 고르면 지우지 않습니다. 개별 녹음은 '남기기'로 자동 삭제에서 제외할 수 있습니다.
+- 사용자가 직접 '다운로드'(웹) 또는 '저장 / 공유'(안드로이드 앱)를 실행할 때만 파일이 앱 밖으로 나갑니다. 어디로 보낼지는 사용자가 고릅니다. 안드로이드 앱에서 공유하면 다음 공유 때까지 앱 자신의 캐시에 임시 사본 하나가 남습니다.
 
 ## 설정
 
@@ -90,7 +94,7 @@ Changes to this policy are recorded in this file and the repository history.
 
 ## 아동
 
-이 앱은 개인정보를 수집하지 않으므로 연령과 무관하게 안전하게 사용할 수 있습니다.
+이 앱은 13세 미만 아동을 대상으로 하지 않으며, 아동을 포함해 누구에게서도 개인정보를 수집하지 않습니다.
 
 ## 데이터 삭제
 
@@ -102,13 +106,17 @@ Changes to this policy are recorded in this file and the repository history.
 
 ## 문의
 
+<intonome.app@gmail.com>
+
+메일을 보내시면 주소와 내용은 답장하는 데에만 씁니다.
+
 <https://github.com/danggeun/intonome/issues>
 
 ---
 
 # Intonome プライバシーポリシー
 
-最終更新日: 2026-11-05
+最終更新日: 2026-11-07
 
 ## 概要
 
@@ -120,15 +128,15 @@ Changes to this policy are recorded in this file and the repository history.
 
 - マイク入力は**リアルタイムで解析された後ただちに破棄**されます。録音ボタンを押さない限り、どこにも保存されません。
 - 解析はすべて端末内で行われます。音声認識サービスや外部 API は使いません。
-- アプリが非表示になるとマイクを解放します。15分間音がなければマイクを閉じます。
+- アプリが非表示になるとマイクを解放します (ウェブアプリで録音中のときは、録音を続けるためにマイクを保持します)。15分間音がなければマイクを閉じます。
 
 ## 録音
 
 録音ボタンで作成したファイルは、端末のブラウザストレージ (IndexedDB) またはアプリの保存領域にのみ保管されます。
 
 - サーバーにアップロードされることはありません。私たちがその内容を見ることはできません。
-- 既定では30日後に自動削除されます。設定でオフにできます。個々の録音は「残す」で自動削除の対象から外せます。
-- ファイルがアプリの外へ出るのは、ユーザーが「ダウンロード」または「共有」を実行したときだけです。送り先はユーザー自身が選びます。
+- 既定では30日後に自動削除されます。設定の「録音の保存期間」で「無期限」を選ぶと自動削除されません。個々の録音は「ずっと残す」で自動削除の対象から外せます。
+- ファイルがアプリの外へ出るのは、ユーザーが「保存」(ウェブ) または「保存 / 共有」(Android アプリ) を実行したときだけです。送り先はユーザー自身が選びます。Android アプリで共有すると、次に共有するまでアプリ自身のキャッシュに一時的なコピーが1つ残ります。
 
 ## 設定
 
@@ -144,7 +152,7 @@ Changes to this policy are recorded in this file and the repository history.
 
 ## 子ども
 
-このアプリは個人情報を収集しないため、年齢を問わず安全に使えます。
+このアプリは13歳未満の子どもを対象としておらず、子どもを含め誰からも個人情報を収集しません。
 
 ## データの削除
 
@@ -156,13 +164,17 @@ Changes to this policy are recorded in this file and the repository history.
 
 ## お問い合わせ
 
+<intonome.app@gmail.com>
+
+メールをいただいた場合、アドレスと内容は返信のためだけに使います。
+
 <https://github.com/danggeun/intonome/issues>
 
 ---
 
 # Intonome 隐私政策
 
-最后更新：2026-11-05
+最后更新：2026-11-07
 
 ## 摘要
 
@@ -174,15 +186,15 @@ Changes to this policy are recorded in this file and the repository history.
 
 - 麦克风输入**实时分析后立即丢弃**。除非你点按录音，否则不会保存在任何地方。
 - 所有分析都在设备上完成。不使用语音识别服务或外部 API。
-- 应用切到后台时会释放麦克风；15 分钟没有声音时会关闭麦克风。
+- 应用切到后台时会释放麦克风（网页版在录音时会保留麦克风，让录音继续）；15 分钟没有声音时会关闭麦克风。
 
 ## 录音
 
 用录音按钮创建的文件只保存在设备的浏览器存储（IndexedDB）或应用的存储空间中。
 
 - 不会上传。我们无法看到这些文件。
-- 默认 30 天后自动删除，可以在设置中关闭。单条录音可以用“保留”排除在自动删除之外。
-- 只有当你选择“下载”或“分享”时，文件才会离开应用，并且由你决定发送到哪里。
+- 默认 30 天后自动删除，可以在设置的“录音保存期限”中改为“永久”。单条录音可以用“保留”排除在自动删除之外。
+- 只有当你选择“下载”（网页版）或“保存 / 分享”（Android 应用）时，文件才会离开应用，并且由你决定发送到哪里。在 Android 应用中分享后，应用自己的缓存里会暂时留下一份副本，直到下一次分享。
 
 ## 设置
 
@@ -198,7 +210,7 @@ Changes to this policy are recorded in this file and the repository history.
 
 ## 儿童
 
-应用不收集个人信息，因此任何年龄都可以安全使用。
+本应用不以 13 岁以下儿童为对象，也不向任何人（包括儿童）收集个人信息。
 
 ## 删除数据
 
@@ -210,13 +222,17 @@ Changes to this policy are recorded in this file and the repository history.
 
 ## 联系我们
 
+<intonome.app@gmail.com>
+
+如果你发邮件给我们，邮箱地址和邮件内容只用于回复。
+
 <https://github.com/danggeun/intonome/issues>
 
 ---
 
 # Intonome 隱私權政策
 
-最後更新：2026-11-05
+最後更新：2026-11-07
 
 ## 摘要
 
@@ -226,17 +242,17 @@ Changes to this policy are recorded in this file and the repository history.
 
 為了分析音高和計算練習時間，App 需要麥克風權限。
 
-- 麥克風輸入**即時分析後立即丟棄**。除非你點一下錄音鍵，否則不會儲存在任何地方。
+- 麥克風輸入**即時分析後立即丟棄**。除非你點一下錄音按鈕（REC），否則不會儲存在任何地方。
 - 所有分析都在裝置上完成。不使用語音辨識服務或外部 API。
-- App 切到背景時會釋放麥克風；15 分鐘沒有聲音時會關閉麥克風。
+- App 切到背景時會停止使用麥克風（網頁版在錄音時會保留麥克風，讓錄音繼續）；15 分鐘沒有聲音時會關閉麥克風。
 
 ## 錄音
 
 用錄音按鈕建立的檔案只儲存在裝置的瀏覽器儲存（IndexedDB）或 App 的儲存空間中。
 
 - 不會上傳。我們無法看到這些檔案。
-- 預設 30 天後自動刪除，可以在設定中關閉。單段錄音可以用「保留」排除在自動刪除之外。
-- 只有當你選擇「下載」或「分享」時，檔案才會離開 App，並且由你決定傳送到哪裡。
+- 預設 30 天後自動刪除，可以在設定的「錄音保留」中改為「永久」。單段錄音可以用「保留」排除在自動刪除之外。
+- 只有當你選擇「下載」（網頁版）或「儲存 / 分享」（Android App）時，檔案才會離開 App，並且由你決定傳送到哪裡。在 Android App 中分享後，App 自己的快取裡會暫時留下一份副本，直到下一次分享。
 
 ## 設定
 
@@ -252,7 +268,7 @@ Changes to this policy are recorded in this file and the repository history.
 
 ## 兒童
 
-App 不收集個人資訊，因此任何年齡都可以安全使用。
+本 App 不以 13 歲以下兒童為對象，也不向任何人（包括兒童）收集個人資訊。
 
 ## 刪除資料
 
@@ -264,13 +280,17 @@ App 不收集個人資訊，因此任何年齡都可以安全使用。
 
 ## 聯絡我們
 
+<intonome.app@gmail.com>
+
+如果你寄信給我們，電子郵件地址和信件內容只會用來回覆。
+
 <https://github.com/danggeun/intonome/issues>
 
 ---
 
 # Política de privacidad de Intonome
 
-Última actualización: 2026-11-05
+Última actualización: 2026-11-07
 
 ## Resumen
 
@@ -280,17 +300,17 @@ App 不收集個人資訊，因此任何年齡都可以安全使用。
 
 La app necesita permiso del micrófono para analizar la altura del sonido y medir el tiempo de práctica.
 
-- La entrada del micrófono se **analiza en tiempo real y se descarta de inmediato**. No se guarda nada a menos que toques «Grabar».
+- La entrada del micrófono se **analiza en tiempo real y se descarta de inmediato**. No se guarda nada a menos que pulses REC.
 - Todo el análisis ocurre en el dispositivo. No se usa ningún servicio de reconocimiento de voz ni API externa.
-- La app libera el micrófono cuando pasa a segundo plano y lo cierra tras 15 minutos sin sonido.
+- La app libera el micrófono cuando pasa a segundo plano (en la app web, una grabación en curso lo mantiene para seguir grabando) y lo cierra tras 15 minutos sin sonido.
 
 ## Grabaciones
 
 Los archivos que creas con el botón de grabar se guardan solo en el almacenamiento del navegador (IndexedDB) o en el almacenamiento de la app en tu dispositivo.
 
 - Nunca se suben. No podemos verlos.
-- De forma predeterminada se eliminan a los 30 días; puedes desactivarlo en Ajustes. Puedes excluir grabaciones concretas con «Conservar».
-- Un archivo sale de la app solo cuando eliges «Descargar» o «Compartir», y tú decides a dónde va.
+- De forma predeterminada se eliminan a los 30 días; elige «Siempre» en Ajustes › Conservar grabaciones para guardarlas. Puedes excluir grabaciones concretas con «Conservar».
+- Un archivo sale de la app solo cuando eliges «Descargar» (web) o «Guardar / Compartir» (app de Android), y tú decides a dónde va. Al compartir desde la app de Android, queda una copia temporal en la caché de la propia app hasta la próxima vez que compartas.
 
 ## Ajustes
 
@@ -306,7 +326,7 @@ La app web descarga solo sus propios archivos (HTML, scripts, fuentes, iconos). 
 
 ## Menores
 
-La app no recopila datos personales, así que puede usarse a cualquier edad.
+La app no está dirigida a menores de 13 años y no recopila datos personales de nadie, incluidos los menores.
 
 ## Eliminar datos
 
@@ -317,5 +337,9 @@ Puedes eliminar grabaciones una a una en la app. Para borrarlo todo, elimina los
 Los cambios de esta política se registran en este archivo y en el historial del repositorio.
 
 ## Contacto
+
+<intonome.app@gmail.com>
+
+Si nos escribes, tu dirección y tu mensaje solo se usan para responderte.
 
 <https://github.com/danggeun/intonome/issues>
